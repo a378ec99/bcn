@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import numpy.testing as np_testing
 
-from bcn.utils import submit
+from utils import submit
 
 class TestSubmitCustom(unittest.TestCase):
     def setUp(self):
