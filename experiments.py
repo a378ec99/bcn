@@ -7,7 +7,6 @@ import numpy as np
 def test(run):
     seed = np.random.randint(0, 1e8)
     print seed
-    np.random.seed(seed)
  
     if run == 'entry_sparsity-1_rank':
         parameters = {'class': 'Experiment',
@@ -717,8 +716,7 @@ def test(run):
                       'free_x': ('rank', list(np.asarray(np.linspace(1, 10, 10), dtype=int))),
                       'free_y': ('measurements', list(np.asarray(np.logspace(np.log10(100), np.log10(1.1e4), 10), dtype=int)))}
     
-    submit(parameters['mode'], parameters['class'], parameters,
-           ppn=12, hours=10000, nodes=4, path='PUBLICATION/bcn/bcn')
+    submit(parameters)
 
 
 if __name__ == '__main__':
