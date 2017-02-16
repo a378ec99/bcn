@@ -1,7 +1,7 @@
 import sys
 import json
 
-import bcn as module
+import bcn
 
 
 
@@ -12,7 +12,7 @@ if __name__ == '__main__':
     class_ = sys.argv[1]
     kwargs = json.loads(sys.argv[2])
 
-    taskpull = getattr(module, class_)(kwargs)
+    taskpull = getattr(bcn, class_)(kwargs)
 
     tasks = taskpull.create_tasks()
     taskpull.allocate()
