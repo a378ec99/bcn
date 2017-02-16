@@ -67,18 +67,10 @@ def square_blocks_matrix(n, m_blocks, r=1.0, step=0):
     return block_matrix
 
   
-def submit(mode, class_, kwargs, ppn=12, hours=10000, nodes=2, path='PUBLICATION/bcn/bcn'):
-
-    if mode == 'profile':
-        import bcn_exp_cleaned5 as module
-        kwargs = json.loads(json.dumps(kwargs))
-        taskpull = getattr(module, class_)(kwargs)
-        tasks = taskpull.create_tasks()
-        taskpull.allocate()
-        for task in tasks:
-            result = taskpull.work(task)
-            taskpull.store(result)
-        taskpull.postprocessing()
+def submit(kwargs, ppn=12, hours=10000, nodes=2, path='PUBLICATION/bcn/bcn'):
+    
+    mode = parameters['mode']
+    class_ = parameters['class']
 
     if mode == 'local':
         subprocess.call(['python', 'taskpull_local.py', class_, json.dumps(kwargs)])
@@ -109,7 +101,6 @@ def submit(mode, class_, kwargs, ppn=12, hours=10000, nodes=2, path='PUBLICATION
         input_.write(job)
         input_.close()
         print 'Submitted {output}'.format(output=output.read())
-
         # TODO monitor for completion and give signal that can continue!
 
     
