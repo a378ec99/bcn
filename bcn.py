@@ -66,15 +66,18 @@ class Experiment(TaskPull):
             self.free_x[1]), len(self.free_y[1])))
 
     def create_tasks(self):
+        np.random.seed(self.parameters['seed'])
         for h in xrange(self.replicates):
             for i, x in enumerate(self.free_x[1]):
                 for j, y in enumerate(self.free_y[1]):
-                    task = h, i, j, x, y, self.free_x[0], self.free_y[0]
+                    seed = np.random.randint(0, 1e8)
+                    task = h, i, j, x, y, self.free_x[0], self.free_y[0], seed
                     print task
                     yield task
 
     def work(self, task):
-        h, i, j, x, y, x_name, y_name = task
+        h, i, j, x, y, x_name, y_name, seed = task
+        np.random.seed(seed)
         self.parameters[x_name] = x
         self.parameters[y_name] = y
         r = Recovery(self.parameters)
