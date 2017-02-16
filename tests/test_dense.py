@@ -8,7 +8,7 @@ from utils import submit
 class TestSubmitDense(unittest.TestCase):
     def setUp(self):
         seed = 42
-        run = 'unittest-custom'
+        run = 'unittest-dense'
         parameters = {'class': 'Experiment',
                       'name': run,
                       'mode': None,
