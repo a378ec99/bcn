@@ -7,7 +7,7 @@ import bcn
 
 if __name__ == '__main__':
     '''
-    Task-Pull for one (local) process to do testing.
+    Task-Pull for one (local) process to do testing and profiling.
     '''
     class_ = sys.argv[1]
     kwargs = json.loads(sys.argv[2])
