@@ -2,7 +2,7 @@ import sys
 import json
 
 from mpi4py import MPI
-import bcn as module
+import bcn
 
 
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
         print 'Could not use node01 as master.'
         master = 0
 
-    taskpull = getattr(module, class_)(kwargs)
+    taskpull = getattr(bcn, class_)(kwargs)
     
     if rank == master: #NOTE Master process executes code below.
 
