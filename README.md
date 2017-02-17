@@ -1,9 +1,9 @@
 # bcn
-Blind Compressive Normalization
+**Blind Compressive Normalization**
 
-The algorithm uses a (hopefully) large sample by feature matrix to detect systematic biases in qantitative data, assuming a low rank corruption and a certain incoherence between signal and corruption.
+The algorithm uses a large (hopefully) sample by feature matrix to detect systematic biases across measurements, assuming a low rank corruption and a certain incoherence between signal and corruption.
 
-Dependencies
+**Dependencies**
 
 - anaconda2
 - pymanopt
