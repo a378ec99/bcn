@@ -49,7 +49,12 @@ class TestSubmitEntry(unittest.TestCase):
         submit(parameters)
         #np_testing.assert_almost_equal()
 
+    """
     def test_parallel(self):
         parameters['mode'] = 'parallel'
         submit(parameters)
         #np_testing.assert_almost_equal()
+    """
+
+if __name__ == '__main__':
+    unittest.main()
