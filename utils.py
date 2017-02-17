@@ -67,7 +67,7 @@ def square_blocks_matrix(n, m_blocks, r=1.0, step=0):
     return block_matrix
 
   
-def submit(kwargs, ppn=12, hours=10000, nodes=2, path='PUBLICATION/bcn/bcn'):
+def submit(kwargs, ppn=12, hours=10000, nodes=2, path='PUBLICATION/GIT/bcn'):
     
     mode = parameters['mode']
     class_ = parameters['class']
