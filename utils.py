@@ -80,7 +80,7 @@ def submit(kwargs, ppn=12, hours=10000, nodes=2, path='/home/sohse/projects/PUBL
         job = """#!/bin/bash
                  #PBS -S /bin/bash
                  #PBS -l nodes={nodes}:ppn={ppn},walltime={hours}:00:00
-                 #PBS -N  {jobname}
+                 #PBS -N {jobname}
                  #PBS -o {path}/logs/{jobname}.out
                  #PBS -e {path}/logs/{jobname}.err
                  export LD_LIBRARY_PATH="${{LD_LIBRARY_PATH}}"
