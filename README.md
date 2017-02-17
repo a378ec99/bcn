@@ -5,6 +5,6 @@ The algorithm uses a (hopefully) large sample by feature matrix to detect system
 
 Dependencies
 
-anaconda2
-pymanopt
-mpi4py & MPI for parallel version
+- anaconda2
+- pymanopt
+- mpi4py (for parallel version)
