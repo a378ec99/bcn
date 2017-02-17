@@ -67,7 +67,7 @@ def square_blocks_matrix(n, m_blocks, r=1.0, step=0):
     return block_matrix
 
   
-def submit(kwargs, ppn=12, hours=10000, nodes=2, path='PUBLICATION/GIT/bcn'):
+def submit(kwargs, ppn=12, hours=10000, nodes=2, path='/home/sohse/projects/PUBLICATION/GIT/bcn'):
     
     mode = parameters['mode']
     class_ = parameters['class']
@@ -81,8 +81,8 @@ def submit(kwargs, ppn=12, hours=10000, nodes=2, path='PUBLICATION/GIT/bcn'):
                  #PBS -S /bin/bash
                  #PBS -l nodes={nodes}:ppn={ppn},walltime={hours}:00:00
                  #PBS -N  {jobname}
-                 #PBS -o /home/sohse/projects/{path}/logs/{jobname}.out
-                 #PBS -e /home/sohse/projects/{path}/logs/{jobname}.err
+                 #PBS -o {path}/logs/{jobname}.out
+                 #PBS -e {path}/logs/{jobname}.err
                  export LD_LIBRARY_PATH="${{LD_LIBRARY_PATH}}"
                  export PATH=/home/sohse/anaconda2/bin:$PATH
                  echo $PATH
@@ -96,7 +96,7 @@ def submit(kwargs, ppn=12, hours=10000, nodes=2, path='PUBLICATION/GIT/bcn'):
                  cat ${{PBS_NODEFILE}}
                  echo ""
                  cd $PBS_O_WORKDIR
-                 /opt/openmpi/1.6.5/gcc/bin/mpirun python /home/sohse/projects/{path}/taskpull.py {class_} '{json}'
+                 /opt/openmpi/1.6.5/gcc/bin/mpirun python {path}/taskpull.py {class_} '{json}'
                  """.format(class_=class_, nodes=nodes, jobname=kwargs['name'], json=json.dumps(kwargs), ppn=ppn, hours=hours, path=path)
         input_.write(job)
         input_.close()
