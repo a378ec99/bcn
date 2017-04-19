@@ -3,7 +3,7 @@ from __future__ import division
 import sys
 
 from abc import ABCMeta, abstractmethod
-from utils import submit, Visualize, square_blocks_matrix
+from utils import Visualize, square_blocks_matrix, choose_random_matrix_elements, choose_random_matrix_pairs
 
 import autograd.numpy as ag
 import numpy as np
@@ -46,11 +46,67 @@ class TaskPull(object):
         pass
 
 
-class Experiment(TaskPull):
+class BlindCompressiveNormalization(object):
     '''
-    Evaluation of two free parameters over their specified range.
+    Blind compressive normalization over threshold and rank hyperparameters (which are unknown).
     '''
 
+    def __init__(self, parameters):
+        self.parameters = parameters
+        self.free_x = self.parameters['free_x']
+        self.free_y = self.parameters['free_y']
+        self.file_name = self.parameters['name']
+        self.visualization_extension = self.parameters[
+            'visualization_extension']
+        self.figure_size = self.parameters['figure_size']
+        self.mixed = np.load(self.parameters['name'] + '_mixed.npy')
+                
+    def allocate(self):
+        self.X = np.empty((len(self.free_x[1]), len(self.free_y[1])))
+        
+    def create_tasks(self):
+        np.random.seed(self.parameters['seed'])
+        for i, x in enumerate(self.free_x[1]):
+            for j, y in enumerate(self.free_y[1]):
+                seed = np.random.randint(0, 1e8)
+                task = i, j, x, y, self.free_x[0], self.free_y[0], seed
+                print task
+                yield task
+
+    def work(self, task):
+        i, j, x, y, x_name, y_name, seed = task
+        np.random.seed(seed)
+        self.parameters[x_name] = x
+        self.parameters[y_name] = y
+        r = BlindRecovery(self.parameters, self.mixed)
+        error = r.run()
+        return i, j, error
+
+    def store(self, result):
+        i, j, error = result
+        self.X[i, j] = error
+
+    def postprocessing(self):
+        v = Visualize(self.X.T, file_name=self.parameters['name'] + '_' + self.parameters['mode'] +
+                      self.visualization_extension, size=self.figure_size)
+        v.recovery_performance(xlabel=self.free_x[0], ylabel=self.free_y[
+                               0], xticklabels=self.free_x[1], yticklabels=self.free_y[1]) # vmin=0, vmax=2.0,
+
+        if self.parameters['save_visualize'] == True:
+            np.save(self.parameters['name'] + '_' + self.parameters['mode'], self.X.T)
+            
+        if self.parameters['unittest'] == True:
+            np.save(self.parameters['name'] + '_' + self.parameters['mode'], self.X)
+            with open(self.parameters['name'] + '_complete.token', 'w') as f:
+                pass
+
+
+    
+class Simulation(TaskPull):
+    '''
+    Blind compressive normalization to estimate bias, evaluated for over two hyperparameters.
+    '''
+    
     def __init__(self, parameters):
         self.parameters = parameters
         self.free_x = self.parameters['free_x']
@@ -90,13 +146,20 @@ class Experiment(TaskPull):
 
     def postprocessing(self):
         self.X = bn.nanmean(self.X, axis=0)
-        np.save(self.file_name, self.X)
-        v = Visualize(self.X.T, file_name=self.file_name +
+        v = Visualize(self.X.T, file_name=self.parameters['name'] + '_' + self.parameters['mode'] +
                       self.visualization_extension, size=self.figure_size)
         v.recovery_performance(xlabel=self.free_x[0], ylabel=self.free_y[
-                               0], xticklabels=self.free_x[1], yticklabels=self.free_y[1]) # vmin=0, vmax=2.0, 
+                               0], xticklabels=self.free_x[1], yticklabels=self.free_y[1]) # vmin=0, vmax=2.0,
 
-
+        if self.parameters['save_visualize'] == True:
+            np.save(self.parameters['name'] + '_' + self.parameters['mode'], self.X.T)
+            
+        if self.parameters['unittest'] == True:
+            np.save(self.parameters['name'] + '_' + self.parameters['mode'], self.X)
+            with open(self.parameters['name'] + '_complete.token', 'w') as f:
+                pass
+            
+        
 class Missing(object):
     '''
     Generate missing values according to different models:
@@ -216,6 +279,7 @@ class Signal(object):
         indices = np.arange(len(pairs))
         np.random.shuffle(indices)
         pairs = np.asarray(pairs)
+        assert len(indices) <= len(pairs) # DANGER
         pairs = pairs[indices]
         return pairs
 
@@ -331,6 +395,14 @@ class Cost(object):
             X = {'feature': X, 'sample': X.T}
             error = 0.0
             for space in ['feature', 'sample']:
+
+                #print self.A[space][::2].shape
+                #print self.pairs[space][:, 0].shape
+                #print X[space].shape
+                #print X[space][self.pairs[space][:, 0]].shape
+                #print self.A[space][1::2].shape
+                #print X[space][self.pairs[space][:, 1]].shape
+                
                 Y_estimate = self.A[space][::2] * X[space][self.pairs[space][:, 0]
                                                            ] + self.A[space][1::2] * X[space][self.pairs[space][:, 1]]  # NOTE Could try to extent to clusters of arbitrary size (e.g. more than 2 pairs) but then still same size... could compute Operator here? Nah.
                 error = error + ag.sum((Y_estimate - self.Y[space])**2)
@@ -350,7 +422,7 @@ class LinearOperator(object):
         # NOTE Solve ay + bx + c for c.
         c = -(a * d[0] + b * d[1])
         return c
-
+    
     def _distance(self, a, b, x0, y0):
         # NOTE Distance from point (x0, y0) to line y = mx + 0.0;
         # https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
@@ -360,6 +432,32 @@ class LinearOperator(object):
         d = np.asarray([y - y0, x - x0])
         return d
 
+    def _construct_measurements(self, pairs, stds, directions, mixed_masked, inexact, incorrect, scaling_factor_stds, incorrect_A_std):
+        A = np.zeros((2 * len(pairs), mixed_masked.shape[1]))  # * np.nan
+        Y = np.zeros((len(pairs), mixed_masked.shape[1]))
+        for i, pair in enumerate(pairs):
+            direction = directions[i]
+            b, a = stds[pair]
+            if i in inexact:
+                s = 0.1 # NOTE ~10%
+                b, a = b - (s * np.random.choice([-1, 1]) * b), a - (s * np.random.choice([-1, 1]) * a)
+            if i in incorrect:
+                direction = np.random.choice([-1, 1])
+                b, a = np.random.uniform(0.1, 2, 2) * scaling_factor_stds # np.absolute(np.random.normal(0.0, 1.0 * scaling_factor_stds, size=2)) # np.absolute(np.random.normal(0.0, incorrect_A_std, 2)) # NOTE All pairs stay the same, just the stds change.
+            b = -direction * b
+            for j in xrange(mixed_masked.shape[1]):
+                if (mixed_masked.mask[pair[0], j] == False) and (mixed_masked.mask[pair[1], j] == False):
+                    y0, x0 = mixed_masked[pair, j]
+                    if np.isfinite([y0, x0]).all():
+                        d = self._distance(a, b, x0, y0)
+                        c = self._solve(a, b, d)
+                        A[2 * i, j] = a
+                        A[2 * i + 1, j] = b
+                        Y[i, j] = c
+                    else:
+                        raise Exception('Point not finite.')
+        return A, Y
+    
     def _estimate_correlations_direction_pairs(self, mixed_masked, threshold):
         # WARNING Not yet live for estimation from real data.
         correlations = np.ma.corrcoef(mixed_masked)
@@ -375,50 +473,31 @@ class LinearOperator(object):
     def _estimate_stds(self, mixed_masked):
         stds = np.ma.filled(np.ma.std(mixed_masked, axis=1), np.nan)
         return stds
-        
-    def _construct_measurements(self, pairs, stds, directions, mixed_masked, inexact, incorrect, scaling_factor_stds, incorrect_A_std):
-        A = np.zeros((2 * len(pairs), mixed_masked.shape[1]))  # * np.nan
-        Y = np.zeros((len(pairs), mixed_masked.shape[1]))
-        for i, pair in enumerate(pairs):
-            direction = directions[i]
-            b, a = stds[pair]
-            if i in inexact:
-                s = 0.1 # NOTE ~10%
-                b, a = b - (s * np.random.choice([-1, 1]) * b), a - (s * np.random.choice([-1, 1]) * a)
-            if i in incorrect:
-                direction = np.random.choice([-1, 1])
-                b, a = np.random.uniform(0.1, 2, 2) * scaling_factor_stds # np.absolute(np.random.normal(0.0, incorrect_A_std, 2)) # NOTE All pairs stay the same, just the stds change.
-            b = -direction * b
-            for j in xrange(mixed_masked.shape[1]):
-                if (mixed_masked.mask[pair[0], j] == False) and (mixed_masked.mask[pair[1], j] == False):
-                    y0, x0 = mixed_masked[pair, j]
-                    if np.isfinite([y0, x0]).all():
-                        d = self._distance(a, b, x0, y0)
-                        c = self._solve(a, b, d)
-                        A[2 * i, j] = a
-                        A[2 * i + 1, j] = b
-                        Y[i, j] = c
-                    else:
-                        raise Exception('Point not finite.')
-        return A, Y
-
-    def generate(self, incorrect_A_std=None, mixed=None, X=None, true_noise=None, true_signal=None, estimate_pairs=False, estimate_stds=False, estimate_noise=False, measurements=None, constrain_samples=False, known_correlations=None, sparsity=None, additive_noise_y_std=None, additive_noise_A_std=None):  # TODO remove estimate noise.
+            
+    def generate(self, incorrect_A_std=None, mixed=None, X=None, true_noise=None, true_signal=None, estimate_pairs=False, estimate_stds=False, estimate_noise=False, measurements=None, constrain_samples=False, known_correlations=None, sparsity=None, additive_noise_y_std=None, additive_noise_A_std=None, threshold=None):  # TODO remove estimate noise.
         if self.operator_name == 'entry':
             assert sparsity == 1
-            max_measurements = true_noise['X'].shape[
-                0] * true_noise['X'].shape[1]
-            if measurements > max_measurements:
-                measurements = max_measurements
-                print 'WARNING: specified too many measurements.'
+            #max_measurements = true_noise['X'].shape[
+            #    0] * true_noise['X'].shape[1]
+            #if measurements > max_measurements:
+            #    measurements = max_measurements
+            #    print 'WARNING: specified too many measurements.'
+            # DANGER!
+                
             A = np.zeros_like(true_noise['X'])
             A = np.array(A, dtype=int)
             Y = np.zeros_like(true_noise['X'])
-            random_pairs = np.random.choice(np.arange(0, true_noise['X'].shape[
-                                            0]), measurements), np.random.choice(np.arange(0, true_noise['X'].shape[1]), measurements)
-            random_pairs = np.vstack(random_pairs).T
-            for r_p in random_pairs:
-                A[r_p[0], r_p[1]] = 1
-                Y[r_p[0], r_p[1]] = true_noise['X'][r_p[0], r_p[1]]
+
+            # TODO Choose random pairs here again, also without overlap? Or at least until full?
+
+            random_element_indices = choose_random_matrix_elements(true_noise['X'].shape, measurements)
+
+            #random_pairs = np.random.choice(np.arange(0, true_noise['X'].shape[
+            #                                0]), measurements), np.random.choice(np.arange(0, true_noise['X'].shape[1]), measurements)
+            #random_pairs = np.vstack(random_pairs).T
+            for e in random_element_indices:
+                A[e[0], e[1]] = 1
+                Y[e[0], e[1]] = true_noise['X'][e[0], e[1]]
             print "A", A.nbytes * 1.0e-6, 'MB'
             print "Y", Y.nbytes * 1.0e-6, 'MB'
             return A, Y, None
@@ -431,15 +510,28 @@ class LinearOperator(object):
                 0] * true_noise['X'].shape[1]
             A = np.empty((measurements, 3, sparsity))
             Y = np.empty(measurements)
+
+            #random_matrix_pairs_indices = choose_random_matrix_pairs(true_noise['X'].shape, measurements, sparsity)
+
+            
             for i in xrange(measurements):
-                A[i, 0, :] = np.random.uniform(0.1, 2, sparsity) * true_signal['feature']['scaling_factor_stds']
-                A[i, 1, :] = np.random.choice(
-                    np.arange(0, true_noise['X'].shape[0]), sparsity, replace=False)
-                A[i, 2, :] = np.random.choice(
-                    np.arange(0, true_noise['X'].shape[1]), sparsity, replace=False)
+                A[i, 0, :] = np.random.uniform(0.1, 2, sparsity) * true_signal['feature']['scaling_factor_stds']    # np.random.normal(0.0, 1.0 * true_signal['feature']['scaling_factor_stds'], size=sparsity) # np.random.uniform(0.1, 2, sparsity) * true_signal['feature']['scaling_factor_stds'] # NOTE only positive. But should be subguassian!
+
+                # TODO choose of all possible pairs a certain number without overlap (indices).
+
+                random_element_indices = choose_random_matrix_elements(true_noise['X'].shape, sparsity)
+                
+                A[i, 1, :] = random_element_indices[:, 0]
+
+                #np.random.choice(
+                #    np.arange(0, true_noise['X'].shape[0]), sparsity, replace=False)
+                A[i, 2, :] = random_element_indices[:, 1]
+
+                #np.random.choice(
+                #    np.arange(0, true_noise['X'].shape[1]), sparsity, replace=False)
                 Y[i] = np.sum(A[i, 0, :] * true_noise['X'][np.asarray(A[i, 1, :], dtype=int), np.asarray(A[i, 2, :], dtype=int)])
                 if i in incorrect:
-                    A[i, 0, :] = np.random.uniform(0.1, 2, sparsity) * true_signal['feature']['scaling_factor_stds'] # np.absolute(np.random.normal(0.0, incorrect_A_std, sparsity)) 
+                    A[i, 0, :] = np.random.uniform(0.1, 2, sparsity) * true_signal['feature']['scaling_factor_stds'] # np.random.normal(0.0, 1.0 * true_signal['feature']['scaling_factor_stds'], size=sparsity) # np.absolute(np.random.normal(0.0, incorrect_A_std, sparsity))
             if additive_noise_y_std is not None:
                 print '------------------------->', additive_noise_y_std
                 Y = Y + np.random.normal(0.0, additive_noise_y_std, size=Y.shape)
@@ -447,7 +539,10 @@ class LinearOperator(object):
             #    sys.exit()
             #    # WARNING DANGER
             if additive_noise_A_std:
-                A[:, 0, :] = A[:, 0, :] + np.random.normal(0.0, additive_noise_A_std, size=A[:, 0, :].shape)
+                A[:, 0, :] = A[:, 0, :] + np.random.normal(0.0, additive_noise_A_std, size=A[:, 0, :].shape) # TODO shuffle a certain propotion along the measurement dimension e.g. A[99, 0, :] to A[45, 0, :] and vice versa. If sparsity is 2 then makes sense...
+                #range(len(A)) but only for proportion! write function
+                #A[:, 0, :] = A[indices, 0, :]
+                
             print "A", A.nbytes * 1.0e-6, 'MB'
             print "Y", Y.nbytes * 1.0e-6, 'MB'
             return A, Y, None
@@ -456,18 +551,45 @@ class LinearOperator(object):
             assert sparsity == 2
             A, Y, pairs_all = {}, {}, {}
             for space in ['feature', 'sample']:
-                min_required_pairs = ((measurements // 2) // mixed[space].shape[1]) + 1  # WARNING Dirty hack.
-                n_pairs = min_required_pairs
-                n_pairs_estimated_incorrectly = n_pairs - int(known_correlations * n_pairs)
                 inexact = []
-                #inexact = np.random.choice(np.arange(0, n_pairs, dtype=int),size=n_pairs_estimated_incorrectly, replace=False) # TODO Which pairs sampled from all possible pairs and given the number wanted should be modified?
-                incorrect = np.random.choice(np.arange(0, n_pairs, dtype=int),size=n_pairs_estimated_incorrectly, replace=False)
-                size = int((1 - known_correlations) * measurements)
+                incorrect = []
                 mixed_masked = np.ma.masked_invalid(mixed[space])
-                pairs = true_signal[space]['pairs'][:n_pairs]
-                directions = true_signal[space]['directions'][:n_pairs]
-                stds = true_signal[space]['stds']
-                temp = self._construct_measurements(pairs, stds, directions, mixed_masked, inexact, incorrect, true_signal[space]['scaling_factor_stds'], incorrect_A_std)
+
+                if estimate_pairs == True and estimate_stds == True:
+                    pass
+                else:
+                    if (len(true_signal['feature']['pairs']) * mixed['feature'].shape[1] + len(true_signal['sample']['pairs']) * mixed['sample'].shape[1]) < measurements:
+                        print 'BAD; more measurements than possible.'
+
+                # * 2 only works if feature and sample length are the same
+                #### NOTE print 'WARNING', "Can't have more measurements than len(true_signal[space]['pairs'] * 2 "
+                
+                if estimate_pairs == True and estimate_stds == True:
+                    pass
+                else:
+                    min_required_pairs = (((measurements // 2) + 1) // mixed[space].shape[1]) + 1  # WARNING Dirty hack. That's why custome might perform better at lower numbers of measurements?
+                    n_pairs = min_required_pairs
+                    n_pairs_estimated_incorrectly = n_pairs - int(known_correlations * n_pairs)
+                    #inexact = np.random.choice(np.arange(0, n_pairs, dtype=int),size=n_pairs_estimated_incorrectly, replace=False) # TODO Which pairs sampled from all possible pairs and given the number wanted should be modified?
+                    incorrect = np.random.choice(np.arange(0, n_pairs, dtype=int), size=n_pairs_estimated_incorrectly, replace=False)
+                    ### WARNING size = int((1 - known_correlations) * measurements)
+                    
+                if estimate_pairs == True and estimate_stds == True:
+                    correlations, directions, pairs = self._estimate_correlations_direction_pairs(mixed_masked, threshold)
+                    stds = self._estimate_stds(mixed_masked)
+                    # DANGER
+                    stds = np.load('bcn' + '_stds_' + space + '.npy')
+                    # DANGER
+                    #directions = np.load('test' + '_directions_' + space + '.npy')
+                    #pairs = np.load('test' + '_pairs_' + space + '.npy')
+        
+                    temp = self._construct_measurements(pairs, stds, directions, mixed_masked, inexact, incorrect, None, incorrect_A_std)
+                else:
+                    #DANGER Can't have more measurements than len(true_signal[space]['pairs'])!
+                    pairs = true_signal[space]['pairs'][:n_pairs] # Doesn't add more!
+                    directions = true_signal[space]['directions'][:n_pairs]
+                    stds = true_signal[space]['stds']
+                    temp = self._construct_measurements(pairs, stds, directions, mixed_masked, inexact, incorrect, true_signal[space]['scaling_factor_stds'], incorrect_A_std)
                 A[space] = temp[0]
                 Y[space] = temp[1]
                 pairs_all[space] = pairs
@@ -478,11 +600,89 @@ class LinearOperator(object):
             # TODO Fix memory error.
 
 
+# TODO Test case with Nan values?
+
+class BlindRecovery(object):
+    '''
+    Blind low-rank matrix recovery via compressed sensing of a bias matrix.
+    '''
+    def __init__(self, parameters, mixed):
+        self.parameters = parameters
+        self.mixed = mixed
+        assert self.parameters['operator_name'] == 'custom'
+        assert self.parameters['sparsity'] == 2
+        assert self.parameters['estimate'][0] == True
+        assert self.parameters['estimate'][1] == True
+        
+    def run(self):
+        problem = self.setup()
+        estimates, errors, guesses = [], [], []
+        for k in xrange(self.parameters['restarts']):
+            X_estimate, X0, final_cost = self.solve(problem)
+            estimates.append(X_estimate)
+            guesses.append(X0)
+            errors.append(final_cost)
+            print k, 'final cost', final_cost
+            print 'X0[0, 0]', X0[0, 0]
+        index = np.argmin(errors)
+
+        error = errors[index]
+        estimate = estimates[index]
+        guess = guesses[index]
+        
+        if self.parameters['save_run']:
+            self.save(estimate, guess)
+        return error
+
+    # TODO visualize with figure4.py right away? # WARNING Note if have replicates, then overwrites them!
+    def save(self, estimate, guess):
+        np.save('figure4/' + self.parameters['name'] + '_guess_' + str(self.parameters['threshold']).replace('.', '-') + '_' + str(self.parameters['rank']), guess)
+        np.save('figure4/' + self.parameters['name'] + '_estimate_' + str(self.parameters['threshold']).replace('.', '-') + '_' + str(self.parameters['rank']), estimate)
+                    
+    def setup(self):
+        mixed = {'feature': self.mixed, 'sample': self.mixed.T}
+        operator = LinearOperator(self.parameters['operator_name'])
+        A, Y, pairs = operator.generate(incorrect_A_std=self.parameters['incorrect_A_std'], mixed=mixed, true_signal=None, measurements=self.parameters['measurements'], estimate_pairs=self.parameters['estimate'][
+            0], estimate_stds=self.parameters['estimate'][1], known_correlations=None, sparsity=self.parameters['sparsity'], threshold=self.parameters['threshold'])
+        # TODO Not just flag if estimate, but pass correct estimates!
+        '''
+        Give over true signal
+            pairs = true_signal[space]['pairs'][:n_pairs]
+            directions = true_signal[space]['directions'][:n_pairs]
+            stds = true_signal[space]['stds']
+        '''
+        cost = Cost(self.parameters['operator_name'], A, Y, pairs)
+        manifold = FixedRankEmbedded(self.parameters['shape'][0], self.parameters[
+                                     'shape'][1], self.parameters['rank'])
+        problem = Problem(manifold=manifold, cost=cost.evaluate,
+                          verbosity=self.parameters['verbosity'])
+        return problem
+        
+    def solve(self, problem):
+        solver = ConjugateGradient(logverbosity=self.parameters['logverbosity'], maxiter=self.parameters['maxiter'], maxtime=self.parameters[
+                                   'maxtime'], mingradnorm=self.parameters['mingradnorm'], minstepsize=self.parameters['minstepsize'])
+        result = None
+        while result is None:
+            try:
+                noise0 = Noise(self.parameters['shape'], 'low-rank').generate(
+                    rank=self.parameters['rank'], noise_amplitude=self.parameters['noise_amplitude'])
+                usvt, optlog = solver.solve(problem, x=noise0['usvt'])
+                #stopping_reason = optlog['stoppingreason']
+                # WARNING Don't know true signal in general.
+                final_cost = optlog['final_values']['f(x)']
+                X = usvt[0].dot(np.diag(usvt[1])).dot(usvt[2])
+                result = True
+            except Exception:
+                # NOTE
+                # https://github.com/ContinuumIO/anaconda-issues/issues/695
+                print 'Likely np.linalg.LinAlgError:', traceback.format_exc()
+        return X, noise0['X'], final_cost
+
+    
 class Recovery(object):
     '''
     Low-rank matrix recovery via compressed sensing of a bias matrix.
     '''
-
     def __init__(self, parameters):
         self.parameters = parameters
 
@@ -514,16 +714,17 @@ class Recovery(object):
         index = np.argmin(errors)
         error = true_errors[index]
         estimate = estimates[index]
-        if self.parameters['save_signal']:
-            self.save(signal, noise, missing, mixed['feature'], guesses[index])
+        if self.parameters['save_run']:
+            self.save(signal, noise, missing, mixed['feature'], guesses[index], estimate)
         return error
 
-    # TODO visualize with figure4.py right away?
-    def save(self, signal, noise, missing, mixed, guess):
+    # TODO visualize with figure4.py right away? # WARNING Note if have replicates, then overwrites them!
+    def save(self, signal, noise, missing, mixed, guess, estimate):
         np.save(self.parameters['name'] + '_guess', guess)
         np.save(self.parameters['name'] + '_signal', signal['X'])
         np.save(self.parameters['name'] + '_mixed', mixed)
         np.save(self.parameters['name'] + '_noise', noise['X'])
+        np.save(self.parameters['name'] + '_estimate', estimate)
         for space in ['sample', 'feature']:
             np.save(self.parameters['name'] +
                     '_stds_' + space, signal[space]['stds'])
@@ -586,7 +787,137 @@ class Recovery(object):
 
 
 
+if __name__ == '__main__':
 
+    parameters = {'run_class': 'BlindCompressiveNormalization',
+                  'name': 'bcn',
+                  'mode': 'parallel',
+                  'seed': 42,
+                  'visualization_extension': '.png',
+                  'figure_size': (8, 8),
+                  'shape': (50, 50),
+                  'signal_model': ('random', 'random'),
+                  'correlation_strength': 1.0,
+                  'normalize_stds': True,
+                  'noise_amplitude': 1.0,
+                  'noise_model': 'low-rank',
+                  'm_blocks': int(50 / 2.0),
+                  'restarts': 10,
+                  'operator_name': 'custom',
+                  'incorrect_A_std': None,
+                  'measurements': np.inf,
+                  'estimate': (True, True),
+                  'sparsity': 2,
+                  'verbosity': 1,
+                  'logverbosity': 2,
+                  'maxiter': 1000,
+                  'maxtime': 100,
+                  'mingradnorm': 1e-12,
+                  'minstepsize': 1e-12, #  * 1e-8
+                  'unittest': False,
+                  'save_run': True,
+                  'save_visualize': False,
+                  'mixed': 'mixed.npy', #'threshold': 0.95, #'rank': 2,
+                  'free_x': ('rank', [2]), # list(np.asarray(np.linspace(1, 5, 5), dtype=int))
+                  'free_y': ('threshold', list(np.asarray(np.linspace(0.5, 0.95, 10))))}
+
+    # TODO find optimal threshold that gives nice recovery! Take threshold that gives almost optimal recovery for the correlation stuff first. Then next step is use that plus minus a bit for recovery!
+
+    
+    
+    true_rank = 2
+    
+    signal = Signal(parameters['shape'], parameters['signal_model'], parameters['m_blocks'], parameters['correlation_strength'], parameters['normalize_stds']).generate()
+
+    #print "signal['feature']['pairs'], signal['sample']['pairs']", signal['feature']['pairs'], signal['sample']['pairs']
+    
+    noise = Noise(parameters['shape'], parameters['noise_model']).generate(parameters['noise_amplitude'], true_rank)
+    mixed = signal['X'] + noise['X']
+    
+    for space in ['sample', 'feature']:
+        np.save(parameters['name'] + '_stds_' + space, signal[space]['stds'])
+        np.save(parameters['name'] + '_directions_' + space, signal[space]['directions'])
+        np.save(parameters['name'] + '_pairs_' + space, signal[space]['pairs'])
+
+    np.save(parameters['name'] + '_signal', signal['X'])
+    np.save(parameters['name'] + '_mixed', mixed)
+    np.save(parameters['name'] + '_noise', noise['X'])
+        
+    from utils import submit
+    
+    submit(parameters, nodes=1)
+    #b = BlindRecovery(parameters, mixed)
+    #b.run()
+
+    # TODO Check if correct!
+    # TODO Do with not mixed but true correlations!
+
+
+    """
+    for rank in list(np.asarray(np.linspace(1, 5, 5))):
+        rank = str(int(rank))
+        for threshold in list(np.asarray(np.logspace(np.log10(0.5), np.log10(0.95), 5))):
+            threshold = str(threshold).replace('.', '-')
+
+            guess = 'figure4/' + np.load(parameters['name'] + '_guess_' + threshold + '_' + rank + '.npy')
+            signal2 = np.load(parameters['name'] + '_signal.npy')
+            mixed2 = np.load(parameters['name'] + '_mixed.npy')
+            estimate = 'figure4/' + mixed2 - np.load(parameters['name'] + '_estimate_' + threshold + '_' + rank + '.npy')
+            noise = np.load(parameters['name'] + '_noise.npy')
+            for space in ['feature']: # 'sample'
+                stds = np.load(parameters['name'] + '_stds_' + space + '.npy')
+                directions = np.load(parameters['name'] + '_directions_' + space + '.npy')
+                pairs = np.load(parameters['name'] + '_pairs_' + space + '.npy')
+
+
+            v = Visualize(file_name='figure4/figure4_' + threshold + '_' + rank)
+            v.dependence_structure(mixed2, signal2, pairs, stds, directions, estimate, guess)
+
+            #v = Visualize(signal2, file_name='figure4_signal_' + threshold + '_' + rank)
+            #v.observed_matrix(vmin=-0.002, vmax=0.05)
+            #v = Visualize(noise, file_name='figure4_noise_' + threshold + '_' + rank)
+            #v.observed_matrix(vmin=-0.002, vmax=0.05)
+            #v = Visualize(mixed2, file_name='figure4_mixed_' + threshold + '_' + rank)
+            #v.observed_matrix(vmin=-0.002, vmax=0.05)
+    
+
+    def _estimate_correlations_direction_pairs(mixed_masked, threshold):
+        # WARNING Not yet live for estimation from real data.
+        correlations = np.ma.corrcoef(mixed_masked)
+        correlations[np.absolute(correlations) < threshold] = 0
+        pairs = np.vstack(np.nonzero(np.tril(correlations, -1))).T
+        indices = np.arange(len(pairs))
+        np.random.shuffle(indices)
+        pairs = np.asarray(pairs)
+        pairs = pairs[indices]
+        directions = np.sign(correlations[pairs[:, 0], pairs[:, 1]])
+        #print pairs
+
+        return correlations, directions, pairs
+
+    def _estimate_stds(mixed_masked):
+        stds = np.ma.filled(np.ma.std(mixed_masked, axis=1), np.nan)
+        return stds
+
+    for threshold in np.linspace(0.6, 0.9, 4):
+        mixed_masked = {'sample': np.ma.masked_invalid(mixed.T), 'feature': np.ma.masked_invalid(mixed)}
+        for space in ['sample', 'feature']:
+            correlations, directions, pairs = _estimate_correlations_direction_pairs(mixed_masked[space], threshold)
+            v = Visualize(correlations, file_name=str(threshold).replace('.', '-') + 'correlations_' + space)
+            v.observed_matrix(vmin=-1, vmax=1)
+            v = Visualize(signal[space]['correlations'], file_name=str(threshold).replace('.', '-') + 'correlations_true_' + space)
+            v.observed_matrix(vmin=-1, vmax=1)
+
+
+    estimated_stds = _estimate_stds(mixed)
+    
+    v = Visualize(None)
+    v.correlation(stds, estimated_stds)
+        
+    # TODO look how chaning thresholds optimizes the correlations -> pairs estimate....
+    # TODO look how std errors influence the stuff... On lare scale systematic erros should cancel out and should get nice std estimate and also direction...
+    """
+    
 # TODO make nice (PEP8 REcovery)
 # TODO Run the different simulations and make plots.
 # TODO Run on the real data to make figure 4 and 5.
