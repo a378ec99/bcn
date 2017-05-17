@@ -37,6 +37,92 @@ def skip_exceptions(func):
             print traceback.format_exc()
             return None
     return exception_handling
+
+    
+def min_measurements(shape):
+    '''
+    Computes the minimum number of measurements that are possible in an ideal case (m_bocks=dimension/2). # WARNING Are these feature space or sample space only or for both?
+    '''
+    assert shape[0] % 2 == 0
+    assert shape[1] % 2 == 0
+    a, b = shape
+    n = ((a / 2) * b) + ((b / 2) * a)
+    return n 
+    
+
+def max_measurements(shape):
+    '''
+    Computes the maximum number of measurements that are possible in an ideal case (m_bocks=2).
+    '''
+    assert shape[0] % 2 == 0
+    assert shape[1] % 2 == 0
+    a, b = shape
+    a_pairs = (a / 2)**2 - (a / 2)
+    b_pairs = (b / 2)**2 - (b / 2)
+    n = int((a_pairs * b) + (b_pairs * a))
+    return n
+
+    
+def choose_random_matrix_pairs(shape, n, sparsity): # Matrices defined by correlation structure. E.g. those that are of a kronecker type are a bit more free? # TODO all just with replacement? So lange alle densen bei verschiedenen shapes so sind ist ok. factor 2 in scala macht nichts.
+
+    # http://stackoverflow.com/questions/29688556/generating-random-pairs-of-integers-without-replacement-in-r
+    # NOTE need to choose pairs of pairs without replacement (and flipping the pairs will be the same (not for position though since no correlation amtrix))
+    # But want to show that need much less than max... dense sensing has no max. only a rate of n log n or less. really just want to show the benefits of dense sensing given that we are reslistically constrained to liniar combinations of correlations.
+    # So just use random sampling for dense case and compute the number of distinct measurements that can make for custom case. More efficient than the number of dense ones...
+    # could recompute the number that would overlap by chance. or do empirically. or subtract that from dense case (probably only ned this factor for small sizes! Which is where we are...
+    # Just throw out those measurements? Rejection sampling?
+    
+    #if sparsity == 2:
+
+    """
+    size = shape[0] * shape[1]
+    values = np.random.choice(size**2, n, replace=False) # size**2 - 1? # NOTE would need small correction factor for those doubly drawn. but since don't do that much for larger samples, it's ok. HAlf can be double and therefore the noise different? It'S the same measurement again. No difference. No information gain.
+    a, b = (values % size) + 1, values // size # integer division needed?
+    out = np.vstack([a, b]).T # TODO verify! DANGER Is it covering all entires? How to make larger, e.g. sparsity = 3? DO brute force and check...
+    return out
+    """
+    
+    if sparsity == 1:
+        return choose_random_matrix_elements(shape, n)
+
+    if sparsity > 1:
+
+        pass
+        """
+        size = shape[0] * shape[1]
+        size = size**sparsity
+
+        temp = np.zeros(size)
+        temp[:n] = 1
+        np.random.shuffle(temp)
+        temp = temp.reshape(shape)
+        elements = np.nonzero(temp)
+        elements = np.vstack(elements).T
+        # WARNING could be huge!
+        """
+
+        
+def choose_random_matrix_elements(shape, n):
+
+    size = shape[0] * shape[1]
+    
+    if n == size:
+        elements = np.nonzero(np.ones(shape)) # NOTE quick fix; probably more sound way. But this is good.
+        elements = np.vstack(elements).T
+        np.random.shuffle(elements)
+        return elements
+        
+    if n < size:
+        temp = np.zeros(size)
+        temp[:n] = 1
+        np.random.shuffle(temp)
+        temp = temp.reshape(shape)
+        elements = np.nonzero(temp)
+        elements = np.vstack(elements).T
+        return elements
+
+    if n > size:
+        raise Exception # DANGER
     
     
 def square_blocks_matrix(n, m_blocks, r=1.0, step=0):
@@ -44,7 +130,7 @@ def square_blocks_matrix(n, m_blocks, r=1.0, step=0):
     assert r >= 0
     assert n >= m_blocks
 
-    blocksizes = np.repeat(n // m_blocks, m_blocks)
+    blocksizes = np.repeat(n // m_blocks, m_blocks) # WARNING some problem if block size == n
     blocksizes[-1] = blocksizes[-1] + (n % m_blocks)
 
     if step == 0:
@@ -67,13 +153,13 @@ def square_blocks_matrix(n, m_blocks, r=1.0, step=0):
     return block_matrix
 
   
-def submit(kwargs, ppn=12, hours=10000, nodes=2, path='/home/sohse/projects/PUBLICATION/GIT/bcn'):
+def submit(parameters, ppn=12, hours=10000, nodes=1, path='/home/sohse/projects/PUBLICATION/GIT/bcn'):
     
     mode = parameters['mode']
-    class_ = parameters['class']
-
+    run_class = parameters['run_class']
+    
     if mode == 'local':
-        subprocess.call(['python', 'taskpull_local.py', class_, json.dumps(kwargs)])
+        subprocess.call(['python', path + '/taskpull_local.py', run_class, json.dumps(parameters)])
         
     if mode == 'parallel':
         output, input_ = popen2('qsub')
@@ -96,8 +182,8 @@ def submit(kwargs, ppn=12, hours=10000, nodes=2, path='/home/sohse/projects/PUBL
                  cat ${{PBS_NODEFILE}}
                  echo ""
                  cd $PBS_O_WORKDIR
-                 /opt/openmpi/1.6.5/gcc/bin/mpirun python {path}/taskpull.py {class_} '{json}'
-                 """.format(class_=class_, nodes=nodes, jobname=kwargs['name'], json=json.dumps(kwargs), ppn=ppn, hours=hours, path=path)
+                 /opt/openmpi/1.6.5/gcc/bin/mpirun python {path}/taskpull.py {run_class} '{json}'
+                 """.format(run_class=run_class, nodes=nodes, jobname=parameters['name'], json=json.dumps(parameters), ppn=ppn, hours=hours, path=path)
         input_.write(job)
         input_.close()
         print 'Submitted {output}'.format(output=output.read())
@@ -137,6 +223,17 @@ class Visualize(object):
             ax.plot(X[pair[0]], X[pair[1]], '.', color='grey', alpha=0.6)
         fig.savefig(self.file_name)
     """
+
+    def correlation(self, x_true, y):
+        self.fig, self.ax = pl.subplots(figsize=self.size)
+        max_ = max([max(x_true), max(y)])
+        self.ax.plot(x_true, y, '.')
+        self.ax.set_xlabel('True')
+        self.ax.set_ylabel('Estimate')
+        self.ax.set_ylim(0, max_)
+        self.ax.set_xlim(0, max_)
+        self.fig.savefig(self.file_name + '_correlation')
+        
     def observed_matrix(self, vmin=-0.005, vmax=0.005, cmap=None, eps=False): # vmin=-0.01, vmax=0.01 # vmin=-3.0, vmax=3.0
         self.fig, self.ax = pl.subplots(figsize=self.size)
         if self.title:
@@ -149,6 +246,12 @@ class Visualize(object):
         self.fig.savefig(self.file_name + '.png')
         
     def recovery_performance(self, vmin=-2.5, vmax=2.5, xlabel=None, ylabel=None, xticklabels=None, yticklabels=None): # 5.0
+
+        if np.sum(np.asarray(xticklabels, dtype=int) - xticklabels) != 0:
+            xticklabels = ['{:.2f}'.format(i) for i in xticklabels]
+        if np.sum(np.asarray(yticklabels, dtype=int) - yticklabels) != 0:
+            yticklabels = ['{:.2f}'.format(i) for i in yticklabels]
+            
         self.fig, self.ax = pl.subplots(figsize=self.size)
         if self.title:
             self.ax.set_title(self.title)
@@ -263,10 +366,10 @@ class Visualize(object):
         ax.get_yaxis().set_visible(False)
         ax.get_xaxis().set_visible(False)
         
-        #self.ax.set_xlabel(xlabel)
-        #self.ax.set_ylabel(ylabel)
+        self.ax.set_xlabel('Ambion - QIAGEN')
+        self.ax.set_ylabel('GC % (low to high)')
         cmap = pl.cm.inferno
-        ax_seaborn = sb.heatmap(self.X, mask=self.mask, vmin=vmin, vmax=vmax, cmap=cmap, ax=self.ax, cbar_kws={'shrink': 0.5})
+        ax_seaborn = sb.heatmap(self.X, mask=self.mask, cmap=cmap, ax=self.ax, cbar_kws={'shrink': 0.5}, robust=True) # vmin=vmin, vmax=vmax, 
         cbar = ax_seaborn.collections[0].colorbar
         cbar.set_ticks([]) # vmin, vmax
         #cbar.set_ticklabels([])

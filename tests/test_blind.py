@@ -8,15 +8,19 @@ import numpy.testing as np_testing
 import sys
 sys.path.append('/home/sohse/projects/PUBLICATION/GIT/bcn')
 from utils import submit #from ..utils import submit
+from bcn import Signal, Noise, Missing
 
 class TestSubmitBlind(unittest.TestCase):
     def setUp(self):
         seed = 42
         run = 'unittest-blind'
-        self.parameters = {'run_class': 'BlindCompressiveNormalization',
+        np.random.seed(seed)
+        self.parameters = {'run_class': 'Simulation',
                         'name': run,
                         'mode': None,
                         'seed': seed,
+                        'double_blind': True,
+                        'replicates': 1,
                         'visualization_extension': '.png',
                         'figure_size': (8, 8),
                         'shape': (50, 50),
@@ -41,18 +45,26 @@ class TestSubmitBlind(unittest.TestCase):
                         'unittest': True,
                         'save_run': False,
                         'save_visualize': False,
-                        'mixed': 'mixed.npy', #'threshold': 0.95, #'rank': 2,
+                        'missing_model': 'MAR',
+                        'p_random': 0.1,
+                        'mixed': run + '_mixed.npy',
                         'free_x': ('rank', list(np.asarray(np.linspace(1, 5, 2), dtype=int))),
                         'free_y': ('threshold', list(np.asarray(np.logspace(np.log10(0.5), np.log10(0.95), 2))))}
-                  
+
+        signal = Signal(self.parameters['shape'], self.parameters['signal_model'], self.parameters['m_blocks'], self.parameters['correlation_strength'], self.parameters['normalize_stds']).generate()
+        noise = Noise(self.parameters['shape'], self.parameters['noise_model']).generate(self.parameters['noise_amplitude'], 2)
+        missing = Missing(self.parameters['shape'], self.parameters['missing_model']).generate(p_random=self.parameters['p_random'])
+        mixed = signal['X'] + noise['X'] + missing['X']
+        np.save(self.parameters['name'] + '_mixed', mixed)
+        
     def test_local(self):
         self.parameters['mode'] = 'local'
         submit(self.parameters)
         os.remove(self.parameters['name'] + '_complete.token')
         file_name = self.parameters['name'] + '_' + self.parameters['mode']
         X = np.load(file_name + '.npy')
-        true_X = np.array([[  4.75e-03,   2.65e-06], [  2.45e-03,   7.07e-11]])
-        np_testing.assert_almost_equal(X, true_X, decimal=2)
+        true_X = np.array([[  4.8186e-03,   1.4304e-07], [  2.1629e-03,   7.9500e-10]])
+        np_testing.assert_almost_equal(X, true_X, decimal=4)
 
     def test_parallel(self):
         self.parameters['mode'] = 'parallel'
@@ -66,9 +78,9 @@ class TestSubmitBlind(unittest.TestCase):
             except IOError: time.sleep(5)
         file_name = self.parameters['name'] + '_' + self.parameters['mode']
         X = np.load(file_name + '.npy')
-        true_X = np.array([[  4.75e-03,   2.65e-06], [  2.45e-03,   7.50e-10]])
-        np_testing.assert_almost_equal(X, true_X, decimal=2)
-
+        true_X = np.array([[  4.8185547e-03,   1.5772426e-07], [  2.1629426e-03,   2.2993649e-10]])
+        np_testing.assert_almost_equal(X, true_X, decimal=4)
+    
 
 if __name__ == '__main__':
     unittest.main()

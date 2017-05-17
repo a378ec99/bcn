@@ -22,6 +22,6 @@ if __name__ == '__main__':
         taskpull.store(result)
 
     taskpull.postprocessing()
-    
+
     
 # TODO Profile with cProfile again and store as .prof to be visualized with https://jiffyclub.github.io/snakeviz/. 

@@ -46,61 +46,7 @@ class TaskPull(object):
         pass
 
 
-class BlindCompressiveNormalization(object):
-    '''
-    Blind compressive normalization over threshold and rank hyperparameters (which are unknown).
-    '''
-
-    def __init__(self, parameters):
-        self.parameters = parameters
-        self.free_x = self.parameters['free_x']
-        self.free_y = self.parameters['free_y']
-        self.file_name = self.parameters['name']
-        self.visualization_extension = self.parameters[
-            'visualization_extension']
-        self.figure_size = self.parameters['figure_size']
-        self.mixed = np.load(self.parameters['name'] + '_mixed.npy')
-                
-    def allocate(self):
-        self.X = np.empty((len(self.free_x[1]), len(self.free_y[1])))
         
-    def create_tasks(self):
-        np.random.seed(self.parameters['seed'])
-        for i, x in enumerate(self.free_x[1]):
-            for j, y in enumerate(self.free_y[1]):
-                seed = np.random.randint(0, 1e8)
-                task = i, j, x, y, self.free_x[0], self.free_y[0], seed
-                print task
-                yield task
-
-    def work(self, task):
-        i, j, x, y, x_name, y_name, seed = task
-        np.random.seed(seed)
-        self.parameters[x_name] = x
-        self.parameters[y_name] = y
-        r = BlindRecovery(self.parameters, self.mixed)
-        error = r.run()
-        return i, j, error
-
-    def store(self, result):
-        i, j, error = result
-        self.X[i, j] = error
-
-    def postprocessing(self):
-        v = Visualize(self.X.T, file_name=self.parameters['name'] + '_' + self.parameters['mode'] +
-                      self.visualization_extension, size=self.figure_size)
-        v.recovery_performance(xlabel=self.free_x[0], ylabel=self.free_y[
-                               0], xticklabels=self.free_x[1], yticklabels=self.free_y[1]) # vmin=0, vmax=2.0,
-
-        if self.parameters['save_visualize'] == True:
-            np.save(self.parameters['name'] + '_' + self.parameters['mode'], self.X.T)
-            
-        if self.parameters['unittest'] == True:
-            np.save(self.parameters['name'] + '_' + self.parameters['mode'], self.X)
-            with open(self.parameters['name'] + '_complete.token', 'w') as f:
-                pass
-
-
     
 class Simulation(TaskPull):
     '''
@@ -117,6 +63,7 @@ class Simulation(TaskPull):
             'visualization_extension']
         self.figure_size = self.parameters['figure_size']
 
+        
     def allocate(self):
         self.X = np.empty((self.replicates, len(
             self.free_x[1]), len(self.free_y[1])))
@@ -136,7 +83,12 @@ class Simulation(TaskPull):
         np.random.seed(seed)
         self.parameters[x_name] = x
         self.parameters[y_name] = y
-        r = Recovery(self.parameters)
+        if self.parameters['double_blind'] == True:
+            mixed = np.load(self.parameters['mixed'])
+            r = BlindRecovery(self.parameters, mixed)
+        else:
+            
+            r = Recovery(self.parameters)
         error = r.run()
         return h, i, j, error
 
@@ -445,8 +397,13 @@ class LinearOperator(object):
                 direction = np.random.choice([-1, 1])
                 b, a = np.random.uniform(0.1, 2, 2) * scaling_factor_stds # np.absolute(np.random.normal(0.0, 1.0 * scaling_factor_stds, size=2)) # np.absolute(np.random.normal(0.0, incorrect_A_std, 2)) # NOTE All pairs stay the same, just the stds change.
             b = -direction * b
+
+            if np.isfinite([b, a]).all(): # NOTE should never be False!
+                pass
+            else:
+                continue
             for j in xrange(mixed_masked.shape[1]):
-                if (mixed_masked.mask[pair[0], j] == False) and (mixed_masked.mask[pair[1], j] == False):
+                if (mixed_masked.mask[pair[0], j] == False) and (mixed_masked.mask[pair[1], j] == False): # NOTE checks if masked any row! So second if isfinite is redundant! No, not if masking according to other criteria! And if value that put tehre is not none.
                     y0, x0 = mixed_masked[pair, j]
                     if np.isfinite([y0, x0]).all():
                         d = self._distance(a, b, x0, y0)
@@ -456,12 +413,18 @@ class LinearOperator(object):
                         Y[i, j] = c
                     else:
                         raise Exception('Point not finite.')
+                else:
+                    pass # print 'Masked', (pair[0], j), 'and', (pair[1], j)
+                    
         return A, Y
+
+    # NOTE if std is not there because of too few values then also the correlation should not be there and no pairs or directions.
     
     def _estimate_correlations_direction_pairs(self, mixed_masked, threshold):
         # WARNING Not yet live for estimation from real data.
         correlations = np.ma.corrcoef(mixed_masked)
-        correlations[np.absolute(correlations) < threshold] = 0
+        correlations = np.ma.filled(correlations, 0)
+        correlations[np.absolute(correlations) < threshold] = 0 # NOTE Anything masked will also be zero even though fill value is different. This doesn'T make sense therefore intruduced the line above.
         pairs = np.vstack(np.nonzero(np.tril(correlations, -1))).T
         indices = np.arange(len(pairs))
         np.random.shuffle(indices)
@@ -553,8 +516,9 @@ class LinearOperator(object):
             for space in ['feature', 'sample']:
                 inexact = []
                 incorrect = []
-                mixed_masked = np.ma.masked_invalid(mixed[space])
+                mixed_masked = np.ma.masked_invalid(mixed[space])  #NOTE could mask based on scan here but will do with invalid too since they just get made nan. 
 
+                ###print mixed_masked
                 if estimate_pairs == True and estimate_stds == True:
                     pass
                 else:
@@ -578,7 +542,7 @@ class LinearOperator(object):
                     correlations, directions, pairs = self._estimate_correlations_direction_pairs(mixed_masked, threshold)
                     stds = self._estimate_stds(mixed_masked)
                     # DANGER
-                    stds = np.load('bcn' + '_stds_' + space + '.npy')
+                    ###stds = np.load('bcn' + '_stds_' + space + '.npy')
                     # DANGER
                     #directions = np.load('test' + '_directions_' + space + '.npy')
                     #pairs = np.load('test' + '_pairs_' + space + '.npy')
@@ -636,8 +600,8 @@ class BlindRecovery(object):
 
     # TODO visualize with figure4.py right away? # WARNING Note if have replicates, then overwrites them!
     def save(self, estimate, guess):
-        np.save('figure4/' + self.parameters['name'] + '_guess_' + str(self.parameters['threshold']).replace('.', '-') + '_' + str(self.parameters['rank']), guess)
-        np.save('figure4/' + self.parameters['name'] + '_estimate_' + str(self.parameters['threshold']).replace('.', '-') + '_' + str(self.parameters['rank']), estimate)
+        np.save(self.parameters['name'] + '_guess_' + str(self.parameters['threshold']).replace('.', '-') + '_' + str(self.parameters['rank']), guess)
+        np.save(self.parameters['name'] + '_estimate_' + str(self.parameters['threshold']).replace('.', '-') + '_' + str(self.parameters['rank']), estimate) # 'figure4/' + 
                     
     def setup(self):
         mixed = {'feature': self.mixed, 'sample': self.mixed.T}
@@ -712,7 +676,7 @@ class Recovery(object):
             if self.parameters['operator_name'] == 'custom':
                 print k, 'SNR', self.signal_to_noise(signal, noise)
         index = np.argmin(errors)
-        error = true_errors[index]
+        error = true_errors[index] # WARNING Selection of restarts based on true_errors
         estimate = estimates[index]
         if self.parameters['save_run']:
             self.save(signal, noise, missing, mixed['feature'], guesses[index], estimate)
@@ -792,7 +756,7 @@ if __name__ == '__main__':
     parameters = {'run_class': 'BlindCompressiveNormalization',
                   'name': 'bcn',
                   'mode': 'parallel',
-                  'seed': 42,
+                  'seed': 45,
                   'visualization_extension': '.png',
                   'figure_size': (8, 8),
                   'shape': (50, 50),
@@ -819,11 +783,12 @@ if __name__ == '__main__':
                   'save_visualize': False,
                   'mixed': 'mixed.npy', #'threshold': 0.95, #'rank': 2,
                   'free_x': ('rank', [2]), # list(np.asarray(np.linspace(1, 5, 5), dtype=int))
-                  'free_y': ('threshold', list(np.asarray(np.linspace(0.5, 0.95, 10))))}
+                  'free_y': ('threshold', [0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98])} # list(np.asarray(np.linspace(0.5, 0.95, 10)))
 
     # TODO find optimal threshold that gives nice recovery! Take threshold that gives almost optimal recovery for the correlation stuff first. Then next step is use that plus minus a bit for recovery!
 
     
+    np.random.seed(45)
     
     true_rank = 2
     
@@ -846,159 +811,3 @@ if __name__ == '__main__':
     from utils import submit
     
     submit(parameters, nodes=1)
-    #b = BlindRecovery(parameters, mixed)
-    #b.run()
-
-    # TODO Check if correct!
-    # TODO Do with not mixed but true correlations!
-
-
-    """
-    for rank in list(np.asarray(np.linspace(1, 5, 5))):
-        rank = str(int(rank))
-        for threshold in list(np.asarray(np.logspace(np.log10(0.5), np.log10(0.95), 5))):
-            threshold = str(threshold).replace('.', '-')
-
-            guess = 'figure4/' + np.load(parameters['name'] + '_guess_' + threshold + '_' + rank + '.npy')
-            signal2 = np.load(parameters['name'] + '_signal.npy')
-            mixed2 = np.load(parameters['name'] + '_mixed.npy')
-            estimate = 'figure4/' + mixed2 - np.load(parameters['name'] + '_estimate_' + threshold + '_' + rank + '.npy')
-            noise = np.load(parameters['name'] + '_noise.npy')
-            for space in ['feature']: # 'sample'
-                stds = np.load(parameters['name'] + '_stds_' + space + '.npy')
-                directions = np.load(parameters['name'] + '_directions_' + space + '.npy')
-                pairs = np.load(parameters['name'] + '_pairs_' + space + '.npy')
-
-
-            v = Visualize(file_name='figure4/figure4_' + threshold + '_' + rank)
-            v.dependence_structure(mixed2, signal2, pairs, stds, directions, estimate, guess)
-
-            #v = Visualize(signal2, file_name='figure4_signal_' + threshold + '_' + rank)
-            #v.observed_matrix(vmin=-0.002, vmax=0.05)
-            #v = Visualize(noise, file_name='figure4_noise_' + threshold + '_' + rank)
-            #v.observed_matrix(vmin=-0.002, vmax=0.05)
-            #v = Visualize(mixed2, file_name='figure4_mixed_' + threshold + '_' + rank)
-            #v.observed_matrix(vmin=-0.002, vmax=0.05)
-    
-
-    def _estimate_correlations_direction_pairs(mixed_masked, threshold):
-        # WARNING Not yet live for estimation from real data.
-        correlations = np.ma.corrcoef(mixed_masked)
-        correlations[np.absolute(correlations) < threshold] = 0
-        pairs = np.vstack(np.nonzero(np.tril(correlations, -1))).T
-        indices = np.arange(len(pairs))
-        np.random.shuffle(indices)
-        pairs = np.asarray(pairs)
-        pairs = pairs[indices]
-        directions = np.sign(correlations[pairs[:, 0], pairs[:, 1]])
-        #print pairs
-
-        return correlations, directions, pairs
-
-    def _estimate_stds(mixed_masked):
-        stds = np.ma.filled(np.ma.std(mixed_masked, axis=1), np.nan)
-        return stds
-
-    for threshold in np.linspace(0.6, 0.9, 4):
-        mixed_masked = {'sample': np.ma.masked_invalid(mixed.T), 'feature': np.ma.masked_invalid(mixed)}
-        for space in ['sample', 'feature']:
-            correlations, directions, pairs = _estimate_correlations_direction_pairs(mixed_masked[space], threshold)
-            v = Visualize(correlations, file_name=str(threshold).replace('.', '-') + 'correlations_' + space)
-            v.observed_matrix(vmin=-1, vmax=1)
-            v = Visualize(signal[space]['correlations'], file_name=str(threshold).replace('.', '-') + 'correlations_true_' + space)
-            v.observed_matrix(vmin=-1, vmax=1)
-
-
-    estimated_stds = _estimate_stds(mixed)
-    
-    v = Visualize(None)
-    v.correlation(stds, estimated_stds)
-        
-    # TODO look how chaning thresholds optimizes the correlations -> pairs estimate....
-    # TODO look how std errors influence the stuff... On lare scale systematic erros should cancel out and should get nice std estimate and also direction...
-    """
-    
-# TODO make nice (PEP8 REcovery)
-# TODO Run the different simulations and make plots.
-# TODO Run on the real data to make figure 4 and 5.
-
-
-# NOTE Higher dimensions make things exponentially better?
-# WARNING must shuffle noise, e.g. if biclustered because signal is not shuffled (difficult to do to get correlation structure to stay simple...); Actually, should be simple., because don'T need to shuffle the correlations, just the rows and columns... but can't if correlations in both spaces?
-# TODO constrain samples, get more accuracy for various estimations since know that have to be absolutely same and not just relative.
-# TODO implement low memory footprint option with storing operators with memory map? And only one problem per node (e.g. with dummies?)
-# TODO load in the real data!
-# TODO work on correlations estimation function...
-# TODO could take only the best runs!? But then might signelct for noise and signal that are more ameanable, e.g. fluke.
-# TODO Check that all maitrices, e.g. V, U are finite before SVD is computed.
-# NOTE Not having completely random signal is fine since that is never the case anaywys in real applications where the signal contains potentially redundant information?
-# NOTE free_x and free_y should be integers!
-
-
-#shape = 100, 120
-#measurements = 1000
-# min_block size = 2
-# possible pairs are 100/2 = 50 + 120/2 = 60 = 110; and each of theses
-# actually has 50 * 120 + 60 * 100 = 6000 + 6000 = 12000 measurements with
-# sparsity 2 up to a max. of 50**2 * 120 + 60**2 * 100 = 300000 + 360000 =
-# 660000 measurements (but they are not totally random or independent)
-
-
-"""
-# NOTE could do 3D plots that keep rank information!!! Do all small scale! Theory for Gaussian random matrices has much fewer values then entry based sensing?
-
-
-# Use percentage for the size and keep sizes constant unless themselves are the contrast of interest.
-
-
-# Dense measurement matrix for different signal redundancies and noise ranks and matrix sizes. In the end choose one.
-# Signal redundancies are always different depending on the number of measurments (e.g. they are the min. required). # NOTE This is here too to keep it consistent; since matrices are still random but structured random in a certain way!
-
-class Additive_Noise_A_vs_Measurements # Set sparsity=2, same as custom, and no noise.
-
-class Additive_Noise_y_vs_Measurements # Set sparsity=2, same as custom, and no noise. # NOTE Maybe just need one class.
-
-class Wrong_A_vs_Measurements # Fill or exchange A with stds from same distribution.
-
-class Sparsity_vs_Measurements # Include the entry operator here.
-
-# NOTE DO 3D one plot of the two below.
-
-class Size_vs_Measurements # Set sparsity=2, same as custom, and no noise. # NOTE Max # of measurement if sparsity=1 is size**2; if 2 then all number of possible pairs including onse-sided overlaps.
-
-# Again but this time doing the noise rank and none of the variations above (e.g. ideal). Set sparsity=2, same as custom, and no noise.
-
-class Rank_vs_Measurements
-
-# Custom measurement matrix for different signal redundancies and noise ranks and matrix sizes. In the end choose one.
-# Signal redundancies are always different depending on the number of measurments (e.g. they are the min. required).
-# All should start out with the ideal condition in the bottom middle (left too few measurements and right too many); this row should look the same everywhere.
-
-class Inexact_Std_vs_Measurements
-
-class Wrong_Pairs_vs_Measurements # In final operator construction just exchange a all those wrong pairs with new stds sampled from same distribution.
-
-class Inexact_Points_vs_Measurements
-
-# Maybe no need to plot. It's inherent. But stress that do not need to throw everything out just because one value missing. Also no need to impute with 0s or other computationally intensive way!
-# class Missing_Values_vs_Measurements # Replenish with additional measurments? No need to set to zero! So fine as long as enough data!
-
-
-# NOTE DO 3D one plot of the two below.
-
-class Size_vs_Measurements
-
-# Again but this time doing the noise rank and none of the variations above (e.g. ideal).
-
-# Custom measurement matrix for different signal redundancies and matrix sizes. In the end choose one.
-# Signal redundancies are always different depending on the number of measurments (e.g. they are the min. required).
-# Also check different types of redundancies, e.g. random, unity or constant, and noise amplitude or model combinations.
-
-class Rank_vs_Measurements
-
-# Highlight perfect recovery stunning result somehow visually?!?
-
-
-# TODO proper correlation estimation? Simple. Just threshold. Directions are included too.
-# TODO std estimation. Simple.
-"""
