@@ -9,11 +9,9 @@ The algorithm recovers bias from a measurement matrix without requiring quantita
 - pymanopt
 - mpi4py (for cluster implementation)
 
-**Publication**
-
-Ohse S, Börries M, Busch H (2017). “Blind compressive normalization of public high-throughput databases”. Manuscript.
-
 **Abstract**
+
+Blind compressive normalization of public high-throughput databases
 
 Motivation: The rise of high-throughput technologies in the domain of molecular and cell biology has generated an unprecedented amount of quantitative high-dimensional data. Public databases at present make a wealth of this data available, but appropriate normalization is critical for meaningful analysis across different experiments and technologies. Because of missing experimental annotation and lack of quantitative standards, large-scale normalization across entire databases is currently limited to approaches that demand ad hoc assumptions about noise sources and biological signal. Without appropriate normalization, meta-analyses are moot and so is the potential to address shortcomings in experimental designs with public data.
 
