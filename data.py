@@ -282,6 +282,7 @@ class Data(object):
         self.seed = seed
         self.d = {'sample': DataSubset(), 'feature': DataSubset()}
         self.rank = None
+        self.noise_amplitude = None
         
     @abc.abstractmethod
     def estimate(self):
@@ -302,14 +303,14 @@ class Data(object):
             rank = self.rank
         for space in ['sample', 'feature']:
             assert self.d[space]['mixed'] is not None
-            bias = BiasLowRank(self.d[space]['mixed'].shape, 'gaussian', rank, amplitude=1.0).generate() # WARNING need to guess appropriately if different type of bias manifold or source.
+            bias = BiasLowRank(self.d[space]['mixed'].shape, 'gaussian', rank, noise_amplitude=self.noise_amplitude).generate() # WARNING need to guess appropriately if different type of bias manifold or source.
             self.d[space]['guess_X'] = bias['X']
             self.d[space]['guess_usvt'] = bias['usvt']    
 
     
 class DataSimulated(Data):
 
-    def __init__(self, shape, rank, correlation_threshold=0.7, m_blocks_factor=4, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, shape, rank, correlation_threshold=0.7, m_blocks_factor=4, noise_amplitude=1.0, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -330,6 +331,8 @@ class DataSimulated(Data):
             List of str that annotates the features in `mixed` for the batch they are from, e.g. measurement technology/platform.
         sample_annotation_batch : list, optional 
             List of str that annotates the samples in `mixed` for the batch they are from, e.g. measurement technology/platform.
+        noise_amplitude : float, default = None
+            Scale/amptitude of the bias (noise).
         """
         super(DataSimulated, self).__init__(seed)
         self.shape = shape
@@ -340,10 +343,11 @@ class DataSimulated(Data):
         self.sample_annotation = sample_annotation
         self.feature_annotation_batch = feature_annotation_batch
         self.sample_annotation_batch = sample_annotation_batch
-
+        self.noise_amplitude = noise_amplitude
+        
         m_blocks = self.shape[0] // self.m_blocks_factor # NOTE using the sample space to determine the m_blocks here.
-        bias = BiasLowRank(self.shape, 'gaussian', self.rank, amplitude=1.0).generate()
-        missing = missing = Missing(self.shape, 'MAR', p_random=0.1).generate()
+        bias = BiasLowRank(self.shape, 'gaussian', self.rank, noise_amplitude=self.noise_amplitude).generate()
+        missing = missing = Missing(self.shape, 'no-missing', p_random=0.1).generate()
         signal = RedundantSignal(self.shape, 'random', m_blocks, 1.0).generate()
         mixed = signal['X'] + bias['X'] + missing['X']
 
@@ -382,7 +386,7 @@ class DataSimulated(Data):
                 
 class DataSimulatedLarge(Data):
 
-    def __init__(self, large_scale_shape, rank, correlation_threshold=0.7, m_blocks_factor=4, subset_factor=4, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, large_scale_shape, rank, correlation_threshold=0.7, m_blocks_factor=4, subset_factor=4, noise_amplitude=1.0, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a large bias recovery experiment.
 
         Parameters
@@ -414,10 +418,11 @@ class DataSimulatedLarge(Data):
         self.sample_annotation = sample_annotation
         self.feature_annotation_batch = feature_annotation_batch
         self.sample_annotation_batch = sample_annotation_batch
+        self.noise_amplitude = noise_amplitude
         
         m_blocks = self.large_scale_shape[0] // self.m_blocks_factor # NOTE using the sample space to determine the m_blocks here.
-        large_scale_bias = BiasLowRank(self.large_scale_shape, 'gaussian', self.rank, amplitude=1.0).generate()
-        large_scale_missing = Missing(self.large_scale_shape, 'MAR', p_random=0.1).generate()
+        large_scale_bias = BiasLowRank(self.large_scale_shape, 'gaussian', self.rank, noise_amplitude=self.noise_amplitude).generate()
+        large_scale_missing = Missing(self.large_scale_shape, 'no-missing', p_random=0.1).generate()
         large_scale_signal = RedundantSignal(self.large_scale_shape, 'random', m_blocks, 1.0).generate()
         large_scale_mixed = large_scale_signal['X'] + large_scale_bias['X'] + large_scale_missing['X']
             
@@ -471,9 +476,9 @@ class DataSimulatedLarge(Data):
                 self.d[space]['estimated_stds'] = estimate_stds(self.d[space]['large_scale_mixed'], pair_subset_back_map(self.d[space]['estimated_pairs'], self.d[space]['subset_indices'])) 
 
 
-class DataBlind(Data):
+class DataBlind(Data): # TODO add stds and correlation (direction, pairs) information from larger matrix directly into this here... # NOTE NO need for estimate but all given! OR special large scale estimate?
 
-    def __init__(self, mixed, rank, correlation_threshold=0.7, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, mixed, rank, correlation_threshold=0.7, feature_annotation=None, noise_amplitude=1.0, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -501,6 +506,7 @@ class DataBlind(Data):
         self.sample_annotation = sample_annotation
         self.feature_annotation_batch = feature_annotation_batch
         self.sample_annotation_batch = sample_annotation_batch
+        self.noise_amplitude = noise_amplitude
         
         for space in ['sample', 'feature']:
             self.d[space]['mixed'] = transpose_view(mixed, space)
@@ -530,7 +536,7 @@ class DataBlind(Data):
                 
 class DataBlindLarge(Data):
 
-    def __init__(self, large_scale_mixed, rank, correlation_threshold=0.7, subset_factor=4, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, large_scale_mixed, rank, correlation_threshold=0.7, subset_factor=4, noise_amplitude=1.0, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -549,6 +555,8 @@ class DataBlindLarge(Data):
             List of str that annotates the features in `mixed` for the batch they are from, e.g. measurement technology/platform.
         sample_annotation_batch : list, optional
             List of str that annotates the samples in `mixed` for the batch they are from, e.g. measurement technology/platform.
+
+            #TODO get subset_indices from __init__ becquse want to specifically select here certain genes and samples?!
         """
         super(DataBlindLarge, self).__init__(seed)
         self.large_scale_mixed = large_scale_mixed
@@ -559,7 +567,8 @@ class DataBlindLarge(Data):
         self.sample_annotation = sample_annotation
         self.feature_annotation_batch = feature_annotation_batch
         self.sample_annotation_batch = sample_annotation_batch
-
+        self.noise_amplitude = noise_amplitude
+        
         self.d['sample']['subset_indices'] = np.random.choice(range(large_scale_mixed.shape[0]), size=large_scale_mixed.shape[0] // self.subset_factor, replace=False)
         self.d['feature']['subset_indices'] = np.random.choice(range(large_scale_mixed.shape[1]), size=large_scale_mixed.shape[1] // self.subset_factor, replace=False)
             

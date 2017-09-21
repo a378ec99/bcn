@@ -13,7 +13,7 @@ import unittest
 import hashlib
 import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GIT2/bcn')
+sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
 from data import DataSimulated, DataSimulatedLarge
 from visualization import visualize_dependences, visualize_correlations
 from cost import Cost
@@ -50,12 +50,12 @@ class TestDependences(unittest.TestCase):
     """
     
     def setUp(self, seed=42):
-        np.random.seed(seed)
+        #np.random.seed(seed)
         self.shape = None
         self.rank = 2
         self.n_measurements = 5000
         self.data = None
-    '''
+    
     def test_dependences_true(self):
         self.shape = (50, 60)
         self.data = DataSimulated(self.shape, self.rank)
@@ -64,13 +64,13 @@ class TestDependences(unittest.TestCase):
         A = operator['A']
         y = operator['y']
         cost = Cost(A, y)
-        solver = ConjugateGradientSolver(cost.cost_function, self.data, self.rank, 1, verbosity=0)
+        solver = ConjugateGradientSolver(cost.cost_function, self.data, self.rank, 10, verbosity=0)
         self.data.d = solver.recover()
         visualize_dependences(self.data.d, file_name='test_dependences_true')
         #_assert_consistency(self.data.d['sample']['estimated_bias'], 1)
     '''    
     def test_dependences_true_large(self):
-        self.shape = (150, 160)
+        self.shape = (50, 60)
         self.data = DataSimulatedLarge(self.shape, self.rank, subset_factor=1)
         self.data.estimate(true_stds={'sample': self.data.d['sample']['true_stds'], 'feature': self.data.d['feature']['true_stds']}, true_pairs={'sample': self.data.d['sample']['true_pairs'], 'feature': self.data.d['feature']['true_pairs']}, true_directions={'sample': self.data.d['sample']['true_directions'], 'feature': self.data.d['feature']['true_directions']})
         operator = LinearOperatorBlind(self.data.d, self.n_measurements).generate()
@@ -90,25 +90,25 @@ class TestDependences(unittest.TestCase):
         A = operator['A']
         y = operator['y']
         cost = Cost(A, y)
-        solver = ConjugateGradientSolver(cost.cost_function, self.data, self.rank, 1, verbosity=0)
+        solver = ConjugateGradientSolver(cost.cost_function, self.data, self.rank, 10, verbosity=0)
         self.data.d = solver.recover()
         visualize_dependences(self.data.d, file_name='test_dependences_estimated')
         #_assert_consistency(self.data.d['sample']['estimated_bias'], 1)
     '''     
     def test_dependences_estimated_large(self):
         # NOTE Only estimates standard deviations, pairs and directions are given.
-        self.shape = (150, 160)
+        self.shape = (50, 60)
         self.data = DataSimulatedLarge(self.shape, self.rank)
         self.data.estimate(true_pairs={'sample': self.data.d['sample']['true_pairs'], 'feature': self.data.d['feature']['true_pairs']}, true_directions={'sample': self.data.d['sample']['true_directions'], 'feature': self.data.d['feature']['true_directions']})
         operator = LinearOperatorBlind(self.data.d, self.n_measurements).generate()
         A = operator['A']
         y = operator['y']
         cost = Cost(A, y)
-        solver = ConjugateGradientSolver(cost.cost_function, self.data, self.rank, 1, verbosity=0)
+        solver = ConjugateGradientSolver(cost.cost_function, self.data, self.rank, 10, verbosity=0)
         self.data.d = solver.recover()
         visualize_dependences(self.data.d, file_name='test_dependences_estimated_large')
         #_assert_consistency(self.data.d['sample']['estimated_bias'], 1)
-    
+    '''
                 
 class TestCorrelations(unittest.TestCase):
     """Tests to verify that the visualizations produced without errors for the blind recovery approach.

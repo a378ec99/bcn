@@ -85,31 +85,34 @@ def visualize_dependences(data, space='sample', file_name='test_dependences', tr
                 std_b = std_b * -1 * direction
                 m = -std_b / float(std_a)
                 ax.plot(list(ax.get_xlim()), [m * p + 0.0 for p in ax.get_xlim()], '--', color='black', alpha=0.6)
+
+                # TODO Plot mean, plus 1 std in both directions marked on Axes both for true and for estimated! Then see if given corret mean is better?
+
                 
         # NOTE Make plot pretty
-        ax.spines['right'].set_color('none')
-        ax.spines['top'].set_color('none')
-        ax.spines['left'].set_smart_bounds(True)
-        ax.spines['bottom'].set_smart_bounds(True)
+        #ax.spines['right'].set_color('none')
+        #ax.spines['top'].set_color('none')
+        #ax.spines['left'].set_smart_bounds(True)
+        #ax.spines['bottom'].set_smart_bounds(True)
 
-        ax.xaxis.set_ticks_position('bottom')
-        ax.yaxis.set_ticks_position('left')
+        #ax.xaxis.set_ticks_position('bottom')
+        #ax.yaxis.set_ticks_position('left')
 
-        ax.yaxis.set_tick_params(width=4, which='major')
-        ax.yaxis.set_tick_params(size=20, which='major')
-        ax.xaxis.set_tick_params(width=4, which='major')
-        ax.xaxis.set_tick_params(size=20, which='major')
+        #ax.yaxis.set_tick_params(width=4, which='major')
+        #ax.yaxis.set_tick_params(size=20, which='major')
+        #ax.xaxis.set_tick_params(width=4, which='major')
+        #ax.xaxis.set_tick_params(size=20, which='major')
 
-        ax.yaxis.set_tick_params(width=4, which='minor')
-        ax.yaxis.set_tick_params(size=10, which='minor')
-        ax.xaxis.set_tick_params(width=4, which='minor')
-        ax.xaxis.set_tick_params(size=20, which='minor')
+        #ax.yaxis.set_tick_params(width=4, which='minor')
+        #ax.yaxis.set_tick_params(size=10, which='minor')
+        #ax.xaxis.set_tick_params(width=4, which='minor')
+        #ax.xaxis.set_tick_params(size=20, which='minor')
 
-        for axis in ['bottom', 'left']:
-            ax.spines[axis].set_linewidth(4)
+        #for axis in ['bottom', 'left']:
+        #    ax.spines[axis].set_linewidth(4)
 
-        ax.xaxis.set_major_formatter(pl.NullFormatter())
-        ax.yaxis.set_major_formatter(pl.NullFormatter())
+        #ax.xaxis.set_major_formatter(pl.NullFormatter())
+        #ax.yaxis.set_major_formatter(pl.NullFormatter())
         ax.axis('equal')
 
     fig.savefig(file_name + format)
@@ -152,16 +155,13 @@ def visualize_correlations(data, space='sample', file_name='test_correlations', 
     fig.savefig(file_name + format)
 
 
-def visualize_performance(data, parameters, xfile_name, blind=False, format='.png'):
+def visualize_performance(errors, x, y, x_name, y_name, file_name, format='.png'):
     """
     """
-    xlabel = parameters['free_x'][0]
-    ylabel = parameters['free_y'][0]
-
-    xticklabels = parameters['free_x'][1]
-    yticklabels = parameters['free_y'][1]
-
-    # TODO What is a better formatting here?
+    xlabel = x_name
+    ylabel = y_name
+    xticklabels = x
+    yticklabels = y
 
     if np.sum(np.asarray(xticklabels, dtype=int) - xticklabels) != 0:
         xticklabels = ['{:.2f}'.format(i) for i in xticklabels]
@@ -171,7 +171,7 @@ def visualize_performance(data, parameters, xfile_name, blind=False, format='.pn
     fig = pl.figure(figsize=(10, 10))
     ax = fig.add_subplot(111)
     ax.set_title('Recovery Performance')
-    ax_seaborn = sb.heatmap(np.log2(data.error), vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, xticklabels=xticklabels, yticklabels=yticklabels, ax=ax, cbar_kws={'shrink': 0.5})
+    ax_seaborn = sb.heatmap(np.log2(errors), vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, xticklabels=xticklabels, yticklabels=yticklabels, ax=ax, cbar_kws={'shrink': 0.5})
     ax_seaborn.set_ylabel(ylabel)
     ax_seaborn.set_xlabel(xlabel)
 
@@ -187,12 +187,7 @@ def visualize_performance(data, parameters, xfile_name, blind=False, format='.pn
 
 
 
-
-
-
-
-
-
+        
 # visualize batch effects (plus annotation) for blind and add contrast if known
 
 # visualize in PCA (plus annotation) for blind and add contrast if known

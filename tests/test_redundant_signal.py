@@ -13,7 +13,7 @@ import unittest
 import hashlib
 import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GIT2/bcn')
+sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
 from redundant_signal import RedundantSignal, _generate_square_blocks_matrix, _generate_pairs, _generate_stds, _generate_directions, _generate_covariance, _generate_matrix_normal_sample
 
 
@@ -23,7 +23,74 @@ def _assert_consistency(X, true_md5):
     current_md5 = m.hexdigest()
     assert current_md5 == true_md5
 
+
+
+class Test_std_consistency(unittest.TestCase):
+
+    def setUp(self, seed=42):
+        #np.random.seed(seed)
+        self.m_blocks = 10
+        self.shape = (250, 250)
         
+    def test(self):
+        self.correlation_matrix_U = _generate_square_blocks_matrix(self.shape[0], self.m_blocks, r=1.0)
+        self.stds_U, scaling_factor_sample = _generate_stds(self.shape[0], 'random', normalize=False)
+        
+        self.U = _generate_covariance(self.correlation_matrix_U, self.stds_U) # sample
+
+        pairs_sample = _generate_pairs(self.correlation_matrix_U)
+        
+        print 'trace U', np.trace(self.U)
+        #####assert np.allclose(np.sum(self.stds_U**2), 1.0, rtol=1e-5, atol=1e-5)
+        #scaling_factor = float(np.sqrt(1 / float(np.sum(stds**2))))
+        
+        self.correlation_matrix_V = _generate_square_blocks_matrix(self.shape[1], self.m_blocks, r=1.0)
+        self.stds_V, scaling_factor_feature = _generate_stds(self.shape[1], 'random', normalize=False) # normalize=False
+        
+        self.V = _generate_covariance(self.correlation_matrix_V, self.stds_V) # feature
+        print 'trace V', np.trace(self.V)
+        #
+        #for i in xrange(40):
+        #    self.sample = _generate_matrix_normal_sample(self.U, self.V)
+        #    
+
+        pairs_feature = _generate_pairs(self.correlation_matrix_V)
+        
+        temp = []
+        for q in xrange(100):
+            self.sample = _generate_matrix_normal_sample(self.U, self.V)
+            temp.append(self.sample)
+        self.sample = np.mean(temp, axis=0)
+        print self.sample.shape
+        sample_stds = np.std(self.sample, axis=1)
+        feature_stds = np.std(self.sample, axis=0)
+
+        print 'A', (feature_stds[pairs_feature][:, 0] / feature_stds[pairs_feature][:, 1])[:4]
+        print 'B', (sample_stds[pairs_sample][:, 0] / sample_stds[pairs_sample][:, 1])[:4]
+
+        print 'true A', (self.stds_V[pairs_feature][:, 0] / self.stds_V[pairs_feature][:, 1])[:4]
+        print 'true B', (self.stds_U[pairs_sample][:, 0] / self.stds_U[pairs_sample][:, 1])[:4]
+        
+        #print 'A', sample_stds
+        #print 'B', self.stds_U # TODO make sure that can estimate stds properly. The factor that the estimated sample stds are smaller depends on the n_feature size, not on n_samples.
+
+        #print 'scaling_factor - sample', scaling_factor_sample, np.mean(feature_stds / self.stds_V)#, np.mean(feature_stds), np.mean(self.stds_V) #np.mean(self.stds_V / feature_stds),
+        #print 'scaling_factor - feature', scaling_factor_feature, np.mean(sample_stds / self.stds_U)#, np.mean(sample_stds), np.mean(self.stds_U) #np.mean(self.stds_U / sample_stds),
+
+        #print sample_stds, np.mean(sample_stds)
+        #print self.stds_U, np.mean(self.stds_U)
+
+        
+        print 'feature', np.mean(feature_stds), np.mean(self.stds_V)
+        print 'sample', np.mean(sample_stds), np.mean(self.stds_U)
+
+        print 'difference feature', np.mean(feature_stds - self.stds_V)
+        print 'difference sample', np.mean(sample_stds - self.stds_U)
+        
+        # TODO only check ratios ... because there might be a non-identifiability factor!
+
+        
+'''       
 class Test_generate_covariance(unittest.TestCase):
     """Test to verify that covariances are generated correctly.
 
@@ -371,7 +438,7 @@ class TestRedundantSignalLarge(unittest.TestCase):
         self._assert_ndarray(signal)
         self._assert_shape(signal)
         _assert_consistency(signal['X'], 'c41d8335382cfb174607791f9943748b')
-
+'''
         
 if __name__ == '__main__':
     unittest.main()

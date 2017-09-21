@@ -34,6 +34,8 @@ class ConjugateGradientSolver(object):
             The random see with wich to run the recovery.
         verbosiy : {0, 1, 2}
             Level of information the gets printed during solver run. A higher number means more.
+
+        # TODO Introduce the option to use a specified inital guess.
         """
         self.seed = seed
         if self.seed is not None:

@@ -13,7 +13,7 @@ import unittest
 import hashlib
 import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GIT2/bcn')
+sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
 from bias import BiasLowRank, BiasUnconstrained
 
 
@@ -71,7 +71,7 @@ class TestBiasLowRank(unittest.TestCase):
         _assert_consistency(bias['X'], '1b321768958469659a3f65bd19f096cf')
         
     def test_gaussian(self):
-        bias = BiasLowRank(self.shape, 'gaussian', self.rank, amplitude=1.0).generate()
+        bias = BiasLowRank(self.shape, 'gaussian', self.rank, noise_amplitude=1.0).generate()
         self._assert_dict(bias)
         self._assert_finite(bias)
         self._assert_ndarray(bias)
@@ -120,7 +120,7 @@ class TestBiasUnconstrained(unittest.TestCase):
         assert current_md5 == true_md5
         
     def test_gaussian_finite(self):
-        bias = BiasUnconstrained(self.shape, 'gaussian', amplitude=1.0).generate()
+        bias = BiasUnconstrained(self.shape, 'gaussian', noise_amplitude=1.0).generate()
         self._assert_dict(bias)
         self._assert_finite(bias)
         self._assert_ndarray(bias)

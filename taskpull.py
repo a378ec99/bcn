@@ -11,34 +11,7 @@ import json
 import abc
 
 from mpi4py import MPI
-import bcn # WARNING Still needs to be implemented.
-
-
-class TaskPull(object):
-    '''
-    Abstract class that denotes API to taskpull.py and taskpull_local.py.
-    '''
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def allocate(self):
-        pass
-
-    @abc.abstractmethod
-    def create_tasks(self):
-        pass
-
-    @abc.abstractmethod
-    def work(self):
-        pass
-
-    @abc.abstractmethod
-    def store(self):
-        pass
-
-    @abc.abstractmethod
-    def postprocessing(self):
-        pass
+import parallel
     
 
 if __name__ == '__main__':
@@ -60,7 +33,7 @@ if __name__ == '__main__':
         print 'Could not use node01 as master.'
         master = 0
 
-    taskpull = getattr(bcn, class_)(kwargs)
+    taskpull = getattr(parallel, class_)(**kwargs)
     
     if rank == master: #NOTE Master process executes code below.
 
@@ -69,6 +42,8 @@ if __name__ == '__main__':
         total_workers = size - 1
         closed_workers = 0
 
+        print 'A'
+        
         while closed_workers < total_workers:
             result = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
             source = status.Get_source()
@@ -93,6 +68,8 @@ if __name__ == '__main__':
     
     else: #NOTE Worker processes execute code below.
 
+        print 'B'
+        
         while True:
             comm.send(None, dest=master, tag=READY)
             task = comm.recv(source=master, tag=MPI.ANY_TAG, status=status)

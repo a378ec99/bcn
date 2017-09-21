@@ -18,7 +18,7 @@ from pymanopt.manifolds import FixedRankEmbedded, Euclidean
 
 class BiasLowRank(object):
 
-    def __init__(self, shape, model, rank, amplitude=None, image_source=None, n_clusters=None):
+    def __init__(self, shape, model, rank, noise_amplitude=None, image_source=None, n_clusters=None):
         """Generate bias according to a low-rank (sparse) model.
 
         Parameters
@@ -29,7 +29,7 @@ class BiasLowRank(object):
             Three bias models are supported, `gaussian` which is based on a QR decomposition of a random Gaussian matrix, `image` which is based on a prespecified image that is then rank reduced, and `bicluster` which is based on `sklearn's` checkerboard function that is then rank reduced.
         rank : int
             Rank of the low-rank decomposition.
-        amplitude : float, optional unless model `gaussian`
+        noise_amplitude : float, optional unless model `gaussian`
             Sets the level of the bias.
         image_source: str, optional unless model `image`
             File location of the image to be used for the model `image`.
@@ -43,7 +43,7 @@ class BiasLowRank(object):
         self.shape = shape
         self.model = model
         self.rank = rank
-        self.amplitude = amplitude
+        self.noise_amplitude = noise_amplitude
         self.image_source = image_source
         self.n_clusters = n_clusters
         
@@ -61,7 +61,7 @@ class BiasLowRank(object):
             usvt = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank).rand()
             # NOTE Eigenvalues are normalized so that the bias level is approximately consistent over differing rank matrices.
             usvt = usvt[0], (usvt[1] / np.sum(np.absolute(usvt[1]))), usvt[2]
-            usvt = usvt[0], usvt[1] * self.amplitude, usvt[2]
+            usvt = usvt[0], usvt[1] * self.noise_amplitude, usvt[2]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
 
         if self.model == 'image':
@@ -87,7 +87,7 @@ class BiasLowRank(object):
 
 class BiasUnconstrained(object):
 
-    def __init__(self, shape, model, amplitude=None, fill_value=None):
+    def __init__(self, shape, model, noise_amplitude=None, fill_value=None):
         """Generate bias according to an unconstrained (non-sparse) model.
 
         Parameters
@@ -103,7 +103,7 @@ class BiasUnconstrained(object):
         """
         self.shape = shape
         self.model = model
-        self.amplitude = amplitude
+        self.noise_amplitude = noise_amplitude
         self.fill_value = fill_value
         
         assert self.model in ['gaussian', 'uniform']
@@ -118,7 +118,7 @@ class BiasUnconstrained(object):
         """
         if self.model == 'gaussian':
             X = Euclidean(self.shape[0], self.shape[1]).rand()
-            X = X * self.amplitude
+            X = X * self.noise_amplitude
             
         if self.model == 'uniform':
             X = np.full(self.shape, self.fill_value)

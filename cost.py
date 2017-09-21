@@ -26,6 +26,6 @@ class Cost(object):
         if len(X) == 3:
             usvt = X
             X = ag.dot(usvt[0], ag.dot(ag.diag(usvt[1]), usvt[2]))
-        error = ag.sum((ag.sum(self.A * X, axis=(1, 2)) - self.y)**2) / self.y.size # NOTE The size scaling is not nessesary for convergence.
+        error = ag.mean((ag.sum(self.A * X, axis=(1, 2)) - self.y)**2) #NOTE The size scaling is not nessesary for convergence. Could use ag.sum. # TODO Should one use ag.sqrt to get RMSE?
         return error
 

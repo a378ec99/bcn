@@ -13,7 +13,7 @@ import unittest
 import hashlib
 import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GIT2/bcn')
+sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
 from data import DataSimulated, DataSimulatedLarge
 from cost import Cost
 from solvers import ConjugateGradientSolver

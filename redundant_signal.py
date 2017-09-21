@@ -137,7 +137,7 @@ def _generate_matrix_normal_sample(U, V):
     return Y
 
 
-def _generate_stds(n, model, std_value=1.5, normalize=True):
+def _generate_stds(n, model, std_value=1.5, normalize=False):
     """Generate standard deviations according to two models.
 
     Parameters
@@ -157,14 +157,15 @@ def _generate_stds(n, model, std_value=1.5, normalize=True):
         A tuple of scaled standard deviations and the corresponding scaling factor.
     """
     if model == 'random':
-        stds = np.random.uniform(0.1, 2, n)
+        stds = np.random.uniform(0.1, 2.0, n) # 0.01, 20.0
     if model == 'constant':
         stds = np.repeat(std_value, n)
     if normalize:
         scaling_factor = float(np.sqrt(1 / float(np.sum(stds**2))))
         stds = stds * scaling_factor
-    return stds, scaling_factor
-
+        return stds, scaling_factor
+    else:
+        return stds, None
     
 def _generate_directions(correlation_matrix, pairs):
     """Generate directions from a signed correlation matrix.
@@ -205,7 +206,7 @@ def _generate_covariance(correlation_matrix, stds):
     
 class RedundantSignal(object):
 
-    def __init__(self, shape, model, m_blocks, correlation_strength, std_value=None, normalize_stds=True):
+    def __init__(self, shape, model, m_blocks, correlation_strength, std_value=None, normalize_stds=False):
         """Generate a high-dimensional signal with a particular redundancy.
 
         Parameters
