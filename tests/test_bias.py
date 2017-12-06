@@ -13,7 +13,7 @@ import unittest
 import hashlib
 import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bias import BiasLowRank, BiasUnconstrained
 
 
@@ -63,7 +63,7 @@ class TestBiasLowRank(unittest.TestCase):
         assert type(bias) == dict
 
     def test_image(self):
-        bias = BiasLowRank(self.shape, 'image', self.rank, image_source='trump.png').generate()
+        bias = BiasLowRank(self.shape,  self.rank, model='image', image_source='trump.png').generate()
         self._assert_dict(bias)
         self._assert_finite(bias)
         self._assert_ndarray(bias)
@@ -71,7 +71,7 @@ class TestBiasLowRank(unittest.TestCase):
         _assert_consistency(bias['X'], '1b321768958469659a3f65bd19f096cf')
         
     def test_gaussian(self):
-        bias = BiasLowRank(self.shape, 'gaussian', self.rank, noise_amplitude=1.0).generate()
+        bias = BiasLowRank(self.shape, self.rank, model='gaussian', noise_amplitude=1.0).generate()
         self._assert_dict(bias)
         self._assert_finite(bias)
         self._assert_ndarray(bias)
@@ -79,7 +79,7 @@ class TestBiasLowRank(unittest.TestCase):
         _assert_consistency(bias['X'], '64fd423a0625ae269d1b9e07f57eb31c')
         
     def test_bicluster(self):
-        bias = BiasLowRank(self.shape, 'bicluster', self.rank, n_clusters=(3,4)).generate()
+        bias = BiasLowRank(self.shape, self.rank, model='bicluster', n_clusters=(3,4)).generate()
         self._assert_dict(bias)
         self._assert_finite(bias)
         self._assert_ndarray(bias)

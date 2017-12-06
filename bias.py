@@ -7,7 +7,7 @@ This module defines two classes that can generate different types of bias.
 from __future__ import division, absolute_import
 
 
-__all__ = ['BiasLowRank', 'BiasUnconstrained']
+__all__ = ['BiasLowRank', 'BiasUnconstrained', 'guess_func']
 
 import numpy as np
 
@@ -16,9 +16,17 @@ from sklearn.datasets import make_checkerboard
 from pymanopt.manifolds import FixedRankEmbedded, Euclidean
 
 
+def guess_func(shape, rank, **kwargs):
+    """Generate an initial bias guess for the solver to start at.
+    """
+    bias = BiasLowRank(shape, rank, **kwargs).generate() # WARNING need to guess appropriately if different type of bias manifold or source.
+    guess = {'X': bias['X'], 'usvt': bias['usvt']}
+    return guess
+
+
 class BiasLowRank(object):
 
-    def __init__(self, shape, model, rank, noise_amplitude=None, image_source=None, n_clusters=None):
+    def __init__(self, shape, rank, model='gaussian', noise_amplitude=1.0, n_clusters=2, image_source=None):
         """Generate bias according to a low-rank (sparse) model.
 
         Parameters
@@ -46,7 +54,7 @@ class BiasLowRank(object):
         self.noise_amplitude = noise_amplitude
         self.image_source = image_source
         self.n_clusters = n_clusters
-        
+
         assert self.model in ['image', 'bicluster', 'gaussian']
         
     def generate(self):
@@ -87,7 +95,7 @@ class BiasLowRank(object):
 
 class BiasUnconstrained(object):
 
-    def __init__(self, shape, model, noise_amplitude=None, fill_value=None):
+    def __init__(self, shape, model='gaussian', noise_amplitude=1.0, fill_value=42):
         """Generate bias according to an unconstrained (non-sparse) model.
 
         Parameters

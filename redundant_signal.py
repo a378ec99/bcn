@@ -163,7 +163,7 @@ def _generate_stds(n, model, std_value=1.5, normalize=False):
     if normalize:
         scaling_factor = float(np.sqrt(1 / float(np.sum(stds**2))))
         stds = stds * scaling_factor
-        return stds, scaling_factor
+        return stds, scaling_factor # NOTE WARNING is the scaling factor still used?
     else:
         return stds, None
     

@@ -13,10 +13,10 @@ import unittest
 import hashlib
 import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from data import DataSimulated
 from cost import Cost
-from linear_operators import LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorBlind
+from linear_operators import LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom
 
 
 def _assert_consistency(X, true_md5):
@@ -39,8 +39,8 @@ class TestCost(unittest.TestCase):
         Rank of the low-rank decomposition of the bias matrix.
     n_measurements : int (default = 901)
         Number of linear operators and measurements to be generated.
-    data : dict, default = None
-        Data contained which is generated on the fly by the `run` method.
+    data : Data object, default = None
+        Generated on the fly by the `run` method.
     """
     def setUp(self, seed=42):
         np.random.seed(seed)
@@ -51,63 +51,62 @@ class TestCost(unittest.TestCase):
     
     def test_entry(self):
         self.data = DataSimulated(self.shape, self.rank)
-        operator = LinearOperatorEntry(self.data.d, self.n_measurements).generate()
+        operator = LinearOperatorEntry(self.data, self.n_measurements).generate()
         A = operator['A']
         y = operator['y']
         cost = Cost(A, y)
-        error_zero = cost.cost_function(self.data.d['sample']['true_bias'])
+        error_zero = cost.cost_func(self.data.d['sample']['true_bias'])
         assert error_zero == 0.0
-        error_nonzero = cost.cost_function(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
+        error_nonzero = cost.cost_func(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
         assert error_nonzero != 0.0
         #_assert_consistency(error_nonzero, 'aa7103fd99b5c6ed73b7af217dee8c68')
     
     def test_dense(self):
         self.data = DataSimulated(self.shape, self.rank)
-        operator = LinearOperatorDense(self.data.d, self.n_measurements).generate()
+        operator = LinearOperatorDense(self.data, self.n_measurements).generate()
         A = operator['A']
         y = operator['y']
         cost = Cost(A, y)
-        error_zero = cost.cost_function(self.data.d['sample']['true_bias'])
+        error_zero = cost.cost_func(self.data.d['sample']['true_bias'])
         assert error_zero == 0.0
-        error_nonzero = cost.cost_function(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
+        error_nonzero = cost.cost_func(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
         assert error_nonzero != 0.0
         #_assert_consistency(error_nonzero, '6a3a70b2a59da3cab0b7813e748fffd1')
 
     def test_ksparse(self):
         self.data = DataSimulated(self.shape, self.rank)
         sparsity = 2
-        operator = LinearOperatorKsparse(self.data.d, self.n_measurements, sparsity).generate()
+        operator = LinearOperatorKsparse(self.data, self.n_measurements, sparsity).generate()
         A = operator['A']
         y = operator['y']
         cost = Cost(A, y)
-        error_zero = cost.cost_function(self.data.d['sample']['true_bias'])
+        error_zero = cost.cost_func(self.data.d['sample']['true_bias'])
         assert error_zero == 0.0
-        error_nonzero = cost.cost_function(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
+        error_nonzero = cost.cost_func(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
         assert error_nonzero != 0.0
         #_assert_consistency(error_nonzero, 'dc73ba472cb0ea08a6c5a00552c9d4f7')
         
     def test_blind(self):
         self.data = DataSimulated(self.shape, self.rank)
         self.data.estimate()
-        self.data.guess()
-        operator = LinearOperatorBlind(self.data.d, self.n_measurements).generate()
+        operator = LinearOperatorCustom(self.data, self.n_measurements).generate()
         A = operator['A']
         y = operator['y']
         cost = Cost(A, y)
         
-        error_zero = cost.cost_function(self.data.d['sample']['true_bias']) # NOTE Can't be exactly zero because estimating everything... need to check the faults!
+        error_zero = cost.cost_func(self.data.d['sample']['true_bias']) # NOTE Can't be exactly zero because estimating everything... need to check the faults!
         print '---------------- COST:', error_zero
         #assert np.isclose(error_zero, 0.0, rtol=1e-5, atol=1e-5)
         
-        error_nonzero = cost.cost_function(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
+        error_nonzero = cost.cost_func(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
         assert error_nonzero != 0.0
         print '---------------- BAD COST:', error_nonzero
         #_assert_consistency(error_nonzero, 'a9b69d2e416c2cafbb0b9049bd566b56')
 
-        error_guess = cost.cost_function(self.data.d['sample']['guess_X'])
-        print '---------------- GUESS COST:', error_guess
+        #error_guess = cost.cost_func(self.data.d['sample']['guess_X'])
+        #print '---------------- GUESS COST:', error_guess
 
-        error_zeros = cost.cost_function(np.zeros_like(self.data.d['sample']['guess_X']))
+        error_zeros = cost.cost_func(np.zeros_like(self.data.d['sample']['true_bias']))
         print '---------------- ZERO COST:', error_zeros
 
 

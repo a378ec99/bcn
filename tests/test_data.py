@@ -7,7 +7,7 @@ This module defines a test class that assert the functioning of the `data` modul
 from __future__ import division, absolute_import
 
 
-__all__ = ['Test_pair_subset', 'TestDataSimulated', 'TestDataBlind', 'TestDataSimulatedLarge', 'TestDataBlindLarge', 'TestStdEstimationImprovement']
+__all__ = ['Test_pair_subset', 'TestDataSimulated', 'TestDataBlind'] # , 'TestDataSimulatedLarge', 'TestDataBlindLarge', , 'TestStdEstimationImprovement'
 
 import unittest
 import hashlib
@@ -16,8 +16,8 @@ import matplotlib
 matplotlib.use('Agg')
 import numpy as np
 import pylab as pl
-sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
-from data import DataSimulated, DataSimulatedLarge, DataBlind, DataBlindLarge, pair_subset
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+from data import DataSimulated, DataBlind #, pair_subset # DataSimulatedLarge, DataBlindLarge, 
 
 
 def _assert_consistency(X, true_md5):
@@ -26,7 +26,7 @@ def _assert_consistency(X, true_md5):
     current_md5 = m.hexdigest()
     assert current_md5 == true_md5
 
-    
+'''    
 class Test_pair_subset(unittest.TestCase):
     """Test to verify that subset of pairs is selected appropriately.
 
@@ -46,7 +46,7 @@ class Test_pair_subset(unittest.TestCase):
         #print 'subset_indices', subset_indices
         #print 'subset_pairs', subset_pairs
         #_assert_consistency(subset_pairs, '1')
-
+'''
         
 class TestDataSimulated(unittest.TestCase):
     """Test to verify that the inital data is created correctly.
@@ -75,7 +75,6 @@ class TestDataSimulated(unittest.TestCase):
             assert data.d[space]['estimated_stds'].shape[0] == data.d[space]['estimated_pairs'].shape[0]
             assert data.d[space]['estimated_directions'].ndim == 1
             #_assert_consistency(data.d[space]['estimated_pairs'], '1')
-        data.guess()
         
         
 class TestDataBlind(unittest.TestCase):
@@ -107,7 +106,6 @@ class TestDataBlind(unittest.TestCase):
             assert data.d[space]['estimated_stds'].shape[0] == data.d[space]['estimated_pairs'].shape[0]
             assert data.d[space]['estimated_directions'].ndim == 1
             #_assert_consistency(data.d[space]['estimated_pairs'], '1')
-        data.guess()
 
 '''       
 class TestDataSimulatedLarge(unittest.TestCase):
@@ -141,7 +139,7 @@ class TestDataSimulatedLarge(unittest.TestCase):
             #_assert_consistency(data.d[space]['estimated_pairs'], '1')
         data.guess()
 '''        
-
+'''
 class TestDataBlindLarge(unittest.TestCase):
     """Test to verify that the inital data is created correctly.
 
@@ -172,8 +170,8 @@ class TestDataBlindLarge(unittest.TestCase):
             assert data.d[space]['estimated_directions'].ndim == 1
             #_assert_consistency(data.d[space]['estimated_pairs'], '1')
         data.guess()
-
-
+'''
+'''
 class TestStdEstimationImprovement(unittest.TestCase):
     """Test to verify that when estimating standard deviations from DataSimulatedLarge there is an improvement.
 
@@ -212,7 +210,7 @@ class TestStdEstimationImprovement(unittest.TestCase):
             ax.plot(n, large_rmsq, 'D', color='red')
             ax.plot(n, large_rmsq, '.', color='blue')
         fig.savefig('rmse_estimation_improvement_test_10')
-        
+'''        
     
 if __name__ == '__main__':
     unittest.main()

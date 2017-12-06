@@ -13,7 +13,7 @@ import unittest
 import hashlib
 import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from missing import Missing
 
 

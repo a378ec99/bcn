@@ -33,7 +33,7 @@ class Missing(object):
         # TODO The `SCAN` model is currently not yet implemented.
         # TODO Check that n_samples, n_features is correct and do so for all other similar instances in this module.
         """
-        self.shape = shape
+        self.shape = tuple(shape)
         self.model = model
         self.p_random = p_random
         self.p_censored = p_censored 
@@ -48,6 +48,9 @@ class Missing(object):
         missing : dict, {'X': ndarray, shape (n_sample, n_features)}
             Contains a missing values matrix `X` (missing values as np.nan and others as zeros).
         """
+
+        print '----------------------------------2', self.shape
+        
         if self.model == 'MAR':
             missing = np.zeros(self.shape)
             q = list(np.ndindex(self.shape))

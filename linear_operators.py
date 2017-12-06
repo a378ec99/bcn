@@ -7,12 +7,39 @@ This module defines a class that generates the measurement operator A and measur
 from __future__ import division, absolute_import
 
 
-__all__ = ['LinearOperatorEntry', 'LinearOperatorDense', 'LinearOperatorKsparse', 'LinearOperatorBlind']
+__all__ = ['LinearOperatorEntry', 'LinearOperatorDense', 'LinearOperatorKsparse', 'LinearOperatorCustom', 'min_measurements', 'max_measurements']
 
 import abc
 import numpy as np
 
 
+
+
+
+def min_measurements(shape):
+    '''
+    Computes the minimum number of measurements that are possible in an ideal case where all the underlying pairs can be detected correctly but the block structure is minimal (m_bocks=dimension/2). Both feature and sample space together!
+    '''
+    assert shape[0] % 2 == 0
+    assert shape[1] % 2 == 0
+    a, b = shape
+    n = ((a / 2) * b) + ((b / 2) * a)
+    return n
+
+
+def max_measurements(shape):
+    '''
+    Computes the maximum number of measurements that are possible in an ideal case where all the underlying pairs can be detected correctly and the block structure is maximal (m_bocks=2). Both feature and sample space together!
+    '''
+    assert shape[0] % 2 == 0
+    assert shape[1] % 2 == 0
+    a, b = shape
+    a_pairs = (a / 2)**2 - (a / 2)
+    b_pairs = (b / 2)**2 - (b / 2)
+    n = int((a_pairs * b) + (b_pairs * a))
+    return n
+
+    
 def _print_size(name, X):
     """Print the memory footprint in MB of a particular data matrix.
 
@@ -26,10 +53,27 @@ def _print_size(name, X):
     print str(name), X.nbytes * 1.0e-6, 'MB'
     
 
+def _pop_pairs_with_indices_randomly(n_pairs, n):
+    """ Does popping randomdly and without replacement. WARNING Need to make sure that not using more unique indices then possible.
+    """
+    random_indices = np.arange(n * n_pairs, dtype=int)
+    np.random.shuffle(random_indices)
+    
+    pair_indices = np.repeat(np.arange(n_pairs, dtype=int), n) # sample until randomly choosen all samples from it.
+    sample_indices = np.tile(np.arange(n, dtype=int), n_pairs) # sample until empty.
+
+    for i in random_indices:
+        pair_index = pair_indices[i]
+        sample_index = sample_indices[i]
+        yield pair_index, sample_index
+
+    
 def _choose_random_matrix_elements(shape, n, duplicates=False):
     """Choose `n` random matrix element indices for a matrix with a given `shape`.
 
     Random element indices are never chosen more than once and the maximum number is the total number of elements in shape. The returned random element indices are always shuffled.
+
+    If duplicates, or sparsity is != 1, then elements can/are chosen more than once. WARNING make consitent with all the other non-duplicate samplings!
     
     Parameters
     ----------
@@ -78,16 +122,16 @@ class LinearOperator(object):
 
     __metaclass__ = abc.ABCMeta
         
-    def __init__(self, d):
+    def __init__(self, data):
         """Abstract base class for the generation of linear operators and their measurements.
 
         Parameters
         ----------
-        d : dict
-            Dictionary containing all the data that is needed for the linear operator and measurment creation.
+        data : Data object
+                Contains a dictionary with all the data that is needed for the linear operator and measurment creation.
                 
         """
-        self.d = d
+        self.data = data
 
     @abc.abstractmethod
     def generate(self):
@@ -105,8 +149,8 @@ class LinearOperator(object):
     
 class LinearOperatorEntry(LinearOperator):
 
-    def __init__(self, d, n_measurements):
-        super(LinearOperatorEntry, self).__init__(d)
+    def __init__(self, data, n_measurements):
+        super(LinearOperatorEntry, self).__init__(data)
         self.n_measurements = n_measurements
         
     def generate(self):
@@ -114,50 +158,8 @@ class LinearOperatorEntry(LinearOperator):
 
         Parameters
         ----------
-        d : dict
-            Dictionary containing all the data that is needed for the linear operator and measurement creation.
-        n_measurements : int
-            Number of linear operators and measurements to be generated.
-
-        Returns
-        -------
-        out : dict, {A: ndarray, shape (n_operators, n_samples, n_features)
-                        Linear operators.
-                     y : ndarray, shape (n_operators)
-                        Measurements.}
-
-        Note
-        ----
-        Does not work with missing values. Same element can be sampled multiple times.
-        """
-        true_bias = self.d['sample']['true_bias']
-        shape = true_bias.shape
-        A = np.zeros((self.n_measurements, shape[0], shape[1]))
-        A = np.array(A, dtype=int)
-        y = np.zeros(self.n_measurements)
-        random_element_indices = _choose_random_matrix_elements(true_bias.shape, self.n_measurements, duplicates=True)
-        for n, element_index in enumerate(random_element_indices):
-            A[n, element_index[0], element_index[1]] = 1
-            y[n] = true_bias[element_index[0], element_index[1]]
-        _print_size('A', A)
-        _print_size('y', y)
-        out = {'A': A, 'y': y}
-        return out
-
-
-class LinearOperatorDense(LinearOperator):
-
-    def __init__(self, d, n_measurements):
-        super(LinearOperatorDense, self).__init__(d)
-        self.n_measurements = n_measurements
-
-    def generate(self):
-        """Generate linear operators A and measurements y from a dense sampling of a signal matrix.
-
-        Parameters
-        ----------
-        d : dict
-            Dictionary containing all the data that is needed for the linear operator and measurement creation.
+        data : Data object
+                Contains a dictionary with all the data that is needed for the linear operator and measurement creation.
         n_measurements : int
             Number of linear operators and measurements to be generated.
 
@@ -172,7 +174,49 @@ class LinearOperatorDense(LinearOperator):
         ----
         Does not work with missing values.
         """
-        true_bias = self.d['sample']['true_bias']
+        true_bias = self.data.d['sample']['true_bias']
+        shape = true_bias.shape
+        A = np.zeros((self.n_measurements, shape[0], shape[1]))
+        A = np.array(A, dtype=int)
+        y = np.zeros(self.n_measurements)
+        random_element_indices = _choose_random_matrix_elements(true_bias.shape, self.n_measurements, duplicates=False) # WARNING Also here same element can be sampled multiple times if duplicatese is True. Handy for comparisons. But doesn'T make sense.
+        for n, element_index in enumerate(random_element_indices):
+            A[n, element_index[0], element_index[1]] = 1
+            y[n] = true_bias[element_index[0], element_index[1]]
+        _print_size('A', A)
+        _print_size('y', y)
+        out = {'A': A, 'y': y}
+        return out
+
+
+class LinearOperatorDense(LinearOperator):
+
+    def __init__(self, data, n_measurements):
+        super(LinearOperatorDense, self).__init__(data)
+        self.n_measurements = n_measurements
+
+    def generate(self):
+        """Generate linear operators A and measurements y from a dense sampling of a signal matrix.
+
+        Parameters
+        ----------
+        data : Data object
+            Contains a dictionary with all the data that is needed for the linear operator and measurement creation.
+        n_measurements : int
+            Number of linear operators and measurements to be generated.
+
+        Returns
+        -------
+        out : dict, {A: ndarray, shape (n_operators, n_samples, n_features)
+                        Linear operators.
+                     y : ndarray, shape (n_operators)
+                        Measurements.}
+
+        Note
+        ----
+        Does not work with missing values.
+        """
+        true_bias = self.data.d['sample']['true_bias']
         shape = true_bias.shape
         A = np.zeros((self.n_measurements, shape[0], shape[1]))
         A = np.array(A, dtype=float)
@@ -190,8 +234,8 @@ class LinearOperatorDense(LinearOperator):
 
 class LinearOperatorKsparse(LinearOperator):
 
-    def __init__(self, d, n_measurements, sparsity):
-        super(LinearOperatorKsparse, self).__init__(d)
+    def __init__(self, data, n_measurements, sparsity):
+        super(LinearOperatorKsparse, self).__init__(data)
         self.n_measurements = n_measurements
         self.sparsity = sparsity
         
@@ -200,8 +244,8 @@ class LinearOperatorKsparse(LinearOperator):
 
         Parameters
         ----------
-        d : dict
-            Dictionary containing all the data that is needed for the linear operator and measurement creation.
+        data : Data object
+            Contains a dictionary with all the data that is needed for the linear operator and measurement creation.
         n_measurements : int
             Number of linear operators and measurements to be generated.
         sparsity : int
@@ -221,14 +265,14 @@ class LinearOperatorKsparse(LinearOperator):
         # TODO shuffle the pairs and still do estimation (make sure those are then pairs which are false or that give them completly new A_i matrices.
         # TODO add noise to y to simulate the redundancy.
         """
-        true_bias = self.d['sample']['true_bias']
+        true_bias = self.data.d['sample']['true_bias']
         shape = true_bias.shape
         A = np.zeros((self.n_measurements, shape[0], shape[1]))
         A = np.array(A, dtype=float)
         y = np.zeros(self.n_measurements)
         for n in xrange(self.n_measurements):
             A_i = np.zeros(shape)
-            indices = _choose_random_matrix_elements(shape, self.sparsity)
+            indices = _choose_random_matrix_elements(shape, self.sparsity, duplicates=False) # Do not want to implement possible pairs for all sparsities; therefore just using random sampling here.
             values = np.random.normal(0.0, 2.0, size=self.sparsity)
             for k in xrange(self.sparsity):
                 A_i[indices[k][0], indices[k][1]] = values[k]
@@ -241,10 +285,10 @@ class LinearOperatorKsparse(LinearOperator):
         return out
 
         
-class LinearOperatorBlind(LinearOperator):
+class LinearOperatorCustom(LinearOperator):
 
-    def __init__(self, d, n_measurements):
-        super(LinearOperatorBlind, self).__init__(d)
+    def __init__(self, data, n_measurements):
+        super(LinearOperatorCustom, self).__init__(data)
         self.n_measurements = n_measurements
         
     def _solve(self, a, b, d):
@@ -269,10 +313,10 @@ class LinearOperatorBlind(LinearOperator):
     def _construct_measurement(self, pair, j, stds, direction, space):
         """Workhorse functon to create linear operator A and measurement y.
         """
-        A = np.zeros(self.d[space]['shape'])
+        A = np.zeros(self.data.d[space]['shape'])
         std_b, std_a = stds
         signed_std_b = -direction * std_b
-        y0, x0 = self.d[space]['mixed'][pair, j]
+        y0, x0 = self.data.d[space]['mixed'][pair, j]
         d = self._distance(std_a, signed_std_b, x0, y0)
         c = self._solve(std_a, signed_std_b, d)
         A[pair[0], j] = std_a
@@ -287,8 +331,8 @@ class LinearOperatorBlind(LinearOperator):
 
         Parameters
         ----------
-        d : dict
-            Dictionary containing all the data that is needed for the linear operator and measurement creation.
+        data : Data object
+            Contains a dictionary with all the data that is needed for the linear operator and measurement creation.
         n_measurements : int
             Number of linear operators and measurements to be generated.
 
@@ -306,25 +350,35 @@ class LinearOperatorBlind(LinearOperator):
         # TODO Incorrect stuff, e.g. return a proportion of incorrect and correct pairs.
         # TODO Initial case of non-perfect correlations (set during signal construction!)
         """
-        A = np.zeros((self.n_measurements, self.d['sample']['shape'][0], self.d['sample']['shape'][1]))
+        A = np.zeros((self.n_measurements, self.data.d['sample']['shape'][0], self.data.d['sample']['shape'][1]))
         A = np.array(A, dtype=float)
         y = np.zeros(self.n_measurements)
+
+        indices = {'sample': _pop_pairs_with_indices_randomly(len(self.data.d['sample']['estimated_pairs']), self.data.d['sample']['shape'][1]), 'feature': _pop_pairs_with_indices_randomly(len(self.data.d['feature']['estimated_pairs']), self.data.d['feature']['shape'][1])}
+        
         for n in xrange(self.n_measurements):
-            space = np.random.choice(['feature', 'sample'])
-            index = np.random.choice(np.arange(len(self.d[space]['estimated_pairs'])))
-            pair = self.d[space]['estimated_pairs'][index]
-            stds = self.d[space]['estimated_stds'][index]
-            direction = self.d[space]['estimated_directions'][index]
-            j = np.random.choice(np.arange(self.d[space]['mixed'].shape[1]))
+            
+            space = np.random.choice(['feature', 'sample']) # TODO here pop those that have not been samples randomly only. REally can do randomly and just pop downstream.
+
+            #index = np.random.choice(np.arange(len(self.data.d[space]['estimated_pairs'])))# TODO here pop those that have not been samples randomly only.
+
+            index, j = indices[space].next()
+            
+            pair = self.data.d[space]['estimated_pairs'][index]
+            stds = self.data.d[space]['estimated_stds'][index]
+            direction = self.data.d[space]['estimated_directions'][index]
+
+            #j = np.random.choice(np.arange(self.data.d[space]['mixed'].shape[1])) # TODO here pop those that have not been samples randomly only.
+
             assert np.isfinite(stds[0])
             assert np.isfinite(stds[1])
             assert np.isfinite(direction)
-            if np.isfinite(self.d[space]['mixed'][pair[0], j]) == False:
+            if np.isfinite(self.data.d[space]['mixed'][pair[0], j]) == False:
                 continue
-            if np.isfinite(self.d[space]['mixed'][pair[1], j]) == False:
+            if np.isfinite(self.data.d[space]['mixed'][pair[1], j]) == False:
                 continue
             A_i, y_i = self._construct_measurement(pair, j, stds, direction, space)
-            A[n, :, :] = A_i
+            A[n, :, :] = A_i # TODO could be made into sparse matrix and used like that with solver to save memory. Check duplicates?
             y[n] = y_i
         _print_size('A', A)
         _print_size('y', y)

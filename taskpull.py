@@ -11,7 +11,7 @@ import json
 import abc
 
 from mpi4py import MPI
-import parallel
+import figures as parallel #DANGER
     
 
 if __name__ == '__main__':
@@ -42,8 +42,6 @@ if __name__ == '__main__':
         total_workers = size - 1
         closed_workers = 0
 
-        print 'A'
-        
         while closed_workers < total_workers:
             result = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
             source = status.Get_source()
@@ -68,8 +66,6 @@ if __name__ == '__main__':
     
     else: #NOTE Worker processes execute code below.
 
-        print 'B'
-        
         while True:
             comm.send(None, dest=master, tag=READY)
             task = comm.recv(source=master, tag=MPI.ANY_TAG, status=status)

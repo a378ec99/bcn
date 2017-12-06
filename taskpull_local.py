@@ -10,7 +10,7 @@ import sys
 import json
 import abc
 
-import parallel
+import figures as parallel # DANGER
 
     
 if __name__ == '__main__':

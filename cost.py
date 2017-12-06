@@ -20,7 +20,7 @@ class Cost(object):
         self.A = A
         self.y = y
 
-    def cost_function(self, X):
+    def cost_func(self, X):
         """Cost function for evaluationg linear operator A and measurements y at X.
         """
         if len(X) == 3:

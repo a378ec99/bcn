@@ -7,14 +7,14 @@ This module defines a test class that asserts the functioning of the `linear_ope
 from __future__ import division, absolute_import
 
 
-__all__ = ['TestLinearOperatorEntry', 'TestLinearOperatorDense', 'TestLinearOperatorKsparse', 'Test_choose_random_matrix_elements', 'TestLinearOperatorBlind']
+__all__ = ['TestLinearOperatorEntry', 'TestLinearOperatorDense', 'TestLinearOperatorKsparse', 'Test_choose_random_matrix_elements', 'TestLinearOperatorCustom']
 
 import unittest
 import hashlib
 import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITrefactored/bcn')
-from linear_operators import _choose_random_matrix_elements, LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorBlind
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+from linear_operators import _choose_random_matrix_elements, LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom
 from data import DataSimulated
 
 
@@ -99,8 +99,8 @@ class TestLinearOperatorEntry(unittest.TestCase):
 
     Attributes
     ----------
-    d : dict
-        Dictionary containing all the data that is needed for the linear operator and measurment creation.
+    data : Data object
+        Contains a dictionary with all the data that is needed for the linear operator and measurment creation.
     n_measurements : int (default = 101)
         Number of linear operators and measurements to be generated.
     shape : tuple of int, optional (unless mixed == None), default = (30, 40)
@@ -114,7 +114,7 @@ class TestLinearOperatorEntry(unittest.TestCase):
         self.n_measurements = 1000
         self.rank = 2
         data = DataSimulated(self.shape, self.rank)
-        self.d = data.d
+        self.data = data
         
     def _assert_shape(self, A, y):
         assert A.shape == (self.n_measurements, self.shape[0], self.shape[1])
@@ -133,7 +133,7 @@ class TestLinearOperatorEntry(unittest.TestCase):
         assert np.sum(y) != 0.0
     
     def test(self):
-        operator = LinearOperatorEntry(self.d, self.n_measurements).generate()
+        operator = LinearOperatorEntry(self.data, self.n_measurements).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)
@@ -148,8 +148,8 @@ class TestLinearOperatorDense(unittest.TestCase):
 
     Attributes
     ----------
-    d : dict
-        Dictionary containing all the data that is needed for the dense linear operator and measurment creation.
+    data : Data object
+        Contains a dictionary with all the data that is needed for the linear operator and measurment creation.
     n_measurements : int (default = 101)
         Number of linear operators and measurements to be generated.
     shape : tuple of int, optional (unless mixed == None), default = (30, 40)
@@ -163,7 +163,7 @@ class TestLinearOperatorDense(unittest.TestCase):
         self.n_measurements = 1000
         self.rank = 2
         data = DataSimulated(self.shape, self.rank)
-        self.d = data.d
+        self.data = data
 
     def _assert_shape(self, A, y):
         assert A.shape == (self.n_measurements, self.shape[0], self.shape[1])
@@ -182,7 +182,7 @@ class TestLinearOperatorDense(unittest.TestCase):
         assert np.sum(y) != 0.0
 
     def test(self):
-        operator = LinearOperatorDense(self.d, self.n_measurements).generate()
+        operator = LinearOperatorDense(self.data, self.n_measurements).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)
@@ -197,8 +197,8 @@ class TestLinearOperatorKsparse(unittest.TestCase):
 
     Attributes
     ----------
-    d : dict
-        Dictionary containing all the data that is needed for the sparse linear operator and measurment creation.
+    data : Data object
+        Contains a dictionary with all the data that is needed for the linear operator and measurment creation.
     n_measurements : int (default = 101)
         Number of linear operators and measurements to be generated.
     shape : tuple of int, optional (unless mixed == None), default = (30, 40)
@@ -212,7 +212,7 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         self.n_measurements = 1000
         self.rank = 2
         data = DataSimulated(self.shape, self.rank)
-        self.d = data.d
+        self.data = data
         
     def _assert_shape(self, A, y):
         assert A.shape == (self.n_measurements, self.shape[0], self.shape[1])
@@ -231,7 +231,7 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         assert np.sum(y) != 0.0
         
     def test_k1(self):
-        operator = LinearOperatorKsparse(self.d, self.n_measurements, 1).generate()
+        operator = LinearOperatorKsparse(self.data, self.n_measurements, 1).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)
@@ -241,7 +241,7 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         #_assert_consistency(A, '2294b09ca9bec5295989b90558d646db')
     
     def test_k2(self):
-        operator = LinearOperatorKsparse(self.d, self.n_measurements, 2).generate()
+        operator = LinearOperatorKsparse(self.data, self.n_measurements, 2).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)
@@ -251,7 +251,7 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         #_assert_consistency(A, 'f0ced32671c642581475304a0c3eddfb')
        
     def test_k3(self):
-        operator = LinearOperatorKsparse(self.d, self.n_measurements, 3).generate()
+        operator = LinearOperatorKsparse(self.data, self.n_measurements, 3).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)
@@ -266,8 +266,8 @@ class TestLinearOperatorKsparse(unittest.TestCase):
 
     Attributes
     ----------
-    d : dict
-        Dictionary containing all the data that is needed for the sparse linear operator and measurment creation.
+    data : Data object
+        Contains a dictionary with all the data that is needed for the linear operator and measurment creation.
     n_measurements : int (default = 101)
         Number of linear operators and measurements to be generated.
     shape : tuple of int, optional (unless mixed == None), default = (30, 40)
@@ -281,7 +281,7 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         self.n_measurements = 1000
         self.rank = 2
         data = DataSimulated(self.shape, self.rank)
-        self.d = data.d
+        self.data = data
 
     def _assert_shape(self, A, y):
         assert A.shape == (self.n_measurements, self.shape[0], self.shape[1])
@@ -300,7 +300,7 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         assert np.sum(y) != 0.0
 
     def test_k1(self):
-        operator = LinearOperatorKsparse(self.d, self.n_measurements, 1).generate()
+        operator = LinearOperatorKsparse(self.data, self.n_measurements, 1).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)
@@ -310,7 +310,7 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         #_assert_consistency(A, '577c48a4e0a76734686caaeb806ae17a')
 
     def test_k2(self):
-        operator = LinearOperatorKsparse(self.d, self.n_measurements, 2).generate()
+        operator = LinearOperatorKsparse(self.data, self.n_measurements, 2).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)
@@ -320,7 +320,7 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         #_assert_consistency(A, '66e0d3b25b9aa254e2c4888bfecfd08b')
 
     def test_k3(self):
-        operator = LinearOperatorKsparse(self.d, self.n_measurements, 3).generate()
+        operator = LinearOperatorKsparse(self.data, self.n_measurements, 3).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)
@@ -330,13 +330,13 @@ class TestLinearOperatorKsparse(unittest.TestCase):
         #_assert_consistency(A, '73750981059b7707be06a1c4348bf5d3')
 
         
-class TestLinearOperatorBlind(unittest.TestCase):
+class TestLinearOperatorCustom(unittest.TestCase):
     """Test to verify that the blind linear operator and its measurements are generated correctly.
 
     Attributes
     ----------
-    d : dict
-        Dictionary containing all the data that is needed for the blind linear operator and measurment creation.
+    data : Data object
+        Contains a dictionary with all the data that is needed for the linear operator and measurment creation.
     n_measurements : int (default = 901)
         Number of linear operators and measurements to be generated.
     shape : tuple of int, optional (unless mixed == None), default = (30, 40)
@@ -354,7 +354,7 @@ class TestLinearOperatorBlind(unittest.TestCase):
         #self.mixed = mixed
         data = DataSimulated(self.shape, self.rank)
         data.estimate()
-        self.d = data.d
+        self.data = data
 
     def _assert_shape(self, A, y):
         assert A.shape == (self.n_measurements, self.shape[0], self.shape[1])
@@ -373,7 +373,7 @@ class TestLinearOperatorBlind(unittest.TestCase):
         assert np.sum(y) != 0.0
         
     def test(self):
-        operator = LinearOperatorBlind(self.d, self.n_measurements).generate()
+        operator = LinearOperatorCustom(self.data, self.n_measurements).generate()
         A = operator['A']
         y = operator['y']
         self._assert_shape(A, y)

@@ -35,6 +35,7 @@ from linear_operators import LinearOperatorBlind
 from cost import Cost
 from visualization import visualize_dependences
 
+
 class Classification(object):
 
     def __init__(self):
@@ -112,7 +113,7 @@ def select_subset_both_dimensions(X, index_dict_x, index_dict_y, annotation_x, a
 
 def map_to_orthologs(organism, features):
 
-    a = dict(np.genfromtxt('GPL570_GPL1261_ortho.txt', delimiter=',', dtype=str))
+    a = dict(np.genfromtxt('data/GPL570_GPL1261_ortho.txt', delimiter=',', dtype=str))
 
     temp = []
     for feature in features:
@@ -123,7 +124,6 @@ def map_to_orthologs(organism, features):
             temp.append('')
     orthologs = np.asarray(temp)
     return orthologs
-
     
 
 def align_features(a, b): # TODO might have to do cross-species with mapping_8-5-17.txt
@@ -143,7 +143,7 @@ def align_features(a, b): # TODO might have to do cross-species with mapping_8-5
     return np.hstack(a_indices), np.hstack(b_indices)
 
 
-def compute_batch_effects_features(GC, features, pickle_name='mapping_features_batch.pickle'):
+def compute_batch_effects_features(GC, features, pickle_name='data/mapping_features_batch.pickle'):
     '''
     NOTE Map the 'scan_features' to ENSEMBL human and GC, length, location (?). Return as 'batch_mapping_d-a-t-e.txt'.
 
@@ -154,7 +154,7 @@ def compute_batch_effects_features(GC, features, pickle_name='mapping_features_b
     if path.exists(pickle_name):
         d_GC = cPickle.load(open(pickle_name, 'r'))
     else:
-        feature_batch = dict(zip(np.genfromtxt('mapping_batch_14-5-17.csv', delimiter=',', usecols=[0], skip_header=1, dtype=str), np.genfromtxt('mapping_batch_14-5-17.csv', delimiter=',', usecols=[1], skip_header=1, dtype=float))) # different batch effects in different columns...
+        feature_batch = dict(zip(np.genfromtxt('data/mapping_batch_14-5-17.csv', delimiter=',', usecols=[0], skip_header=1, dtype=str), np.genfromtxt('mapping_batch_14-5-17.csv', delimiter=',', usecols=[1], skip_header=1, dtype=float))) # different batch effects in different columns...
         out = []
         for feature in features:
             out.append(feature_batch.get(feature, np.nan))
@@ -169,7 +169,7 @@ def compute_batch_effects_features(GC, features, pickle_name='mapping_features_b
     return d_GC
 
 
-def compute_batch_effects_samples(batches, samples, pickle_name='mapping_tissues_batch.pickle', redo=False):
+def compute_batch_effects_samples(batches, samples, pickle_name='data/mapping_tissues_batch.pickle', redo=False):
 
     if path.exists(pickle_name) and redo == False:
         d_batches = cPickle.load(open(pickle_name, 'r'))
@@ -198,7 +198,7 @@ def compute_batch_effects_samples(batches, samples, pickle_name='mapping_tissues
     return d_batches
 
 
-def compute_annotation_features(GO_terms, features, pickle_name='mapping_features.pickle', redo=False): # TODO limit here to interesting features
+def compute_annotation_features(GO_terms, features, pickle_name='data/mapping_features.pickle', redo=False): # TODO limit here to interesting features
     '''
     NOTE Map the 'scan_features' to ENSEMBL human and GO terms with description. Return as 'mapping_d-a-t-e.txt'.
 
@@ -210,7 +210,7 @@ def compute_annotation_features(GO_terms, features, pickle_name='mapping_feature
         d_features = cPickle.load(open(pickle_name, 'r'))
 
     else:
-        gene_GO = np.genfromtxt('mapping_8-5-17.txt', delimiter=',', usecols=[3, 1], skip_header=1, dtype=str)
+        gene_GO = np.genfromtxt('data/mapping_8-5-17.txt', delimiter=',', usecols=[3, 1], skip_header=1, dtype=str)
         #print 'n GO terms', len(set(gene_GO[:, 1]))
         #### want_set = set(gene_GO[:, 1]) - set([''])
 
@@ -227,7 +227,7 @@ def compute_annotation_features(GO_terms, features, pickle_name='mapping_feature
     return d_features
 
 
-def compute_annotation_samples(tissues, samples, pickle_name='mapping_tissues.pickle', redo=False):
+def compute_annotation_samples(tissues, samples, pickle_name='data/mapping_tissues.pickle', redo=False):
 
     if path.exists(pickle_name) and redo == False:
         d_tissues = cPickle.load(open(pickle_name, 'r'))
@@ -348,6 +348,9 @@ if __name__ == '__main__':
 
     # NOTE Load data
 
+    np.random.seed(seed=42)
+
+        
     gpl = 'GPL1261'
 
     with h5py.File('/home/sohse/projects/NCBI/Normalization_SCAN_{gpl}.h5'.format(gpl=gpl), 'r') as f:
@@ -365,11 +368,11 @@ if __name__ == '__main__':
     batches_scatter = {'+': range(len(scan_samples1)), 'o': (np.arange(len(scan_samples2)) + len(scan_samples1)).tolist()} # GPL1261, GPL570
     samples = np.hstack([scan_samples1, scan_samples2])
 
-    with open('features_GPL1261.txt', 'w') as f:
+    with open('data/features_GPL1261.txt', 'w') as f:
         for id_ in scan_features1:
             f.write(id_ + '\n')
 
-    with open('features_GPL570.txt', 'w') as f:
+    with open('data/features_GPL570.txt', 'w') as f:
         for id_ in scan_features2:
             f.write(id_ + '\n')
 
