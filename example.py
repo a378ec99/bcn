@@ -23,16 +23,16 @@ if __name__ == '__main__':
     np.random.seed(seed=42)
     
     rank = 2
-    n_measurements = 16000 # NOTE that at some points wil be just repeating the same mesurements... need to see how many unique are possible and likely! Depends on correlation structure, e.g. if few blocks then lots of possiblities.
+    n_measurements = 10000 # 16000 # NOTE that at some points wil be just repeating the same mesurements... need to see how many unique are possible and likely! Depends on correlation structure, e.g. if few blocks then lots of possiblities.
 
     #for rank, shape in zip(range(5), [int(i) for i in np.linspace(100, 1000, 5)]):
 
-    shape = (150, 160) # NOTE sample, feature
+    shape = (100, 110) # (150, 160) # NOTE sample, feature
 
-    print 'min', min_measurements(shape), 70 * 155 * 2 # - 10% missing # - 20% not estimated propoerly!
-    print 'max', max_measurements(shape), 5600 * 155 * 2 # - 10% missing # - 20 % not estaimted properly!
+    print 'min', min_measurements(shape), 50 * 105 * 2 # m_blocks factor is is 2 # 155 # 70 #- 10% missing # - 20% not estimated propoerly!
+    print 'max', max_measurements(shape), 2500 * 105 * 2 # m_blocks factor is is 2 # 155 # 5600 #  - 10% missing # - 20 % not estaimted properly!
     
-    truth = DataSimulated(shape, rank, noise_amplitude=100.0)
+    truth = DataSimulated(shape, rank, noise_amplitude=15.0) # 100
     #visualize_dependences(truth, file_name='out/test_dependences_truth', truth_available=True, estimate_available=False, recovery_available=False)
     visualize_correlations(truth, file_name='out/test_correlations_truth_{}'.format(n_measurements), truth_available=True)
 
@@ -54,9 +54,7 @@ if __name__ == '__main__':
     #visualize_dependences(blind, file_name='out/test_dependences_blind_estimate', truth_available=False, estimate_available=True, recovery_available=False)
     visualize_correlations(blind, file_name='out/test_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
 
-
-    
-    n_restarts = 10
+    n_restarts = 5
 
     operator = LinearOperatorCustom(blind, n_measurements).generate()
     A = operator['A']

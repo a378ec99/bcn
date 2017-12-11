@@ -250,7 +250,7 @@ class DataSimulated(Data):
             Rank of the low-rank decomposition.
         correlation_threshold : float, default = 0.7
             The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
-        m_blocks_factor : int, default = 4
+        m_blocks_factor : int, default = 2
             Factor to determine the number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
         feature_annotation : list, optional
             List of str that annotates the features in `mixed`.

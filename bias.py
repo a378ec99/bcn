@@ -1,8 +1,8 @@
-"""Bias generation module.
+"""Bias generation.
 
 Notes
 -----
-This module defines two classes that can generate different types of bias.
+Defines two classes that can generate different types of bias and a bias guess function.
 """
 from __future__ import division, absolute_import
 
@@ -18,8 +18,26 @@ from pymanopt.manifolds import FixedRankEmbedded, Euclidean
 
 def guess_func(shape, rank, **kwargs):
     """Generate an initial bias guess for the solver to start at.
+
+    Parameters
+    ----------
+    shape : (int, int)
+        Dimensions of the array to be recoved.
+    rank : int
+        Rank of the bias to be recovered (estimate or truth).
+    kwargs : dict
+        Additional arguments to be passed to the BiasLowRank class.
+        
+    Returns
+    -------
+    guess : dict
+        Initial guess for the solver to be used, containing X and the decomposed usvt.
+
+    Notes
+    -----
+    The guess function needs to use the class that is matched to the according underlying bias.
     """
-    bias = BiasLowRank(shape, rank, **kwargs).generate() # WARNING need to guess appropriately if different type of bias manifold or source.
+    bias = BiasLowRank(shape, rank, **kwargs).generate() 
     guess = {'X': bias['X'], 'usvt': bias['usvt']}
     return guess
 
@@ -33,20 +51,16 @@ class BiasLowRank(object):
         ----------
         shape : tuple of int
             Shape of the output bias matrix in the form of (n_samples, n_features).
-        model : {'image', 'bicluster', 'gaussian'}
-            Three bias models are supported, `gaussian` which is based on a QR decomposition of a random Gaussian matrix, `image` which is based on a prespecified image that is then rank reduced, and `bicluster` which is based on `sklearn's` checkerboard function that is then rank reduced.
         rank : int
             Rank of the low-rank decomposition.
+        model : {'image', 'bicluster', 'gaussian'}
+            Three bias models are supported, `gaussian` which is based on a QR decomposition of a random Gaussian matrix, `image` which is based on a prespecified image that is then rank reduced, and `bicluster` which is based on `sklearn's` checkerboard function that is then rank reduced.
         noise_amplitude : float, optional unless model `gaussian`
             Sets the level of the bias.
-        image_source: str, optional unless model `image`
-            File location of the image to be used for the model `image`.
         n_clusters: tuple of int, optional unless model `bicluster`
             Number of clusters for the model `bicluster` in the form of (n_sample_clusters, n_column_clusters).
-
-        Notes
-        -----
-        # TODO Check that n_samples, n_features is correct and do so for all other similar instances in this module.
+        image_source: str, optional unless model `image`
+            File location of the image to be used for the model `image`.
         """
         self.shape = shape
         self.model = model
@@ -89,8 +103,9 @@ class BiasLowRank(object):
             usvt = np.linalg.svd(X)
             usvt = usvt[0][:, :self.rank], usvt[1][:self.rank], usvt[2][:self.rank, :]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
-        
-        return {'X': X, 'usvt': usvt}
+
+        bias = {'X': X, 'usvt': usvt}
+        return bias
         
 
 class BiasUnconstrained(object):
@@ -104,7 +119,7 @@ class BiasUnconstrained(object):
             Shape of the output bias matrix in the form of (n_samples, n_features).
         model : {'gaussian', 'uniform'}
             Two bias models are supported, `gaussian` which is based on random sampling of a Gaussian matrix and `uniform` which is based on repetition of a prespecified fill value.
-        amplitude : float, optional unless model `gaussian`
+        noise_amplitude : float, optional unless model `gaussian`
             Sets the level of the bias.
         fill_value : float, optional unless model `uniform`
             Sets the fill value for the uniform bias model.
@@ -131,5 +146,6 @@ class BiasUnconstrained(object):
         if self.model == 'uniform':
             X = np.full(self.shape, self.fill_value)
 
-        return {'X': X}
+        bias = {'X': X}
+        return bias
 

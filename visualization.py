@@ -7,7 +7,7 @@ This module defines several functions that can generate different types of visua
 from __future__ import division, absolute_import
 
 
-__all__ = ['visualize_dependences', 'visualize_correlations', 'visualize_performance', 'visualize_absolute']
+__all__ = ['visualize_dependences', 'visualize_correlations', 'visualize_performance', 'visualize_absolute', 'pair_index', 'pair_overlap']
 
 import matplotlib
 matplotlib.use('Agg')
@@ -40,11 +40,9 @@ def pair_index(pairs, pair):
         index = None
     return index
 
-
-
     
 def pair_overlap(true_pairs, estimated_pairs):
-    """ Determines 3 groups of overlap.
+    """ Determines the possible 3 groups of overlap (only_in_estimated, only_in_true, in both)
 
     Parameters
     ----------
@@ -56,11 +54,10 @@ def pair_overlap(true_pairs, estimated_pairs):
     Returns
     -------
     d : dict
-        Dictionary of the 3 groups of overlap (only_in_estimated, only_in_true, in both)
-    """
+        Dictionary of the 3 groups of overlap.
 
     # WARNING  Are there even order issues? (1,2) (2,1) ?
-    
+    """
     only_in_estimated = []
     for pair in estimated_pairs:
         if pair_index(true_pairs, pair) is None:
@@ -81,11 +78,20 @@ def pair_overlap(true_pairs, estimated_pairs):
     
     return d
 
-
-    
     
 def visualize_absolute(data, space='sample', file_name='out/test_absolute', format='.png'):
-    """
+    """Visualize absolute values of the dataset, with signal, mixed and bias shown.
+
+    Parameters
+    ----------
+    data : Data object
+        The dataset to be visualized.
+    space : str
+        Space of array to be visualized, e.g. sample or feature.
+    file_name : str
+        Name and path of figure output.
+    format : str
+        Format of figure.   
     """
     fig = pl.figure(figsize=(10, 10 * 3))
 
@@ -105,8 +111,6 @@ def visualize_absolute(data, space='sample', file_name='out/test_absolute', form
     ax.tick_params(axis='both', which='both', length=0)
     
     fig.savefig(file_name + format)
-
-    
     
 
 def visualize_dependences(data, space='sample', file_name='out/test_dependences', truth_available=True, estimate_available=True, recovery_available=True, format='.png', max_plots=10, max_points=40): # '.eps'
@@ -115,28 +119,30 @@ def visualize_dependences(data, space='sample', file_name='out/test_dependences'
     Parameters
     ----------
     data : Data object
-    
-    space : str, optional (default = 'sample')
-        
-    file_name : str, optional (default = 'test_dependences')
-
-    blind_recovery : bool
-
+        The dataset to be visualized.
+    space : str
+        Space of array to be visualized, e.g. sample or feature.
+    file_name : str
+        Name and path of figure output.
+    truth_available : bool
+        If ground truth avaiable set here.
+    estimate_available: bool
+        If recovery data is available in Data object.
+    recovery_available: bool
+        If recovery data is available in Data object.
     format : str
-
+        Format of figure.
     max_plots : int
-
+        Maximum number of plots (features/samples) used.
     max_points : int
+        Maximum number of points to be plotted.
     """
-
     if truth_available and estimate_available:
 
         d = pair_overlap(data.d[space]['true_pairs'], data.d[space]['estimated_pairs'])
         
         for pairs_name, pairs in d.iteritems():
 
-            #print pairs_name, pairs
-            
             if len(pairs) == 0:
                 continue
 
@@ -259,8 +265,6 @@ def visualize_dependences(data, space='sample', file_name='out/test_dependences'
 
             ax.axis('equal')
         fig.savefig(file_name + format)
-
-
         
 
 def visualize_correlations(data, space='sample', file_name='out/test_correlations', truth_available=True, format='.png'):
@@ -269,14 +273,15 @@ def visualize_correlations(data, space='sample', file_name='out/test_correlation
     Parameters
     ----------
     data : Data object
-
-    space : str, (default = 'sample')
-
-    file_name : str, (default = 'test_correlations')
-
-    blind : bool
-
+        The dataset to be visualized.
+    space : str
+        Space of array to be visulizaed, e.g. sample or feature.
+    file_name : str
+        Name and path of figure output.
+    truth_available : bool
+        If ground truth avaiable set here.
     format : str
+        Format of figure.
     """
     if truth_available:
         correlations = data.d[space]['true_correlations']
@@ -299,8 +304,6 @@ def visualize_correlations(data, space='sample', file_name='out/test_correlation
 
     #ax.set_ylim(0, 250)
     fig.savefig(file_name + format)
-
-
     
 
 def visualize_performance(errors, x, y, x_name, y_name, file_name='out/test_performance', format='.png'):
@@ -315,9 +318,13 @@ def visualize_performance(errors, x, y, x_name, y_name, file_name='out/test_perf
     y : ndarray, 1D
         Basically yticklabels.
     x_name : str
-        xlabel.
+        Plot xlabel.
     y_name : str
-        ylabel.
+        Plot ylabel.
+    file_name : str
+        Name and path of figure output.
+    format : str
+        Format of figure.
     """
     xlabel = x_name
     ylabel = y_name
@@ -347,11 +354,6 @@ def visualize_performance(errors, x, y, x_name, y_name, file_name='out/test_perf
     fig.savefig(file_name + format)
 
 
-
-        
-# visualize batch effects (plus annotation) for blind and add contrast if known
-
-# visualize in PCA (plus annotation) for blind and add contrast if known
 
 
 

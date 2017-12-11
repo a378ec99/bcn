@@ -1,24 +1,31 @@
-"""Linear operator and measurement generation module.
+"""Linear operator and measurement generation.
 
 Notes
 -----
-This module defines a class that generates the measurement operator A and measurement y from the input of the `data` module.
+Defines classes that generate the measurement operator A and measurement y from the input of a Data object.
 """
 from __future__ import division, absolute_import
 
 
-__all__ = ['LinearOperatorEntry', 'LinearOperatorDense', 'LinearOperatorKsparse', 'LinearOperatorCustom', 'min_measurements', 'max_measurements']
+__all__ = ['LinearOperatorEntry', 'LinearOperatorDense', 'LinearOperatorKsparse', 'LinearOperatorCustom', 'min_measurements', 'max_measurements', '_print_size', '_pop_pairs_with_indices_randomly', '_choose_random_matrix_elements']
 
 import abc
 import numpy as np
 
 
-
-
-
 def min_measurements(shape):
     '''
-    Computes the minimum number of measurements that are possible in an ideal case where all the underlying pairs can be detected correctly but the block structure is minimal (m_bocks=dimension/2). Both feature and sample space together!
+    Computes the minimum number of measurements that are possible in a non-ideal case where all the underlying pairs can be detected correctly but the block structure is minimal (m_bocks=dimension/2). Both feature and sample space are considered together.
+
+    Parameters
+    ----------
+    shape : (int, int)
+        Dimensions of the array to be recovered.
+
+    Returns
+    -------
+    n : int
+        Theoretical minimum number of measurements possible in non-ideal setting (worst case and perfect pair knowledge).
     '''
     assert shape[0] % 2 == 0
     assert shape[1] % 2 == 0
@@ -29,7 +36,17 @@ def min_measurements(shape):
 
 def max_measurements(shape):
     '''
-    Computes the maximum number of measurements that are possible in an ideal case where all the underlying pairs can be detected correctly and the block structure is maximal (m_bocks=2). Both feature and sample space together!
+    Computes the maximum number of measurements that are possible in an ideal case where all the underlying pairs can be detected correctly and the block structure is maximal (m_bocks=2). Both feature and sample space are considered together.
+
+    Parameters
+    ----------
+    shape : (int, int)
+        Dimensions of the array to be recovered.
+
+    Returns
+    -------
+    n : int
+        Theoretical minimum number of measurements possible in ideal setting (best case and perfect pair knowledge).
     '''
     assert shape[0] % 2 == 0
     assert shape[1] % 2 == 0
@@ -39,7 +56,7 @@ def max_measurements(shape):
     n = int((a_pairs * b) + (b_pairs * a))
     return n
 
-    
+
 def _print_size(name, X):
     """Print the memory footprint in MB of a particular data matrix.
 
@@ -51,11 +68,27 @@ def _print_size(name, X):
         Input data matrix.
     """
     print str(name), X.nbytes * 1.0e-6, 'MB'
-    
 
-def _pop_pairs_with_indices_randomly(n_pairs, n):
-    """ Does popping randomdly and without replacement. WARNING Need to make sure that not using more unique indices then possible.
+
+def _pop_pairs_with_indices_randomly(n_pairs, n, max_pops):
+    """ Does popping of indices to create measurements randomly and without replacement.
+
+    Parameters
+    ----------
+    n_pairs : int
+        Number of pairs in feature or sample space.
+    n : int
+        Number of entries for a particular pair.
+    max_pops : int
+        Number of maximal calls to this generator. Need to make sure that not trying to pop more unique indices then possible.
+        
+    Yields
+    ------
+    pair_index, sample_index : (int, int)
+        Index for a particular pair and a particular entry for that pair.
     """
+    assert max_pops <= n * n_pairs
+    
     random_indices = np.arange(n * n_pairs, dtype=int)
     np.random.shuffle(random_indices)
     
@@ -73,15 +106,15 @@ def _choose_random_matrix_elements(shape, n, duplicates=False):
 
     Random element indices are never chosen more than once and the maximum number is the total number of elements in shape. The returned random element indices are always shuffled.
 
-    If duplicates, or sparsity is != 1, then elements can/are chosen more than once. WARNING make consitent with all the other non-duplicate samplings!
-    
     Parameters
     ----------
     shape : tuple of int
         Shape of the matrix of which to sample the random element indices from.
     n : int
         Number of element indices to choose (max. determined by shape)
-
+    duplicates : bool
+        Allow duplicate elements or not. If duplicates, or sparsity is != 1, then elements can be chosen more than once.
+    
     Returns
     -------
     element_indices : ndarray, shape (n, 2)
@@ -107,7 +140,7 @@ def _choose_random_matrix_elements(shape, n, duplicates=False):
             element_indices = np.vstack(element_indices).T
             np.random.shuffle(element_indices)
 
-    else:
+    else: 
         element_indices = []
         for i in xrange(n):
             x = np.random.randint(0, shape[0])
@@ -179,7 +212,7 @@ class LinearOperatorEntry(LinearOperator):
         A = np.zeros((self.n_measurements, shape[0], shape[1]))
         A = np.array(A, dtype=int)
         y = np.zeros(self.n_measurements)
-        random_element_indices = _choose_random_matrix_elements(true_bias.shape, self.n_measurements, duplicates=False) # WARNING Also here same element can be sampled multiple times if duplicatese is True. Handy for comparisons. But doesn'T make sense.
+        random_element_indices = _choose_random_matrix_elements(true_bias.shape, self.n_measurements, duplicates=False) # NOTE Also here same element can be sampled multiple times if duplicatese is True. That setting might be handy for comparisons, but doesn't make sense in the bigger picture.
         for n, element_index in enumerate(random_element_indices):
             A[n, element_index[0], element_index[1]] = 1
             y[n] = true_bias[element_index[0], element_index[1]]
@@ -260,10 +293,7 @@ class LinearOperatorKsparse(LinearOperator):
 
         Note
         ----
-        # Does not work with missing values. Same pair can be sampled multiple times (but within a pair elements can't be the same).
-
-        # TODO shuffle the pairs and still do estimation (make sure those are then pairs which are false or that give them completly new A_i matrices.
-        # TODO add noise to y to simulate the redundancy.
+        Does not consider missing values. Directly based on true bias. Same pair can be sampled multiple times (but within a pair elements can't be the same).
         """
         true_bias = self.data.d['sample']['true_bias']
         shape = true_bias.shape
@@ -272,7 +302,7 @@ class LinearOperatorKsparse(LinearOperator):
         y = np.zeros(self.n_measurements)
         for n in xrange(self.n_measurements):
             A_i = np.zeros(shape)
-            indices = _choose_random_matrix_elements(shape, self.sparsity, duplicates=False) # Do not want to implement possible pairs for all sparsities; therefore just using random sampling here.
+            indices = _choose_random_matrix_elements(shape, self.sparsity, duplicates=False) # TODO Want to implement possible pairs for all sparsities; for now, just using random sampling here. Use Bence's suggestion.
             values = np.random.normal(0.0, 2.0, size=self.sparsity)
             for k in xrange(self.sparsity):
                 A_i[indices[k][0], indices[k][1]] = values[k]
@@ -293,6 +323,20 @@ class LinearOperatorCustom(LinearOperator):
         
     def _solve(self, a, b, d):
         """Solve a linear equation ay + bx + c for c.
+
+        Parameters
+        ----------
+        a : float
+            First variable of the linear equation based on the standard deviation of a.
+        b : float
+            Second variable of the linear equation based on the signed standard deviation of b.
+        d : (float, float)
+            Encoded by the distance d is the value for x and y needed to selvoe the equation.
+
+        Returns
+        -------
+        c : float
+            Variable solved for.
         """
         c = -(a * d[0] + b * d[1])
         return c
@@ -300,6 +344,22 @@ class LinearOperatorCustom(LinearOperator):
     def _distance(self, a, b, x0, y0):
         """Distance from point (x0, y0) to line y = mx + 0.0
 
+        Parameters
+        ----------
+        a : float
+            Standard deviation of feature/sample a.
+        b : float
+            Standard deviation of feature/sample b with sign (direction).
+        x0 : float
+            The x-coordinate of a point somewhere off the ideal line.
+        y0 : float
+            The y-coordinate of a point somewhere off the ideal line.
+
+        Returns
+        -------
+        d : float
+            Distance from point (x0, y0) to line y = mx + 0.0.
+            
         Source
         ------
         https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
@@ -311,7 +371,25 @@ class LinearOperatorCustom(LinearOperator):
         return d
 
     def _construct_measurement(self, pair, j, stds, direction, space):
-        """Workhorse functon to create linear operator A and measurement y.
+        """Creates linear operator A and measurement y in the framework of compressed sensing.
+
+        Parameters
+        ----------
+        pair : (int, int)
+            A pair of features or samples that are strongly dependent.
+        j : int
+            A particular entry of the pair.
+        stds :
+            Standard deviations of the pair.
+        direction :
+            Direction of the dependency, e.g. -1 anticorrelated.
+        space : {'feature', 'sample'}
+            The space of the array to be used.
+
+        Returns
+        -------
+        A, y : 2d-array, 1d-array
+            Measurment operator, measurements.
         """
         A = np.zeros(self.data.d[space]['shape'])
         std_b, std_a = stds
@@ -342,33 +420,19 @@ class LinearOperatorCustom(LinearOperator):
                         Linear operators.
                      y : ndarray, shape (n_operators)
                         Measurements.}
-
-        Note
-        ----
-        Does not work with missing values and only makes sense for sparsity = 2.
-        # TODO fast multiplication and addition and low-memory storage of sparse operators!
-        # TODO Incorrect stuff, e.g. return a proportion of incorrect and correct pairs.
-        # TODO Initial case of non-perfect correlations (set during signal construction!)
         """
         A = np.zeros((self.n_measurements, self.data.d['sample']['shape'][0], self.data.d['sample']['shape'][1]))
         A = np.array(A, dtype=float)
         y = np.zeros(self.n_measurements)
 
-        indices = {'sample': _pop_pairs_with_indices_randomly(len(self.data.d['sample']['estimated_pairs']), self.data.d['sample']['shape'][1]), 'feature': _pop_pairs_with_indices_randomly(len(self.data.d['feature']['estimated_pairs']), self.data.d['feature']['shape'][1])}
+        indices = {'sample': _pop_pairs_with_indices_randomly(len(self.data.d['sample']['estimated_pairs']), self.data.d['sample']['shape'][1], self.n_measurements // 2), 'feature': _pop_pairs_with_indices_randomly(len(self.data.d['feature']['estimated_pairs']), self.data.d['feature']['shape'][1], self.n_measurements // 2)}
         
         for n in xrange(self.n_measurements):
-            
-            space = np.random.choice(['feature', 'sample']) # TODO here pop those that have not been samples randomly only. REally can do randomly and just pop downstream.
-
-            #index = np.random.choice(np.arange(len(self.data.d[space]['estimated_pairs'])))# TODO here pop those that have not been samples randomly only.
-
+            space = np.random.choice(['feature', 'sample'])
             index, j = indices[space].next()
-            
             pair = self.data.d[space]['estimated_pairs'][index]
             stds = self.data.d[space]['estimated_stds'][index]
             direction = self.data.d[space]['estimated_directions'][index]
-
-            #j = np.random.choice(np.arange(self.data.d[space]['mixed'].shape[1])) # TODO here pop those that have not been samples randomly only.
 
             assert np.isfinite(stds[0])
             assert np.isfinite(stds[1])
@@ -377,8 +441,9 @@ class LinearOperatorCustom(LinearOperator):
                 continue
             if np.isfinite(self.data.d[space]['mixed'][pair[1], j]) == False:
                 continue
+            
             A_i, y_i = self._construct_measurement(pair, j, stds, direction, space)
-            A[n, :, :] = A_i # TODO could be made into sparse matrix and used like that with solver to save memory. Check duplicates?
+            A[n, :, :] = A_i
             y[n] = y_i
         _print_size('A', A)
         _print_size('y', y)

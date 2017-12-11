@@ -48,9 +48,6 @@ class Missing(object):
         missing : dict, {'X': ndarray, shape (n_sample, n_features)}
             Contains a missing values matrix `X` (missing values as np.nan and others as zeros).
         """
-
-        print '----------------------------------2', self.shape
-        
         if self.model == 'MAR':
             missing = np.zeros(self.shape)
             q = list(np.ndindex(self.shape))
