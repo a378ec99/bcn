@@ -1,8 +1,8 @@
-"""Visualization module.
+"""Visualization of data and recovery.
 
 Notes
 -----
-This module defines several functions that can generate different types of visualizations for diagnostic purposes.
+Defines several functions that can generate different types of visualizations for diagnostic purposes.
 """
 from __future__ import division, absolute_import
 

@@ -1,8 +1,8 @@
-"""Visualization testing module.
+"""Visualization testing.
 
 Notes
 -----
-This module define a classes that tests the functioning of the `visualization` module and its components.
+Defines a classes that tests the functioning of the `visualization` module and its components.
 """
 from __future__ import division, absolute_import
 

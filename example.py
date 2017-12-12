@@ -16,8 +16,6 @@ from linear_operators import LinearOperatorCustom, min_measurements, max_measure
 from visualization import visualize_dependences, visualize_correlations, visualize_absolute
 
 
-
-
 if __name__ == '__main__':
 
     np.random.seed(seed=42)
@@ -32,7 +30,7 @@ if __name__ == '__main__':
     print 'min', min_measurements(shape), 50 * 105 * 2 # m_blocks factor is is 2 # 155 # 70 #- 10% missing # - 20% not estimated propoerly!
     print 'max', max_measurements(shape), 2500 * 105 * 2 # m_blocks factor is is 2 # 155 # 5600 #  - 10% missing # - 20 % not estaimted properly!
     
-    truth = DataSimulated(shape, rank, noise_amplitude=15.0) # 100
+    truth = DataSimulated(shape, rank, noise_amplitude=30.0) # 100
     #visualize_dependences(truth, file_name='out/test_dependences_truth', truth_available=True, estimate_available=False, recovery_available=False)
     visualize_correlations(truth, file_name='out/test_correlations_truth_{}'.format(n_measurements), truth_available=True)
 
@@ -54,7 +52,7 @@ if __name__ == '__main__':
     #visualize_dependences(blind, file_name='out/test_dependences_blind_estimate', truth_available=False, estimate_available=True, recovery_available=False)
     visualize_correlations(blind, file_name='out/test_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
 
-    n_restarts = 5
+    n_restarts = 10
 
     operator = LinearOperatorCustom(blind, n_measurements).generate()
     A = operator['A']

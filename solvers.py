@@ -1,8 +1,8 @@
-"""Solver construction module.
+"""Solver construction.
 
 Notes
 -----
-This module defines a class that can solve a pymanopt `problem`. Currently only supports ConjugateGradient.
+Defines a class that can solve a pymanopt `problem`. Currently only supports ConjugateGradient.
 """
 from __future__ import division, absolute_import
 

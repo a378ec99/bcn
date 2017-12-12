@@ -1,8 +1,8 @@
-"""Linear operator and measurement testing module.
+"""Linear operator and measurement testing.
 
 Notes
 -----
-This module defines a test class that asserts the functioning of the `linear_operator` module and its related functions.
+Defines a test class that asserts the functioning of the `linear_operator` module and its related functions.
 """
 from __future__ import division, absolute_import
 

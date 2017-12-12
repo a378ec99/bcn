@@ -1,8 +1,8 @@
-"""Missing values generation module.
+"""Missing values generation.
 
 Notes
 -----
-This module defines a class that can generate different types of issing values.
+Defines a class that can generate different types of issing values.
 """
 from __future__ import division, absolute_import
 

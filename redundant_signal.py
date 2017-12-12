@@ -1,8 +1,8 @@
-"""Signal generation module.
+"""Signal generation.
 
 Notes
 -----
-This module defines a class that can generate different variations of a high-dimensional signal.
+Defines a class that can generate different variations of a high-dimensional signal.
 """
 from __future__ import division, absolute_import
 

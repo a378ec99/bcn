@@ -1,8 +1,8 @@
-"""Data testing module.
+"""Data testing.
 
 Notes
 -----
-This module defines a test class that assert the functioning of the `data` module.
+Defines a test class that assert the functioning of the `data` module.
 """
 from __future__ import division, absolute_import
 

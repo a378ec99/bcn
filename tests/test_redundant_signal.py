@@ -1,8 +1,8 @@
-"""Signal testing module.
+"""Signal testing.
 
 Notes
 -----
-This module defines a test class that asserts the functioning of the `signal` module and its related functions.
+Defines a test class that asserts the functioning of the `signal` module and its related functions.
 """
 from __future__ import division, absolute_import
 

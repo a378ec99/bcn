@@ -1,8 +1,8 @@
-"""Data class definition module.
+"""The Data class is defined here.
 
 Notes
 -----
-This module defines a class that is used thoughout for storage, processing and visualization of all data.
+Defines a class that is used thoughout for storage, processing and visualization of all data.
 """
 from __future__ import division, absolute_import
 
@@ -68,7 +68,7 @@ def estimate_pairs(correlations, threshold=0.8):
     ----------
     correlations : ndarray, shape (n_samples, n_samples)
         A correlation matrix. Can contain `nan` values.
-    threshold : int, default 0.7
+    threshold : float
         The threshold below which correlations are not considered as pairs.
 
     Returns
@@ -164,7 +164,6 @@ def estimate_stds(mixed, pairs):
     return stds
 
 
-
 class DataSubset(object):
 
     def __init__(self):
@@ -218,10 +217,15 @@ class Data(object):
         ----------
         seed : int, optional, default == None
             The seed to initialize np.random.seed with.
+            
         Attributes
         ----------
         d : dict
             Dictionary containing all the intial data of a bias recovery run (including randomly created signal, bias, missing matrices).
+        rank : int
+            Rank of the matrix to be recovered.
+        noise_amplitude :
+            Noise level of the bias.
         """
         if seed is not None:
             np.random.seed(seed)
@@ -248,10 +252,14 @@ class DataSimulated(Data):
             Shape of the mixed, signal, bias and missing matrix in the form of (n_samples, n_features).
         rank : int
             Rank of the low-rank decomposition.
-        correlation_threshold : float, default = 0.7
+        correlation_threshold : float
             The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
         m_blocks_factor : int, default = 2
             Factor to determine the number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
+        noise_amplitude : float, default = None
+            Scale/amptitude of the bias (noise).
+        missing_type : {'MAR', 'NMAR', 'no-missing', 'SCAN'}
+            The type if missing values, from none to censored or SCAN based.
         feature_annotation : list, optional
             List of str that annotates the features in `mixed`.
         sample_annotation : list, optional 
@@ -260,8 +268,8 @@ class DataSimulated(Data):
             List of str that annotates the features in `mixed` for the batch they are from, e.g. measurement technology/platform.
         sample_annotation_batch : list, optional 
             List of str that annotates the samples in `mixed` for the batch they are from, e.g. measurement technology/platform.
-        noise_amplitude : float, default = None
-            Scale/amptitude of the bias (noise).
+        seed : int
+            Seed for the random number generator.
         """
         super(DataSimulated, self).__init__(seed)
         self.shape = shape
@@ -294,6 +302,15 @@ class DataSimulated(Data):
             
     def estimate(self, true_pairs=None, true_directions=None, true_stds=None):
         """Estimate sucessively correlations, pairs, directions and strandard deviations from a `mixed` matrix.
+
+        Parameters
+        ----------
+        true_pairs : ndarray, int (n, 2)
+            Sequence of true pairs given as tuples.
+        true_directions : ndarray, int, n
+            Sequence of true directions, e.g. -1, +1.
+        true_stds : ndarray, int (n, 2)
+            Sequence of true standard deviations of each pair.
         """
         for space in ['feature', 'sample']:
             assert self.d[space]['correlation_threshold'] is not None
@@ -313,7 +330,7 @@ class DataSimulated(Data):
                 self.d[space]['estimated_directions'] = estimate_directions(self.d[space]['estimated_correlations'], self.d[space]['estimated_pairs'])
 
 
-class DataBlind(Data): # TODO add stds and correlation (direction, pairs) information from larger matrix directly into this here... # NOTE NO need for estimate but all given! OR special large scale estimate?
+class DataBlind(Data):
 
     def __init__(self, mixed, rank, correlation_threshold=0.7, feature_annotation=None, noise_amplitude=1.0, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
@@ -324,16 +341,20 @@ class DataBlind(Data): # TODO add stds and correlation (direction, pairs) inform
             The bias corrupted low-rank matrix from which the bias is to be recovered.
         rank : int
             The rank to use for the intial guess of the bias (for the solver).
-        correlation_threshold : float, default = 0.7
+        correlation_threshold : float
             The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
         feature_annotation : list, optional
             List of str that annotates the features in `mixed`.
+        noise_amplitude : float, default = None
+            Scale/amptitude of the bias (noise).    
         sample_annotation : list, optional
             List of str that annotates the samples in `mixed`.
         feature_annotation_batch : list, optional
             List of str that annotates the features in `mixed` for the batch they are from, e.g. measurement technology/platform.
         sample_annotation_batch : list, optional
             List of str that annotates the samples in `mixed` for the batch they are from, e.g. measurement technology/platform.
+        seed : int
+            Seed for the random number generator.
         """
         super(DataBlind, self).__init__(seed)
         self.mixed = mixed
@@ -352,6 +373,15 @@ class DataBlind(Data): # TODO add stds and correlation (direction, pairs) inform
 
     def estimate(self, true_pairs=None, true_directions=None, true_stds=None):
         """Estimate sucessively correlations, pairs, directions and strandard deviations from a `mixed` matrix.
+
+        Parameters
+        ----------
+        true_pairs : ndarray, int (n, 2)
+            Sequence of true pairs given as tuples.
+        true_directions : ndarray, int, n
+            Sequence of true directions, e.g. -1, +1.
+        true_stds : ndarray, int (n, 2)
+            Sequence of true standard deviations of each pair.
         """
         for space in ['feature', 'sample']:
             assert self.d[space]['correlation_threshold'] is not None

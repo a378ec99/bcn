@@ -2,7 +2,7 @@
 
 Notes
 -----
-This module defines classes that are used to run multiple bias recoveries in parallel to generate different figures.
+Defines classes that are used to run multiple bias recoveries in parallel to generate different figures.
 """
 from __future__ import division, absolute_import
 
@@ -53,7 +53,7 @@ class TaskPull(object):
     def postprocessing(self):
         pass
 
-'''        
+''' # NOTE Taken out to test n based (not random_fraction) noise.
 def shuffle_some_pairs(pairs, random_fraction, max_indices):
     """
     Shuffles a fraction of pairs randomly.
@@ -739,16 +739,19 @@ if __name__ == '__main__':
     submit(kwargs, mode='parallel', nodes=12, ppn=6, run_class=run_class)
     print run_class, kwargs
     '''
+    
+    '''
     run_class = 'Figure8'
     file_name = 'out/' + run_class
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(5e4), 8), dtype=int)), 'random_fractions': [0.0, 1.0/50**2, 2.0/50**2, 3.0/50**2, 5.0/50**2, 10.0/50**2, 25.0/50**2, 1.0], 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name + '_log'}
     # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
     submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)
     print run_class, kwargs
+    '''
    
     run_class = 'Figure8'
     file_name = 'out/' + run_class
-    kwargs = {'measurements': [200, 400, 800, 1000, 1200, 2000, 3000, 10000], 'random_fractions': [0, 1, 2, 3, 4, 5, 6, 10], 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name + '_custom'}
+    kwargs = {'measurements': [200, 400, 800, 1000, 1200, 2000, 3000, 10000], 'random_fractions': [0, 1, 10, 20, 30, 40, 50, 60], 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name + '_custom'}
     # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
     submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)
     print run_class, kwargs

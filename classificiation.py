@@ -1,8 +1,8 @@
-"""Classification module.
+"""Classification on high-throughput data.
 
 Notes
 -----
-This module defines two classes that can be used to test bias recovery on real data.
+Defines two classes that can be used to test bias recovery on high-throughput data.
 """
 from __future__ import division, absolute_import
 
