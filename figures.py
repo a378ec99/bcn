@@ -53,38 +53,8 @@ class TaskPull(object):
     def postprocessing(self):
         pass
 
-''' # NOTE Taken out to test n based (not random_fraction) noise.
-def shuffle_some_pairs(pairs, random_fraction, max_indices):
-    """
-    Shuffles a fraction of pairs randomly.
-
-    Parameters
-    ----------
-    pairs : ndarray (n, 2)
-        Sequence of pairs used as integer indices to an array.
-    random_fraction : float
-        Fraction of pairs that are to be randomized.
-    max_indices : int
-        Maximum value of indices that are allowed for the pairs.
         
-    Returns
-    -------
-    pairs_new : ndarray (n, 2)
-        Sequence of pairs shuffled accordingly.
-    """
-    n = int(random_fraction * len(pairs))
-    if n == len(pairs):
-        pairs_new = generate_random_pairs(n, max_indices)
-    elif n == 0:
-        pairs_new = pairs
-    else:
-        pairs_new = deepcopy(pairs)
-        x = generate_random_pairs(n, max_indices)
-        pairs_new[-n:, :] = x
-    return pairs_new
-'''
-
-def shuffle_some_pairs(pairs, n_random, max_indices):
+def shuffle_some_pairs(pairs, n, max_indices):
     """
     Shuffles a fraction of pairs randomly.
 
@@ -92,8 +62,8 @@ def shuffle_some_pairs(pairs, n_random, max_indices):
     ----------
     pairs : ndarray (n, 2)
         Sequence of pairs used as integer indices to an array.
-    random_fraction : float
-        Fraction of pairs that are to be randomized.
+    n : int
+        Number of pairs that are to be randomized.
     max_indices : int
         Maximum value of indices that are allowed for the pairs.
 
@@ -102,7 +72,6 @@ def shuffle_some_pairs(pairs, n_random, max_indices):
     pairs_new : ndarray (n, 2)
         Sequence of pairs shuffled accordingly.
     """
-    n = n_random
     if n == len(pairs):
         pairs_new = generate_random_pairs(n, max_indices)
     elif n == 0:
@@ -114,7 +83,7 @@ def shuffle_some_pairs(pairs, n_random, max_indices):
     return pairs_new
     
     
-def generate_random_pairs(n_pairs, max_indices):
+def generate_random_pairs(n, max_indices):
     """
     Generates a sequence of random pairs.
 
@@ -132,7 +101,7 @@ def generate_random_pairs(n_pairs, max_indices):
     """
     pairs = []
     indices = np.arange(0, max_indices, dtype=int)
-    for i in xrange(n_pairs):
+    for i in xrange(n):
         pair = tuple(np.random.choice(indices, size=2, replace=False))
         pairs.append(pair)
     pairs = np.asarray(pairs)
@@ -570,7 +539,7 @@ class Figure7(TaskPull):
 
 class Figure8(TaskPull):
 
-    def __init__(self, measurements=None, random_fractions=None, seed=None, noise_amplitude=None, file_name=None):
+    def __init__(self, measurements=None, random_pairs=None, seed=None, noise_amplitude=None, file_name=None):
         """
         """
         self.measurements = measurements
@@ -581,35 +550,41 @@ class Figure8(TaskPull):
         self.noise_amplitude = noise_amplitude
         self.file_name = file_name
         self.rank = 2
-        self.random_fractions = random_fractions
-        self.m_blocks_factor = self.shape[0]
+        self.random_pairs = random_pairs
+        self.m_blocks_factor = self.shape[0] // 2 # should result in two large blocks, since m_blocks = self.shape[0] // self.m_blocks_factor
+        self.replicates = 3
         
     def allocate(self):
-        self.true_errors = np.ones((len(self.measurements), len(self.random_fractions))) * np.nan
-        self.solver_errors = np.ones((len(self.measurements), len(self.random_fractions))) * np.nan
+        self.true_errors = np.ones((self.replicates, len(self.measurements), len(self.random_pairs))) * np.nan
+        self.solver_errors = np.ones((self.replicates, len(self.measurements), len(self.random_pairs))) * np.nan
 
     def create_tasks(self):
         if self.seed is not None:
             np.random.seed(self.seed)
-        for i, m in enumerate(self.measurements):
-            for j, random_fraction in enumerate(self.random_fractions):
-                secondary_seed = np.random.randint(0, 1e8)
-                task = i, j, m, random_fraction, secondary_seed
-                print task
-                yield task
+
+        for replicate in xrange(self.replicates):
+            for i, m in enumerate(self.measurements):
+                for j, random_pair in enumerate(self.random_pairs):
+                    secondary_seed = np.random.randint(0, 1e8)
+                    task = replicate, i, j, m, random_pair, secondary_seed
+                    print task
+                    yield task
 
     def work(self, task):
-        i, j, m, random_fraction, secondary_seed = task
+        replicate, i, j, m, random_pair, secondary_seed = task
         np.random.seed(secondary_seed)
 
         data = DataSimulated(self.shape, self.rank, m_blocks_factor=self.m_blocks_factor, noise_amplitude=self.noise_amplitude)
 
-        sample_pairs = shuffle_some_pairs(data.d['sample']['true_pairs'], random_fraction, data.d['sample']['shape'][0])
-        feature_pairs = shuffle_some_pairs(data.d['feature']['true_pairs'], random_fraction, data.d['feature']['shape'][0])
+        print "data.d['sample']['true_pairs']", data.d['sample']['true_pairs']
+        print "data.d['feature']['true_pairs']", data.d['feature']['true_pairs']
         
-        print "random_fraction", random_fraction # "random_fraction * data.d['sample']['shape'][0]", random_fraction * data.d['sample']['shape'][0]
-        print "data.d['sample']['true_pairs'][:5]", "sample_pairs[:5]", sample_pairs[:5], data.d['sample']['true_pairs'][:5]
-        print "data.d['sample']['true_pairs'][-5:]", "sample_pairs[-5:]", sample_pairs[-5:], data.d['sample']['true_pairs'][-5:]
+        sample_pairs = shuffle_some_pairs(data.d['sample']['true_pairs'], random_pair, data.d['sample']['shape'][0])
+        feature_pairs = shuffle_some_pairs(data.d['feature']['true_pairs'], random_pair, data.d['feature']['shape'][0])
+        
+        #print "random_pair", random_pair # "random_fraction * data.d['sample']['shape'][0]", random_fraction * data.d['sample']['shape'][0]
+        #print "data.d['sample']['true_pairs'][:5]", "sample_pairs[:5]", sample_pairs[:5], data.d['sample']['true_pairs'][:5]
+        #print "data.d['sample']['true_pairs'][-5:]", "sample_pairs[-5:]", sample_pairs[-5:], data.d['sample']['true_pairs'][-5:]
         
         data.estimate(true_pairs={'sample': sample_pairs, 'feature': feature_pairs}, true_directions={'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']}, true_stds={'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']})
         #data.estimate(true_pairs={'sample': data.d['sample']['true_pairs'], 'feature': data.d['feature']['true_pairs']}, true_directions={'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']}, true_stds={'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']})
@@ -626,16 +601,18 @@ class Figure8(TaskPull):
         error_true = error / zero_error
 
         #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
-        return error_true, error_solver, i, j
+        return error_true, error_solver, i, j, replicate
 
     def store(self, result):
-        error_true, error_solver, i, j = result
-        self.true_errors[i, j] = error_true
-        self.solver_errors[i, j] = error_solver
+        error_true, error_solver, i, j, replicate = result
+        self.true_errors[replicate, i, j] = error_true
+        self.solver_errors[replicate, i, j] = error_solver
 
     def postprocessing(self):
-        visualize_performance(self.true_errors, self.random_fractions, self.measurements, 'random_fractions', 'measurements', file_name=self.file_name + '_error_true')
-        visualize_performance(self.solver_errors, self.random_fractions, self.measurements, 'random_fractions', 'measurements', file_name=self.file_name + '_error_solver')
+        self.true_errors = np.mean(self.true_errors, axis=0)
+        self.solver_errors = np.mean(self.solver_errors, axis=0)
+        visualize_performance(self.true_errors, self.random_pairs, self.measurements, 'random_pairs', 'measurements', file_name=self.file_name + '_error_true')
+        visualize_performance(self.solver_errors, self.random_pairs, self.measurements, 'random_pairs', 'measurements', file_name=self.file_name + '_error_solver')
 
 
 def submit(kwargs, run_class, mode='local', ppn=1, hours=10000, nodes=1, path='/home/sohse/projects/PUBLICATION/GITssh/bcn'):
@@ -751,13 +728,13 @@ if __name__ == '__main__':
    
     run_class = 'Figure8'
     file_name = 'out/' + run_class
-    kwargs = {'measurements': [200, 400, 800, 1000, 1200, 2000, 3000, 10000], 'random_fractions': [0, 1, 10, 20, 30, 40, 50, 60], 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name + '_custom'}
+    kwargs = {'measurements': [200, 400, 800, 1000, 1200, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 50, 100, 1000], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_custom8_averaged'}
     # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
     submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)
     print run_class, kwargs
+
+    
    
-
-
 
 
 

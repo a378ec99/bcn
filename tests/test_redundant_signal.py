@@ -90,7 +90,7 @@ class Test_std_consistency(unittest.TestCase):
         # TODO only check ratios ... because there might be a non-identifiability factor!
 
         
-'''       
+      
 class Test_generate_covariance(unittest.TestCase):
     """Test to verify that covariances are generated correctly.
 
@@ -390,7 +390,7 @@ class TestRedundantSignal(unittest.TestCase):
         self._assert_shape(signal)
         _assert_consistency(signal['X'], '5b5cb68873cd8d68329adad3be9da2a2')
 
-        
+'''        
 class TestRedundantSignalLarge(unittest.TestCase):
     """Test to verify that everything is still fine for larger matrices.
 

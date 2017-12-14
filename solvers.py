@@ -32,16 +32,14 @@ class ConjugateGradientSolver(object):
             Rank of the manifold (presumably the same rank of the true bias matrix to be recovered) and rank of the initial guess.
         n_restarts : int
             Number of restats of the solver (more needed the larger the bias matrix).
-        seed : int, default = 42
-            The random see with wich to run the recovery.
-        verbosiy : {0, 1, 2}
-            Level of information the gets printed during solver run. A higher number means more.
         noise_amplitude : float
             Noise level needed to make a guess
         space = str, {feature, sample}
             To be used as reference for the input mixed.
-            
-        # TODO Introduce the option to use a specified inital guess.
+        seed : int, default = 42
+            The random see with wich to run the recovery.
+        verbosiy : {0, 1, 2}
+            Level of information the gets printed during solver run. A higher number means more.
         """
         self.seed = seed
         if self.seed is not None:
@@ -60,6 +58,22 @@ class ConjugateGradientSolver(object):
         self.noise_amplitude = noise_amplitude
         
     def solve(self, guess):
+        """ Solve a particular recovery problem based on the given initial guess.
+        
+        Parameters
+        ----------
+        guess : tuple, (u, s, vt)
+            Descomposed random low-rank matrix as initial guess.
+            
+        Returns
+        -------
+        X : ndarray, (n_samples, n_features)
+            Solution of the recovery problem.
+        stopping_reason : str
+            Why the solver finished, e.g. out of time, out of steps, etc.
+        final_cost : float
+            Final value of the objective function.
+        """
         worked = False
         for n in xrange(self.n_retries_svd):
             try:
@@ -76,6 +90,14 @@ class ConjugateGradientSolver(object):
         return X, stopping_reason, final_cost
 
     def recover(self):
+        """
+        Runs the solver n_restarts times and picks the best run.
+        
+        Returns
+        -------
+        self.data : Data object
+            Updated data object with solution from solver and intial guess, plus estimates of correlations, directions and standard deviations.
+        """
         estimates, errors, guesses_X, guesses_usvt = [], [], [], []
         for k in xrange(self.n_restarts):
             guess = self.guess_func(self.shape, self.rank, noise_amplitude=self.noise_amplitude)
@@ -98,16 +120,5 @@ class ConjugateGradientSolver(object):
         self.data.d[self.space]['estimated_signal'] = self.mixed - estimated_bias
 
         return self.data
-
-        
-# NOTE
-# https://github.com/ContinuumIO/anaconda-issues/issues/695
-# print 'Likely np.linalg.LinAlgError:', traceback.format_exc()
-
-
-# TODO set seed @ decorator
-
-
-
 
         

@@ -283,6 +283,9 @@ class DataSimulated(Data):
         self.noise_amplitude = noise_amplitude
         
         m_blocks = self.shape[0] // self.m_blocks_factor #self.m_blocks_factor #  # NOTE using the sample space to determine the m_blocks here.
+
+        print 'm_blocks', m_blocks
+        
         bias = BiasLowRank(self.shape, self.rank, noise_amplitude=self.noise_amplitude).generate() # BiasUnconstrained(self.shape, model='gaussian', noise_amplitude=1.0).generate() # 
         missing = Missing(self.shape, missing_type, p_random=0.1).generate()
         signal = RedundantSignal(self.shape, 'random', m_blocks, 1.0).generate()
