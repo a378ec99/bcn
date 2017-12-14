@@ -7,6 +7,5 @@ The algorithm recovers bias from a matrix of measurements without requiring quan
 
 - anaconda >= 5.0.1
 - pymanopt >= 0.2.3
-- mpi4py >= 3.0.0 (optional)
+- mpi4py >= 3.0.0 (optional for parallel use)
 
-['anaconda >= 5.0.1', 'pymanopt >= 0.2.3', 'mpi4py >= 3.0.0'],
