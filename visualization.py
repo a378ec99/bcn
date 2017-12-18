@@ -12,7 +12,7 @@ __all__ = ['visualize_dependences', 'visualize_correlations', 'visualize_perform
 import matplotlib
 matplotlib.use('Agg')
 import numpy as np
-import pylab as pl
+import matplotlib.pyplot as pl
 import seaborn.apionly as sb
 
 
