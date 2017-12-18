@@ -475,7 +475,7 @@ class Figure6(TaskPull):
         
 class Figure7(TaskPull):
 
-    def __init__(self, measurements=None, random_fractions=None, seed=None, noise_amplitude=None, file_name=None):
+    def __init__(self, measurements=None, random_pairs=None, seed=None, noise_amplitude=None, file_name=None):
         """
         """
         self.measurements = measurements
@@ -487,30 +487,33 @@ class Figure7(TaskPull):
         self.file_name = file_name
         self.sparsity = 2
         self.rank = 2
-        self.random_fractions = random_fractions
+        self.random_pairs = random_pairs
+        self.replicates = 5
         
     def allocate(self):
-        self.true_errors = np.ones((len(self.measurements), len(self.random_fractions))) * np.nan
-        self.solver_errors = np.ones((len(self.measurements), len(self.random_fractions))) * np.nan
+        self.true_errors = np.ones((self.replicates, len(self.measurements), len(self.random_pairs))) * np.nan
+        self.solver_errors = np.ones((self.replicates, len(self.measurements), len(self.random_pairs))) * np.nan
 
     def create_tasks(self):
         if self.seed is not None:
             np.random.seed(self.seed)
-        for i, m in enumerate(self.measurements):
-            for j, random_fraction in enumerate(self.random_fractions):
-                secondary_seed = np.random.randint(0, 1e8)
-                task = i, j, m, random_fraction, secondary_seed
-                print task
-                yield task
+
+        for replicate in xrange(self.replicates):
+            for i, m in enumerate(self.measurements):
+                for j, random_pair in enumerate(self.random_pairs):
+                    secondary_seed = np.random.randint(0, 1e8)
+                    task = replicate, i, j, m, random_pair, secondary_seed
+                    print task
+                    yield task
 
     def work(self, task):
-        i, j, m, random_fraction, secondary_seed = task
+        replicate, i, j, m, random_pair, secondary_seed = task
         np.random.seed(secondary_seed)
 
         data = DataSimulated(self.shape, self.rank, noise_amplitude=self.noise_amplitude)
         operator = LinearOperatorKsparse(data, m, self.sparsity).generate()
         A, y = operator['A'], operator['y']
-        shuffle_indices = int(random_fraction * len(y))
+        shuffle_indices = random_pair
         shuffle_indices_subset = deepcopy(y[:shuffle_indices])
         np.random.shuffle(shuffle_indices_subset)
         y[:shuffle_indices] = shuffle_indices_subset
@@ -525,16 +528,18 @@ class Figure7(TaskPull):
         error_true = error / zero_error
 
         #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
-        return error_true, error_solver, i, j
+        return error_true, error_solver, i, j, replicate
 
     def store(self, result):
-        error_true, error_solver, i, j = result
-        self.true_errors[i, j] = error_true
-        self.solver_errors[i, j] = error_solver
+        error_true, error_solver, i, j, replicate = result
+        self.true_errors[replicate, i, j] = error_true
+        self.solver_errors[replicate, i, j] = error_solver
 
     def postprocessing(self):
-        visualize_performance(self.true_errors, self.random_fractions, self.measurements, 'random_fractions', 'measurements', file_name=self.file_name + '_error_true')
-        visualize_performance(self.solver_errors, self.random_fractions, self.measurements, 'random_fractions', 'measurements', file_name=self.file_name + '_error_solver')
+        self.true_errors = np.mean(self.true_errors, axis=0)
+        self.solver_errors = np.mean(self.solver_errors, axis=0)
+        visualize_performance(self.true_errors, self.random_pairs, self.measurements, 'random_pairs', 'measurements', file_name=self.file_name + '_error_true')
+        visualize_performance(self.solver_errors, self.random_pairs, self.measurements, 'random_pairs', 'measurements', file_name=self.file_name + '_error_solver')
         
 
 class Figure8(TaskPull):
@@ -552,7 +557,7 @@ class Figure8(TaskPull):
         self.rank = 2
         self.random_pairs = random_pairs
         self.m_blocks_factor = self.shape[0] // 2 # should result in two large blocks, since m_blocks = self.shape[0] // self.m_blocks_factor
-        self.replicates = 3
+        self.replicates = 5
         
     def allocate(self):
         self.true_errors = np.ones((self.replicates, len(self.measurements), len(self.random_pairs))) * np.nan
@@ -708,27 +713,19 @@ if __name__ == '__main__':
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(500), np.log10(1300), 8), dtype=int)), 'y_noises': list(np.logspace(np.log10(0.001), np.log10(0.2), 8)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
-    
+    '''
     
     run_class = 'Figure7' 
     file_name = 'out/' + run_class
-    kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e4), 8), dtype=int)), 'random_fractions': list(np.logspace(np.log10(0.01), np.log10(1.0), 8)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name + 'fast'}
+    kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
+    #list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e4), 8), dtype=int)) # 'random_fractions': list(np.logspace(np.log10(0.01), np.log10(1.0), 8))
     submit(kwargs, mode='parallel', nodes=12, ppn=6, run_class=run_class)
     print run_class, kwargs
-    '''
-    
-    '''
-    run_class = 'Figure8'
-    file_name = 'out/' + run_class
-    kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(5e4), 8), dtype=int)), 'random_fractions': [0.0, 1.0/50**2, 2.0/50**2, 3.0/50**2, 5.0/50**2, 10.0/50**2, 25.0/50**2, 1.0], 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name + '_log'}
-    # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
-    submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)
-    print run_class, kwargs
-    '''
+
    
     run_class = 'Figure8'
     file_name = 'out/' + run_class
-    kwargs = {'measurements': [200, 400, 800, 1000, 1200, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 50, 100, 1000], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_custom8_averaged'}
+    kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
     # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
     submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)
     print run_class, kwargs

@@ -243,7 +243,7 @@ class Data(object):
     
 class DataSimulated(Data):
 
-    def __init__(self, shape, rank, correlation_threshold=0.7, m_blocks_factor=2, noise_amplitude=1.0, missing_type='MAR', feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, shape, rank, model='gaussian', correlation_threshold=0.7, m_blocks_factor=2, noise_amplitude=1.0, missing_type='MAR', feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -276,18 +276,22 @@ class DataSimulated(Data):
         self.rank = rank
         self.correlation_threshold = correlation_threshold
         self.m_blocks_factor = m_blocks_factor
+        self.noise_amplitude = noise_amplitude
+        self.missing_type = missing_type
         self.feature_annotation = feature_annotation
         self.sample_annotation = sample_annotation
         self.feature_annotation_batch = feature_annotation_batch
         self.sample_annotation_batch = sample_annotation_batch
-        self.noise_amplitude = noise_amplitude
-        
-        m_blocks = self.shape[0] // self.m_blocks_factor #self.m_blocks_factor #  # NOTE using the sample space to determine the m_blocks here.
+        self.missing_fraction = 0.1 # NOTE fraction of missing values set here in hardcoded fashion.
+        self.model = model
+        self.image_source = 'tests/trump.png'# NOTE Hardcoded.
+
+        m_blocks = self.shape[0] // self.m_blocks_factor # NOTE using the sample space to determine the m_blocks here.
 
         print 'm_blocks', m_blocks
         
-        bias = BiasLowRank(self.shape, self.rank, noise_amplitude=self.noise_amplitude).generate() # BiasUnconstrained(self.shape, model='gaussian', noise_amplitude=1.0).generate() # 
-        missing = Missing(self.shape, missing_type, p_random=0.1).generate()
+        bias = BiasLowRank(self.shape, self.rank, model=self.model, noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate() # BiasUnconstrained(self.shape, model='gaussian', noise_amplitude=1.0).generate()
+        missing = Missing(self.shape, self.missing_type, p_random=self.missing_fraction).generate() 
         signal = RedundantSignal(self.shape, 'random', m_blocks, 1.0).generate()
         mixed = signal['X'] + bias['X'] + missing['X']
 
@@ -335,7 +339,7 @@ class DataSimulated(Data):
 
 class DataBlind(Data):
 
-    def __init__(self, mixed, rank, correlation_threshold=0.7, feature_annotation=None, noise_amplitude=1.0, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, mixed, rank, correlation_threshold=0.7, noise_amplitude=1.0, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -346,10 +350,10 @@ class DataBlind(Data):
             The rank to use for the intial guess of the bias (for the solver).
         correlation_threshold : float
             The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
-        feature_annotation : list, optional
-            List of str that annotates the features in `mixed`.
         noise_amplitude : float, default = None
             Scale/amptitude of the bias (noise).    
+        feature_annotation : list, optional
+            List of str that annotates the features in `mixed`.
         sample_annotation : list, optional
             List of str that annotates the samples in `mixed`.
         feature_annotation_batch : list, optional
@@ -363,11 +367,11 @@ class DataBlind(Data):
         self.mixed = mixed
         self.rank = rank
         self.correlation_threshold = correlation_threshold
+        self.noise_amplitude = noise_amplitude
         self.feature_annotation = feature_annotation
         self.sample_annotation = sample_annotation
         self.feature_annotation_batch = feature_annotation_batch
         self.sample_annotation_batch = sample_annotation_batch
-        self.noise_amplitude = noise_amplitude
         
         for space in ['sample', 'feature']:
             self.d[space]['mixed'] = transpose_view(mixed, space)

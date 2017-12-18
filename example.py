@@ -12,58 +12,42 @@ from bias import guess_func
 from data import DataSimulated, DataBlind
 from cost import Cost
 from solvers import ConjugateGradientSolver
-from linear_operators import LinearOperatorCustom, min_measurements, max_measurements
+from linear_operators import LinearOperatorCustom, possible_measurement_range
 from visualization import visualize_dependences, visualize_correlations, visualize_absolute
 
 
 if __name__ == '__main__':
     
     np.random.seed(seed=42)
-    
+
+    # General setup of the recovery experiment.
+    n_restarts = 10 # 15
     rank = 2
-    n_measurements = 10000 # 16000 # NOTE that at some points wil be just repeating the same mesurements... need to see how many unique are possible and likely! Depends on correlation structure, e.g. if few blocks then lots of possiblities.
-    
-    #for rank, shape in zip(range(5), [int(i) for i in np.linspace(100, 1000, 5)]):
-    
-    shape = (100, 110) # (150, 160) # NOTE sample, feature
-    
-    print 'min', min_measurements(shape), 50 * 105 * 2 # m_blocks factor is is 2 # 155 # 70 #- 10% missing # - 20% not estimated propoerly!
-    print 'max', max_measurements(shape), 2500 * 105 * 2 # m_blocks factor is is 2 # 155 # 5600 #  - 10% missing # - 20 % not estaimted properly!
-    
-    truth = DataSimulated(shape, rank, correlation_threshold=0.85, m_blocks_factor=shape[0] // 2, noise_amplitude=30.0) # 100
-    #visualize_dependences(truth, file_name='out/test_dependences_truth', truth_available=True, estimate_available=False, recovery_available=False)
-    visualize_correlations(truth, file_name='out/test_correlations_truth_{}'.format(n_measurements), truth_available=True)
-    
-    truth.estimate()
-    #visualize_dependences(truth, file_name='out/test_dependences_truth_estimate', truth_available=True, estimate_available=True, recovery_available=False)
-    visualize_correlations(truth, file_name='out/test_correlations_estimated_truth_{}'.format(n_measurements), truth_available=False)
-    visualize_absolute(truth, file_name='out/test_absolute_truth_{}'.format(n_measurements))
-    
-    
-    
-    
+    n_measurements = 10000    
+    shape = (100, 110) #NOTE samples, features
+    missing_fraction = 0.1
+    noise_amplitude = 30.0
+    print 'possible_measurement_range', possible_measurement_range(shape, missing_fraction)
+
+    # Creation of the test data and blind estimation of the dependency structure.
+    truth = DataSimulated(shape, rank, model='image', correlation_threshold=0.9, m_blocks_factor=shape[0] // 2, noise_amplitude=noise_amplitude)
+    #FIXME visualize_absolute(truth, file_name='out/test_absolute_truth_{}'.format(n_measurements))
     mixed = truth.d['sample']['mixed']
-    
     blind = DataBlind(mixed, rank, correlation_threshold=0.9) # 0.85
-    #visualize_dependences(blind, file_name='out/test_dependences_blind', truth_available=False, estimate_available=False, recovery_available=False)
-    
-    
     blind.estimate() # true_pairs={'sample': truth.d['sample']['true_pairs'], 'feature':truth.d['feature']['true_pairs']}, true_directions={'sample': truth.d['sample']['true_directions'], 'feature': truth.d['feature']['true_directions']}, true_stds={'sample': truth.d['sample']['true_stds'], 'feature': truth.d['feature']['true_stds']}
-    #visualize_dependences(blind, file_name='out/test_dependences_blind_estimate', truth_available=False, estimate_available=True, recovery_available=False)
-    visualize_correlations(blind, file_name='out/test_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
-    
-    n_restarts = 15
-    
+    visualize_correlations(blind, file_name='out/test_image_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
+
+    # Construction of the measurement operator and measurements from the data.
     operator = LinearOperatorCustom(blind, n_measurements).generate()
     A = operator['A']
     y = operator['y']
     cost = Cost(A, y)
-    
+
+    # Setup and run of the recovery with the standard solver.
     solver = ConjugateGradientSolver(cost.cost_func, guess_func, blind, rank, n_restarts, verbosity=0)
     recovered = solver.recover()
-    
-    #visualize_dependences(recovered, file_name='out/test_dependences_blind_recovered', truth_available=False, estimate_available=True, recovery_available=True)
-    
+
+    # Add information about true signal to visualize recovery performance.
     for space in ['sample', 'feature']:
         recovered.d[space]['true_pairs'] = truth.d[space]['true_pairs']
         recovered.d[space]['signal'] = truth.d[space]['signal']
@@ -73,17 +57,10 @@ if __name__ == '__main__':
         recovered.d[space]['true_pairs'] = truth.d[space]['true_pairs']
         recovered.d[space]['true_stds'] = truth.d[space]['true_stds']
         recovered.d[space]['true_directions'] = truth.d[space]['true_directions']
+        recovered.noise_amplitude = noise_amplitude
+    visualize_dependences(recovered, file_name='out/test_image_dependences_blind_{}'.format(n_measurements), truth_available=True, estimate_available=True, recovery_available=True)
     
-    #visualize_dependences(recovered, file_name='out/test_dependences_blind_truth_recovered', truth_available=True, estimate_available=True, recovery_available=True)
-    
-    #for space in ['sample', 'feature']:
-    #    recovered.d[space]['estimated_directions'] = truth.d[space]['estimated_directions']
-    #    recovered.d[space]['estimated_pairs'] = truth.d[space]['estimated_pairs']
-    #    recovered.d[space]['estimated_stds'] = truth.d[space]['estimated_stds']
-    
-    visualize_dependences(recovered, file_name='out/test_dependences_blind_{}'.format(n_measurements), truth_available=True, estimate_available=True, recovery_available=True)
-    
-    
+    # Print and visualize the recovery performance statistics.
     error_solver = cost.cost_func(recovered.d['sample']['estimated_bias'])
     divisor = np.sum(~np.isnan(recovered.d['sample']['mixed']))
     error_ideal = np.nansum(np.absolute(recovered.d['sample']['signal'] - (recovered.d['sample']['mixed'] - recovered.d['sample']['true_bias']))) / divisor
@@ -98,7 +75,7 @@ if __name__ == '__main__':
     print 'error_true_ratio', error_true
     print 'error_solver', error_solver
 
-
+    visualize_absolute(recovered, file_name='out/test_image_absolute_recovered_{}'.format(n_measurements), recovered=True)
 
 
 

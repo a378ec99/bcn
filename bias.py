@@ -27,7 +27,7 @@ def guess_func(shape, rank, **kwargs):
         Rank of the bias to be recovered (estimate or truth).
     kwargs : dict
         Additional arguments to be passed to the BiasLowRank class.
-        
+
     Returns
     -------
     guess : dict
@@ -37,7 +37,7 @@ def guess_func(shape, rank, **kwargs):
     -----
     The guess function needs to use the class that is matched to the according underlying bias.
     """
-    bias = BiasLowRank(shape, rank, **kwargs).generate() 
+    bias = BiasLowRank(shape, rank, **kwargs).generate()
     guess = {'X': bias['X'], 'usvt': bias['usvt']}
     return guess
 
@@ -70,7 +70,7 @@ class BiasLowRank(object):
         self.n_clusters = n_clusters
 
         assert self.model in ['image', 'bicluster', 'gaussian']
-        
+
     def generate(self):
         """Generate bias according to a low-rank (sparse) model.
 
@@ -81,7 +81,8 @@ class BiasLowRank(object):
         """
         if self.model == 'gaussian':
             usvt = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank).rand()
-            # NOTE Eigenvalues are normalized so that the bias level is approximately consistent over differing rank matrices.
+            # NOTE Eigenvalues are normalized so that the bias level is
+            # approximately consistent over differing rank matrices.
             usvt = usvt[0], (usvt[1] / np.sum(np.absolute(usvt[1]))), usvt[2]
             usvt = usvt[0], usvt[1] * self.noise_amplitude, usvt[2]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
@@ -93,20 +94,23 @@ class BiasLowRank(object):
             # TODO Need this normalization below? Can do better?
             X = (X / X.max()) - 0.5
             usvt = np.linalg.svd(X)
-            usvt = usvt[0][:, :self.rank], usvt[1][:self.rank], usvt[2][:self.rank, :]
+            usvt = usvt[0][:, :self.rank], usvt[1][
+                :self.rank], usvt[2][:self.rank, :]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
-            
+
         if self.model == 'bicluster':
-            X, rows, columns = make_checkerboard(shape=self.shape, n_clusters=self.n_clusters, noise=0, shuffle=False)
+            X, rows, columns = make_checkerboard(
+                shape=self.shape, n_clusters=self.n_clusters, noise=0, shuffle=False)
             # TODO Need this normalization below? Can do better?
             X = (X / X.max()) - 0.5
             usvt = np.linalg.svd(X)
-            usvt = usvt[0][:, :self.rank], usvt[1][:self.rank], usvt[2][:self.rank, :]
+            usvt = usvt[0][:, :self.rank], usvt[1][
+                :self.rank], usvt[2][:self.rank, :]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
 
         bias = {'X': X, 'usvt': usvt}
         return bias
-        
+
 
 class BiasUnconstrained(object):
 
@@ -128,9 +132,9 @@ class BiasUnconstrained(object):
         self.model = model
         self.noise_amplitude = noise_amplitude
         self.fill_value = fill_value
-        
+
         assert self.model in ['gaussian', 'uniform']
-        
+
     def generate(self):
         """Generate bias according to an unconstrained (non-sparse) model.
 
@@ -142,10 +146,9 @@ class BiasUnconstrained(object):
         if self.model == 'gaussian':
             X = Euclidean(self.shape[0], self.shape[1]).rand()
             X = X * self.noise_amplitude
-            
+
         if self.model == 'uniform':
             X = np.full(self.shape, self.fill_value)
 
         bias = {'X': X}
         return bias
-

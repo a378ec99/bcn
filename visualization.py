@@ -79,7 +79,7 @@ def pair_overlap(true_pairs, estimated_pairs):
     return d
 
     
-def visualize_absolute(data, space='sample', file_name='out/test_absolute', format='.png'):
+def visualize_absolute(data, space='sample', file_name='out/test_absolute', format='.png', recovered=False):
     """Visualize absolute values of the dataset, with signal, mixed and bias shown.
 
     Parameters
@@ -91,27 +91,66 @@ def visualize_absolute(data, space='sample', file_name='out/test_absolute', form
     file_name : str
         Name and path of figure output.
     format : str
-        Format of figure.   
+        Format of figure.
+    recovered : bool
+        If recovery has been performed; then show also the results.
     """
-    fig = pl.figure(figsize=(10, 10 * 3))
 
-    ax = fig.add_subplot(3, 1, 1)
-    ax.set_title('Signal')
-    ax_seaborn = sb.heatmap(data.d[space]['signal'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
-    ax.tick_params(axis='both', which='both', length=0)
+    if recovered == True:
+        fig = pl.figure(figsize=(10 * 2, 10 * 3))
 
-    ax = fig.add_subplot(3, 1, 2)
-    ax.set_title('Mixed')
-    ax_seaborn = sb.heatmap(data.d[space]['mixed'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
-    ax.tick_params(axis='both', which='both', length=0)
-    
-    ax = fig.add_subplot(3, 1, 3)
-    ax.set_title('Bias (noise_amplitude {})'.format(data.noise_amplitude))
-    ax_seaborn = sb.heatmap(data.d[space]['true_bias'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
-    ax.tick_params(axis='both', which='both', length=0)
-    
-    fig.savefig(file_name + format)
-    
+        ax = fig.add_subplot(3, 2, 1)
+        ax.set_title('Signal')
+        ax_seaborn = sb.heatmap(data.d[space]['signal'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+
+        ax = fig.add_subplot(3, 2, 2)
+        ax.set_title('Recovered Signal')
+        ax_seaborn = sb.heatmap(data.d[space]['estimated_signal'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+
+        ax = fig.add_subplot(3, 2, 3)
+        ax.set_title('Mixed')
+        ax_seaborn = sb.heatmap(data.d[space]['mixed'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+
+        ax = fig.add_subplot(3, 2, 4)
+        ax.set_title('Guess')
+        ax_seaborn = sb.heatmap(data.d[space]['guess_X'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+
+        ax = fig.add_subplot(3, 2, 5)
+        ax.set_title('Bias (noise_amplitude {})'.format(data.noise_amplitude))
+        ax_seaborn = sb.heatmap(data.d[space]['true_bias'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+        
+        ax = fig.add_subplot(3, 2, 6)
+        ax.set_title('Recovered Bias)'.format(data.noise_amplitude))
+        ax_seaborn = sb.heatmap(data.d[space]['estimated_bias'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+
+        fig.savefig(file_name + format)
+
+    else:
+        fig = pl.figure(figsize=(10, 10 * 3))
+
+        ax = fig.add_subplot(3, 1, 1)
+        ax.set_title('Signal')
+        ax_seaborn = sb.heatmap(data.d[space]['signal'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+
+        ax = fig.add_subplot(3, 1, 2)
+        ax.set_title('Mixed')
+        ax_seaborn = sb.heatmap(data.d[space]['mixed'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+
+        ax = fig.add_subplot(3, 1, 3)
+        ax.set_title('Bias (noise_amplitude {})'.format(data.noise_amplitude))
+        ax_seaborn = sb.heatmap(data.d[space]['true_bias'], vmin=-2.5, vmax=2.5, cmap=pl.cm.inferno, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=False, yticklabels=False, robust=True)
+        ax.tick_params(axis='both', which='both', length=0)
+
+        fig.savefig(file_name + format)
+        
 
 def visualize_dependences(data, space='sample', file_name='out/test_dependences', truth_available=True, estimate_available=True, recovery_available=True, format='.png', max_plots=10, max_points=40): # '.eps'
     """Visualizes dependences to diagnose how the original, guess and reconstruction looks like on that backgrounnd.

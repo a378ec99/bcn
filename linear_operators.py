@@ -7,54 +7,45 @@ Defines classes that generate the measurement operator A and measurement y from 
 from __future__ import division, absolute_import
 
 
-__all__ = ['LinearOperatorEntry', 'LinearOperatorDense', 'LinearOperatorKsparse', 'LinearOperatorCustom', 'min_measurements', 'max_measurements', '_print_size', '_pop_pairs_with_indices_randomly', '_choose_random_matrix_elements']
+__all__ = ['LinearOperatorEntry', 'LinearOperatorDense', 'LinearOperatorKsparse', 'LinearOperatorCustom', 'possible_measurement_range', '_print_size', '_pop_pairs_with_indices_randomly', '_choose_random_matrix_elements']
 
 import abc
 import numpy as np
 
 
-def min_measurements(shape):
+def possible_measurement_range(shape, missing_fraction):
     '''
-    Computes the minimum number of measurements that are possible in a non-ideal case where all the underlying pairs can be detected correctly but the block structure is minimal (m_bocks=dimension/2). Both feature and sample space are considered together.
+    Computes the range of the possible number of measurements for a particular shaped matrix.
 
     Parameters
     ----------
     shape : (int, int)
         Dimensions of the array to be recovered.
-
+    missing_fraction : float
+        Fraction of missing values in mixed matrix to be used for recovery.
     Returns
     -------
-    n : int
-        Theoretical minimum number of measurements possible in non-ideal setting (worst case and perfect pair knowledge).
+    n_worst_case, n_best_case : (int, int)
+        Number of measurements possible in the worst case and the best case.
+    
+    Note
+    ----
+    Possible measurements are defined by the block structure of the correlation matrix. Worst case block structure (m_bocks = dimension/2) and best case block structure (m_blocks = 2).
+    Optimal detection of all potential pairs is assumed and both feature and sample space are summed for the final number of possible measurements.
     '''
     assert shape[0] % 2 == 0
     assert shape[1] % 2 == 0
     a, b = shape
-    n = ((a / 2) * b) + ((b / 2) * a)
-    return n
 
-
-def max_measurements(shape):
-    '''
-    Computes the maximum number of measurements that are possible in an ideal case where all the underlying pairs can be detected correctly and the block structure is maximal (m_bocks=2). Both feature and sample space are considered together.
-
-    Parameters
-    ----------
-    shape : (int, int)
-        Dimensions of the array to be recovered.
-
-    Returns
-    -------
-    n : int
-        Theoretical minimum number of measurements possible in ideal setting (best case and perfect pair knowledge).
-    '''
-    assert shape[0] % 2 == 0
-    assert shape[1] % 2 == 0
-    a, b = shape
+    n_worst_case = int(((a / 2) * b) + ((b / 2) * a))
+    n_worst_case  = n_worst_case - (missing_fraction * n_worst_case)
+    
     a_pairs = (a / 2)**2 - (a / 2)
     b_pairs = (b / 2)**2 - (b / 2)
-    n = int((a_pairs * b) + (b_pairs * a))
-    return n
+    n_best_case = int((a_pairs * b) + (b_pairs * a))
+    n_best_case = n_best_case - (missing_fraction * n_best_case)
+    
+    return n_worst_case, n_best_case
 
 
 def _print_size(name, X):
