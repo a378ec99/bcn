@@ -92,7 +92,7 @@ class BiasLowRank(object):
             if X.shape != self.shape:
                 X = imresize(X, self.shape)
             # TODO Need this normalization below? Can do better?
-            X = (X / X.max()) - 0.5
+            X = 0.5 * ((X / np.absolute(X).max()) - 0.5)
             usvt = np.linalg.svd(X)
             usvt = usvt[0][:, :self.rank], usvt[1][
                 :self.rank], usvt[2][:self.rank, :]

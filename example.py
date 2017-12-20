@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     # General setup of the recovery experiment.
     n_restarts = 10 # 15
-    rank = 2
+    rank = 6
     n_measurements = 10000    
     shape = (100, 110) #NOTE samples, features
     missing_fraction = 0.1
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     A = operator['A']
     y = operator['y']
     cost = Cost(A, y)
-
+    
     # Setup and run of the recovery with the standard solver.
     solver = ConjugateGradientSolver(cost.cost_func, guess_func, blind, rank, n_restarts, verbosity=0)
     recovered = solver.recover()
