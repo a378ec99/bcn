@@ -7,7 +7,7 @@ setup(
       author = 'Sebastian Ohse',
       author_email = 'sebastian.ohse@mailbox.org',
       url = 'https://github.com/a378ec99/bcn',
-      license = 'LICENSE.txt',
+      license = 'LICENSE',
       long_description = open('README.md').read(),
       keywords = ('bias', 'normalization', 'blind', 'manifold optimization', 'compressed sensing', 'high-dimensional'),
       packages = find_packages(exclude=['tests']),
