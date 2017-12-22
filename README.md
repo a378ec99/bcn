@@ -1,7 +1,7 @@
 # bcn
 **Blind Compressive Normalization**
 
-The algorithm recovers bias from a matrix of measurements without requiring quantitative standards. Estimation of dependencies that are leveraged to recover the bias is based on detectable redundancies in the data alone.
+The algorithm recovers bias from a high-throughput database without the use of prior information. Instead, detectable redundancies in the form of dependencies between samples and features are leveraged.
 
 **Dependencies**
 
