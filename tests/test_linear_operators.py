@@ -14,8 +14,8 @@ import hashlib
 import sys
 import numpy as np
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
-from linear_operators import _choose_random_matrix_elements, LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom
-from data import DataSimulated
+from ..bcn.linear_operators import _choose_random_matrix_elements, LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom
+from ..bcn.data import DataSimulated
 
 
 def _assert_consistency(X, true_md5):

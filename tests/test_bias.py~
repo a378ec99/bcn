@@ -1,8 +1,8 @@
-"""Bias testing module.
+"""Bias testing.
 
 Notes
 -----
-This module defines two test classes that assert the functioning of the `bias` module.
+Defines two test classes that assert the functioning of the `bias` module.
 """
 from __future__ import division, absolute_import
 

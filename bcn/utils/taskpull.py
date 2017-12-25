@@ -11,7 +11,7 @@ import json
 import abc
 
 from mpi4py import MPI
-import figures as parallel #DANGER
+import ...examples.figures as parallel #DANGER
     
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
-"""Cost testing module.
+"""Cost testing.
 
 Notes
 -----
-This module defines a class that assert the functioning of the `cost` module.
+Defines a class that assert the functioning of the `cost` module.
 """
 from __future__ import division, absolute_import
 

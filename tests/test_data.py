@@ -17,7 +17,7 @@ matplotlib.use('Agg')
 import numpy as np
 import pylab as pl
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
-from data import DataSimulated, DataBlind #, pair_subset # DataSimulatedLarge, DataBlindLarge, 
+from ..bcn.data import DataSimulated, DataBlind #, pair_subset # DataSimulatedLarge, DataBlindLarge, 
 
 
 def _assert_consistency(X, true_md5):

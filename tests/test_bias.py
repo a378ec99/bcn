@@ -14,7 +14,7 @@ import hashlib
 import sys
 import numpy as np
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
-from bias import BiasLowRank, BiasUnconstrained
+from ..bcn.bias import BiasLowRank, BiasUnconstrained
 
 
 def _assert_consistency(X, true_md5):

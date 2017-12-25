@@ -17,12 +17,12 @@ from copy import deepcopy
 
 import numpy as np
 
-from data import DataSimulated
-from visualization import visualize_performance, visualize_dependences
-from solvers import ConjugateGradientSolver
-from cost import Cost
-from linear_operators import LinearOperatorCustom, LinearOperatorKsparse, min_measurements, max_measurements
-from bias import guess_func
+from ..bcn.data import DataSimulated
+from ..bcn.utils.visualization import visualize_performance, visualize_dependences
+from ..bcn.solvers import ConjugateGradientSolver
+from ..bcn.cost import Cost
+from ..bcn.linear_operators import LinearOperatorCustom, LinearOperatorKsparse, min_measurements, max_measurements
+from ..bcn.bias import guess_func
 
 
 

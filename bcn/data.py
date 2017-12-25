@@ -13,9 +13,9 @@ from copy import deepcopy
 import numpy as np
 import abc
 from scipy.stats import pearsonr
-from bias import BiasLowRank, BiasUnconstrained
-from redundant_signal import RedundantSignal
-from missing import Missing
+from .bias import BiasLowRank, BiasUnconstrained
+from .redundant_signal import RedundantSignal
+from .missing import Missing
 
 
 def transpose_view(X, space):

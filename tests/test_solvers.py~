@@ -1,8 +1,8 @@
-"""Solvers testing module.
+"""Solvers testing.
 
 Notes
 -----
-This module defines a class that assert the functioning of the `solvers` module. Currently only supports testing ConjugateGradient class.
+Defines a class that assert the functioning of the `solvers` module. Currently only supports testing ConjugateGradient class.
 """
 from __future__ import division, absolute_import
 

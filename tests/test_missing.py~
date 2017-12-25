@@ -1,8 +1,8 @@
-"""Missing values testing module.
+"""Missing values testing.
 
 Notes
 -----
-This module defines a test class that assert the functioning of the `missing` module.
+Defines a test class that assert the functioning of the `missing` module.
 """
 from __future__ import division, absolute_import
 

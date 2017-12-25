@@ -8,12 +8,12 @@ sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 
 import numpy as np
 
-from bias import guess_func
-from data import DataSimulated, DataBlind
-from cost import Cost
-from solvers import ConjugateGradientSolver
-from linear_operators import LinearOperatorCustom, possible_measurement_range
-from visualization import visualize_dependences, visualize_correlations, visualize_absolute
+from ..bcn.bias import guess_func
+from ..bcn.data import DataSimulated, DataBlind
+from ..bcn.cost import Cost
+from ..bcn.solvers import ConjugateGradientSolver
+from ..bcn.linear_operators import LinearOperatorCustom, possible_measurement_range
+from ..bcn.utils.visualization import visualize_dependences, visualize_correlations, visualize_absolute
 
 
 if __name__ == '__main__':
