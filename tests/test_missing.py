@@ -14,7 +14,7 @@ import hashlib
 import sys
 import numpy as np
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
-from ..bcn.missing import Missing
+from bcn.missing import Missing
 
 
 def _assert_consistency(X, true_md5):

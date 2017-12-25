@@ -29,11 +29,11 @@ import re
 
 import cPickle
 
-from ..bcn.data import DataBlind
-from ..bcn.solvers import ConjugateGradientSolver
-from ..bcn.linear_operators import LinearOperatorBlind
-from ..bcn.cost import Cost
-from ..bcn.utils.visualization import visualize_dependences
+from bcn.data import DataBlind
+from bcn.solvers import ConjugateGradientSolver
+from bcn.linear_operators import LinearOperatorBlind
+from bcn.cost import Cost
+from bcn.utils.visualization import visualize_dependences
 
 
 class Classification(object):

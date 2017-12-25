@@ -14,12 +14,12 @@ import hashlib
 import sys
 import numpy as np
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
-from ..bcn.data import DataSimulated #, DataSimulatedLarge
-from ..bcn.utils.visualization import visualize_dependences, visualize_correlations
-from ..bcn.cost import Cost
-from ..bcn.solvers import ConjugateGradientSolver
-from ..bcn.linear_operators import LinearOperatorCustom
-from ..bcn.bias import guess_func
+from bcn.data import DataSimulated #, DataSimulatedLarge
+from bcn.utils.visualization import visualize_dependences, visualize_correlations
+from bcn.cost import Cost
+from bcn.solvers import ConjugateGradientSolver
+from bcn.linear_operators import LinearOperatorCustom
+from bcn.bias import guess_func
 
 
 def _assert_consistency(X, true_md5):

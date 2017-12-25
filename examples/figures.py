@@ -17,12 +17,12 @@ from copy import deepcopy
 
 import numpy as np
 
-from ..bcn.data import DataSimulated
-from ..bcn.utils.visualization import visualize_performance, visualize_dependences
-from ..bcn.solvers import ConjugateGradientSolver
-from ..bcn.cost import Cost
-from ..bcn.linear_operators import LinearOperatorCustom, LinearOperatorKsparse, min_measurements, max_measurements
-from ..bcn.bias import guess_func
+from bcn.data import DataSimulated
+from bcn.utils.visualization import visualize_performance, visualize_dependences
+from bcn.solvers import ConjugateGradientSolver
+from bcn.cost import Cost
+from bcn.linear_operators import LinearOperatorCustom, LinearOperatorKsparse, min_measurements, max_measurements
+from bcn.bias import guess_func
 
 
 
@@ -676,47 +676,47 @@ def submit(kwargs, run_class, mode='local', ppn=1, hours=10000, nodes=1, path='/
 if __name__ == '__main__':
     '''
     run_class = 'Figure3'
-    file_name = 'out/' + run_class
+    file_name = '../out/' + run_class
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e3), 8), dtype=int)), 'ranks': list(np.asarray(np.linspace(1, 8, 8), dtype=int)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
     
     run_class = 'Figure4'
-    file_name = 'out/' + run_class
+    file_name = '../out/' + run_class
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e3), 8), dtype=int)), 'ranks': list(np.asarray(np.linspace(1, 8, 8), dtype=int)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
 
     
     run_class = 'Figure2' # WARNING Max. of 2 processes per node, otherwise memory error. # WARNING Also hardcoded number of measurements for solver convergence issues.
-    file_name = 'out/' + run_class
+    file_name = '../out/' + run_class
     kwargs = {'measurement_percentages': list(np.asarray(np.logspace(np.log10(0.01), np.log10(1.0), 8))), 'dimensions': [(10, 10), (25, 25), (50, 50), (100, 100), (200, 200)], 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name} # , (400, 400), (800, 800)
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
 
     
     run_class = 'Figure1'
-    file_name = 'out/' + run_class
+    file_name = '../out/' + run_class
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(300), np.log10(1900), 8), dtype=int)), 'sparsities': list(np.asarray(np.arange(1, 9), dtype=int)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
 
     
     run_class = 'Figure5'
-    file_name = 'out/' + run_class
+    file_name = '../out/' + run_class
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(500), np.log10(1300), 8), dtype=int)), 'y_noises': list(np.logspace(np.log10(0.001), np.log10(0.2), 8)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
 
     run_class = 'Figure6'
-    file_name = 'out/' + run_class
+    file_name = '../out/' + run_class
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(500), np.log10(1300), 8), dtype=int)), 'y_noises': list(np.logspace(np.log10(0.001), np.log10(0.2), 8)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
     '''
     
     run_class = 'Figure7' 
-    file_name = 'out/' + run_class
+    file_name = '../out/' + run_class
     kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
     #list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e4), 8), dtype=int)) # 'random_fractions': list(np.logspace(np.log10(0.01), np.log10(1.0), 8))
     submit(kwargs, mode='parallel', nodes=12, ppn=6, run_class=run_class)
@@ -724,7 +724,7 @@ if __name__ == '__main__':
 
    
     run_class = 'Figure8'
-    file_name = 'out/' + run_class
+    file_name = '../out/' + run_class
     kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
     # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
     submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)

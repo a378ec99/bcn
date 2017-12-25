@@ -13,9 +13,9 @@ from copy import deepcopy
 import numpy as np
 import abc
 from scipy.stats import pearsonr
-from .bias import BiasLowRank, BiasUnconstrained
-from .redundant_signal import RedundantSignal
-from .missing import Missing
+from bcn.bias import BiasLowRank, BiasUnconstrained
+from bcn.redundant_signal import RedundantSignal
+from bcn.missing import Missing
 
 
 def transpose_view(X, space):
@@ -284,7 +284,7 @@ class DataSimulated(Data):
         self.sample_annotation_batch = sample_annotation_batch
         self.missing_fraction = 0.1 # NOTE fraction of missing values set here in hardcoded fashion.
         self.model = model
-        self.image_source = 'tests/trump.png'# NOTE Hardcoded.
+        self.image_source = '../tests/trump.png'# NOTE Hardcoded.
 
         m_blocks = self.shape[0] // self.m_blocks_factor # NOTE using the sample space to determine the m_blocks here.
 
