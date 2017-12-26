@@ -9,6 +9,9 @@ from __future__ import division, absolute_import
 
 __all__ = ['Figure1, Figure2, Figure3, Figure4, Figure5, Figure6, Figure7, Figure8', 'shuffle_some_pairs', 'generate_random_pairs']
 
+import sys # WARNING remove in final version
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+
 from abc import ABCMeta, abstractmethod
 import subprocess
 import json
@@ -21,7 +24,7 @@ from bcn.data import DataSimulated
 from bcn.utils.visualization import visualize_performance, visualize_dependences
 from bcn.solvers import ConjugateGradientSolver
 from bcn.cost import Cost
-from bcn.linear_operators import LinearOperatorCustom, LinearOperatorKsparse, min_measurements, max_measurements
+from bcn.linear_operators import LinearOperatorCustom, LinearOperatorKsparse
 from bcn.bias import guess_func
 
 
@@ -641,7 +644,7 @@ def submit(kwargs, run_class, mode='local', ppn=1, hours=10000, nodes=1, path='/
         Path to work in (e.g. store logs, output and use bcn.py from).
     """
     if mode == 'local':
-        subprocess.call(['python', path + '/taskpull_local.py', run_class, json.dumps(kwargs)])
+        subprocess.call(['python', path + '/bcn/utils/taskpull_local.py', run_class, json.dumps(kwargs)])
 
     if mode == 'parallel':
         output, input_ = popen2('qsub')
@@ -664,7 +667,7 @@ def submit(kwargs, run_class, mode='local', ppn=1, hours=10000, nodes=1, path='/
                  cat ${{PBS_NODEFILE}}
                  echo ""
                  cd $PBS_O_WORKDIR
-                 /opt/openmpi/1.6.5/gcc/bin/mpirun python {path}/taskpull.py {run_class} '{json}'
+                 /opt/openmpi/1.6.5/gcc/bin/mpirun python {path}/bcn/utils/taskpull.py {run_class} '{json}'
                  """.format(run_class=run_class, nodes=nodes, jobname=run_class, json=json.dumps(kwargs), ppn=ppn, hours=hours, path=path)
         input_.write(job)
         input_.close()
@@ -714,20 +717,20 @@ if __name__ == '__main__':
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
     '''
-    
+    '''
     run_class = 'Figure7' 
     file_name = '../out/' + run_class
     kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
     #list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e4), 8), dtype=int)) # 'random_fractions': list(np.logspace(np.log10(0.01), np.log10(1.0), 8))
     submit(kwargs, mode='parallel', nodes=12, ppn=6, run_class=run_class)
     print run_class, kwargs
-
+    '''
    
     run_class = 'Figure8'
     file_name = '../out/' + run_class
     kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
     # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
-    submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)
+    submit(kwargs, mode='local', ppn=2, nodes=20, run_class=run_class)
     print run_class, kwargs
 
     

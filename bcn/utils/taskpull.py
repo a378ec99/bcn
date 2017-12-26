@@ -6,7 +6,11 @@ Task-Pull based on https://github.com/jbornschein/mpi4py-examples/blob/master/09
 """
 from __future__ import absolute_import
 
-import sys
+
+import sys # WARNING remove in final version
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+
+#import sys
 import json
 import abc
 
