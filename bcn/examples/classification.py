@@ -7,8 +7,8 @@ Defines two classes that can be used to test bias recovery on high-throughput da
 from __future__ import division, absolute_import
 
 
-#import sys # WARNING remove in final version
-#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+import sys # WARNING remove in final version
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 
 #__all__ = ['Classification', 'DataReal']
 

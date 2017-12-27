@@ -4,8 +4,8 @@
 from __future__ import division, absolute_import
 
 
-#import sys # WARNING remove in final version
-#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+import sys # WARNING remove in final version
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 
 import numpy as np
 
@@ -32,11 +32,11 @@ if __name__ == '__main__':
 
     # Creation of the test data and blind estimation of the dependency structure.
     truth = DataSimulated(shape, rank, model='image', correlation_threshold=0.9, m_blocks_factor=shape[0] // 2, noise_amplitude=noise_amplitude)
-    #FIXME visualize_absolute(truth, file_name='../out/test_absolute_truth_{}'.format(n_measurements))
+    #FIXME visualize_absolute(truth, file_name='../../out/test_absolute_truth_{}'.format(n_measurements))
     mixed = truth.d['sample']['mixed']
     blind = DataBlind(mixed, rank, correlation_threshold=0.9) # 0.85
     blind.estimate() # true_pairs={'sample': truth.d['sample']['true_pairs'], 'feature':truth.d['feature']['true_pairs']}, true_directions={'sample': truth.d['sample']['true_directions'], 'feature': truth.d['feature']['true_directions']}, true_stds={'sample': truth.d['sample']['true_stds'], 'feature': truth.d['feature']['true_stds']}
-    visualize_correlations(blind, file_name='../out/test_image_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
+    visualize_correlations(blind, file_name='../../out/test_image_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
 
     # Construction of the measurement operator and measurements from the data.
     operator = LinearOperatorCustom(blind, n_measurements).generate()
@@ -59,7 +59,7 @@ if __name__ == '__main__':
         recovered.d[space]['true_stds'] = truth.d[space]['true_stds']
         recovered.d[space]['true_directions'] = truth.d[space]['true_directions']
         recovered.noise_amplitude = noise_amplitude
-    visualize_dependences(recovered, file_name='../out/test_image_dependences_blind_{}'.format(n_measurements), truth_available=True, estimate_available=True, recovery_available=True)
+    visualize_dependences(recovered, file_name='../../out/test_image_dependences_blind_{}'.format(n_measurements), truth_available=True, estimate_available=True, recovery_available=True)
     
     # Print and visualize the recovery performance statistics.
     error_solver = cost.cost_func(recovered.d['sample']['estimated_bias'])
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     print 'error_true_ratio', error_true
     print 'error_solver', error_solver
 
-    visualize_absolute(recovered, file_name='../out/test_image_absolute_recovered_{}'.format(n_measurements), recovered=True)
+    visualize_absolute(recovered, file_name='../../out/test_image_absolute_recovered_{}'.format(n_measurements), recovered=True)
 
 
 
