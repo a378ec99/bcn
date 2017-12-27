@@ -11,9 +11,9 @@ __all__ = ['TestCost']
 
 import unittest
 import hashlib
-import sys
+#import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bcn.data import DataSimulated
 from bcn.cost import Cost
 from bcn.linear_operators import LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom

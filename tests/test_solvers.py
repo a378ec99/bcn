@@ -11,9 +11,9 @@ __all__ = ['TestConjugateGradientSolver']
 
 import unittest
 import hashlib
-import sys
+#import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bcn.data import DataSimulated#, DataSimulatedLarge
 from bcn.cost import Cost
 from bcn.solvers import ConjugateGradientSolver

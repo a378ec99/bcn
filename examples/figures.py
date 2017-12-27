@@ -9,8 +9,8 @@ from __future__ import division, absolute_import
 
 __all__ = ['Figure1, Figure2, Figure3, Figure4, Figure5, Figure6, Figure7, Figure8', 'shuffle_some_pairs', 'generate_random_pairs']
 
-import sys # WARNING remove in final version
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+#import sys # WARNING remove in final version
+#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 
 from abc import ABCMeta, abstractmethod
 import subprocess

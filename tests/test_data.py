@@ -11,12 +11,12 @@ __all__ = ['Test_pair_subset', 'TestDataSimulated', 'TestDataBlind'] # , 'TestDa
 
 import unittest
 import hashlib
-import sys
+#import sys
 import matplotlib
 matplotlib.use('Agg')
 import numpy as np
 import pylab as pl
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bcn.data import DataSimulated, DataBlind #, pair_subset # DataSimulatedLarge, DataBlindLarge,
 
 

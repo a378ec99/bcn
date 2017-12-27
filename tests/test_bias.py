@@ -11,9 +11,9 @@ __all__ = ['TestBiasLowRank', 'TestBiasUnconstrained']
 
 import unittest
 import hashlib
-import sys
+#import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bcn.bias import BiasLowRank, BiasUnconstrained
 
 

@@ -11,9 +11,9 @@ __all__ = ['TestRedundantSignal', 'Test_generate_square_blocks_matrix', 'Test_ge
 
 import unittest
 import hashlib
-import sys
+#import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bcn.redundant_signal import RedundantSignal, _generate_square_blocks_matrix, _generate_pairs, _generate_stds, _generate_directions, _generate_covariance, _generate_matrix_normal_sample
 
 

@@ -11,9 +11,9 @@ __all__ = ['TestDependences', 'TestCorrelations']
 
 import unittest
 import hashlib
-import sys
+#import sys
 import numpy as np
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bcn.data import DataSimulated #, DataSimulatedLarge
 from bcn.utils.visualization import visualize_dependences, visualize_correlations
 from bcn.cost import Cost

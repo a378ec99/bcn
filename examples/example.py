@@ -4,8 +4,8 @@
 from __future__ import division, absolute_import
 
 
-import sys # WARNING remove in final version
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+#import sys # WARNING remove in final version
+#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 
 import numpy as np
 
