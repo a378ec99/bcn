@@ -730,7 +730,7 @@ if __name__ == '__main__':
     file_name = '../out/' + run_class
     kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
     # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
-    submit(kwargs, mode='local', ppn=2, nodes=20, run_class=run_class)
+    submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)
     print run_class, kwargs
 
     

@@ -9,21 +9,15 @@ from __future__ import division, absolute_import
 
 __all__ = ['TestBiasLowRank', 'TestBiasUnconstrained']
 
+import sys
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+
 import unittest
-import hashlib
-#import sys
 import numpy as np
-#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bcn.bias import BiasLowRank, BiasUnconstrained
+from bcn.utils.testing import assert_consistency
 
 
-def _assert_consistency(X, true_md5):
-    m = hashlib.md5()
-    m.update(X)
-    current_md5 = m.hexdigest()
-    assert current_md5 == true_md5
-
-        
 class TestBiasLowRank(unittest.TestCase):
     """Test to verify that all three models produce finite ndarrays that are consistent.
 
@@ -68,7 +62,7 @@ class TestBiasLowRank(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        _assert_consistency(bias['X'], '1b321768958469659a3f65bd19f096cf')
+        assert_consistency(bias['X'], 'c393adcf9d466c25a2997ed619fc03a0')
         
     def test_gaussian(self):
         bias = BiasLowRank(self.shape, self.rank, model='gaussian', noise_amplitude=1.0).generate()
@@ -76,7 +70,7 @@ class TestBiasLowRank(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        _assert_consistency(bias['X'], '64fd423a0625ae269d1b9e07f57eb31c')
+        assert_consistency(bias['X'], '64fd423a0625ae269d1b9e07f57eb31c')
         
     def test_bicluster(self):
         bias = BiasLowRank(self.shape, self.rank, model='bicluster', n_clusters=(3,4)).generate()
@@ -84,7 +78,7 @@ class TestBiasLowRank(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        _assert_consistency(bias['X'], '3cc3ffcca30bda21e83043d0be8e03b9')
+        assert_consistency(bias['X'], '3cc3ffcca30bda21e83043d0be8e03b9')
 
 
 class TestBiasUnconstrained(unittest.TestCase):
@@ -113,7 +107,7 @@ class TestBiasUnconstrained(unittest.TestCase):
     def _assert_dict(self, bias):
         assert type(bias) == dict
 
-    def _assert_consistency(self, bias, true_md5):
+    def assert_consistency(self, bias, true_md5):
         m = hashlib.md5()
         m.update(bias['X'])
         current_md5 = m.hexdigest()
@@ -125,7 +119,7 @@ class TestBiasUnconstrained(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        _assert_consistency(bias['X'], '274886b402bf99b7eef93466eb580f55')
+        assert_consistency(bias['X'], '274886b402bf99b7eef93466eb580f55')
         
     def test_uniform_finite(self):
         bias = BiasUnconstrained(self.shape, 'uniform', fill_value=-1.5).generate()
@@ -133,7 +127,7 @@ class TestBiasUnconstrained(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        _assert_consistency(bias['X'], 'c550d003aa3c3eaedf8b0c8f6ffc6911')
+        assert_consistency(bias['X'], 'c550d003aa3c3eaedf8b0c8f6ffc6911')
 
     
 if __name__ == '__main__':

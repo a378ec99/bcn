@@ -9,21 +9,16 @@ from __future__ import division, absolute_import
 
 __all__ = ['TestCost']
 
-import unittest
-import hashlib
+
 import sys
-import numpy as np
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+
+import unittest
+import numpy as np
 from bcn.data import DataSimulated
 from bcn.cost import Cost
 from bcn.linear_operators import LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom
-
-
-def _assert_consistency(X, true_md5):
-    m = hashlib.md5()
-    m.update(X)
-    current_md5 = m.hexdigest()
-    assert current_md5 == true_md5
+from bcn.utils.testing import assert_consistency
 
 
 class TestCost(unittest.TestCase):
@@ -59,7 +54,7 @@ class TestCost(unittest.TestCase):
         assert error_zero == 0.0
         error_nonzero = cost.cost_func(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
         assert error_nonzero != 0.0
-        #_assert_consistency(error_nonzero, 'aa7103fd99b5c6ed73b7af217dee8c68')
+        assert_consistency(error_nonzero, '825927bc02df4562bcb901896dad7ad7')
     
     def test_dense(self):
         self.data = DataSimulated(self.shape, self.rank)
@@ -71,7 +66,7 @@ class TestCost(unittest.TestCase):
         assert error_zero == 0.0
         error_nonzero = cost.cost_func(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
         assert error_nonzero != 0.0
-        #_assert_consistency(error_nonzero, '6a3a70b2a59da3cab0b7813e748fffd1')
+        assert_consistency(error_nonzero, '7a98003d7deb2570abbb4d846def4270')
 
     def test_ksparse(self):
         self.data = DataSimulated(self.shape, self.rank)
@@ -84,7 +79,7 @@ class TestCost(unittest.TestCase):
         assert error_zero == 0.0
         error_nonzero = cost.cost_func(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
         assert error_nonzero != 0.0
-        #_assert_consistency(error_nonzero, 'dc73ba472cb0ea08a6c5a00552c9d4f7')
+        assert_consistency(error_nonzero, '270677a6cbe716139280db670b1774a5')
         
     def test_blind(self):
         self.data = DataSimulated(self.shape, self.rank)
@@ -101,7 +96,7 @@ class TestCost(unittest.TestCase):
         error_nonzero = cost.cost_func(self.data.d['sample']['true_bias'] + np.random.normal(0, 1, self.data.d['sample']['mixed'].shape))
         assert error_nonzero != 0.0
         print '---------------- BAD COST:', error_nonzero
-        #_assert_consistency(error_nonzero, 'a9b69d2e416c2cafbb0b9049bd566b56')
+        assert_consistency(error_nonzero, '1ff66eb670796e29c48d2e68588d8a2b')
 
         #error_guess = cost.cost_func(self.data.d['sample']['guess_X'])
         #print '---------------- GUESS COST:', error_guess

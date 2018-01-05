@@ -6,22 +6,15 @@ Defines a test class that assert the functioning of the `missing` module.
 """
 from __future__ import division, absolute_import
 
-
 __all__ = ['TestMissing']
 
+import sys
+sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+
 import unittest
-import hashlib
-#import sys
 import numpy as np
-#sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
 from bcn.missing import Missing
-
-
-def _assert_consistency(X, true_md5):
-    m = hashlib.md5()
-    m.update(X)
-    current_md5 = m.hexdigest()
-    assert current_md5 == true_md5
+from bcn.utils.testing import assert_consistency
 
     
 class TestMissing(unittest.TestCase):
@@ -59,7 +52,7 @@ class TestMissing(unittest.TestCase):
         self._assert_not_finite(missing)
         self._assert_ndarray(missing)
         self._assert_shape(missing)
-        _assert_consistency(missing['X'], '887918fd77dbe00d302b1105da156eb5')
+        assert_consistency(missing['X'], '887918fd77dbe00d302b1105da156eb5')
 
     def test_NMAR(self):
         missing = Missing(self.shape, 'NMAR', p_censored=0.2).generate()
@@ -67,7 +60,7 @@ class TestMissing(unittest.TestCase):
         self._assert_not_finite(missing)
         self._assert_ndarray(missing)
         self._assert_shape(missing)
-        _assert_consistency(missing['X'], '5a506bce5f99444f6ee3bed2e7e2b6cc')
+        assert_consistency(missing['X'], '5a506bce5f99444f6ee3bed2e7e2b6cc')
 
     def test_NoMissing(self):
         missing = Missing(self.shape, 'no-missing').generate()
@@ -75,7 +68,7 @@ class TestMissing(unittest.TestCase):
         self._assert_finite(missing)
         self._assert_ndarray(missing)
         self._assert_shape(missing)
-        _assert_consistency(missing['X'], 'c30c3f99eebe77a50cbd1ef6ef15a34b')
+        assert_consistency(missing['X'], 'c30c3f99eebe77a50cbd1ef6ef15a34b')
 
     def test_SCAN(self):
         pass

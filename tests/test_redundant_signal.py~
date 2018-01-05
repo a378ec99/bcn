@@ -9,51 +9,35 @@ from __future__ import division, absolute_import
 
 __all__ = ['TestRedundantSignal', 'Test_generate_square_blocks_matrix', 'Test_generate_pairs', 'Test_generate_stds', 'Test_generate_matrix_normal_sample', 'Test_generate_covariance', 'Test_generate_directions']
 
-import unittest
-import hashlib
 import sys
-import numpy as np
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+
+import unittest
+import numpy as np
 from bcn.redundant_signal import RedundantSignal, _generate_square_blocks_matrix, _generate_pairs, _generate_stds, _generate_directions, _generate_covariance, _generate_matrix_normal_sample
-
-
-def _assert_consistency(X, true_md5):
-    m = hashlib.md5()
-    m.update(X)
-    current_md5 = m.hexdigest()
-    assert current_md5 == true_md5
-
+from bcn.utils.testing import assert_consistency
 
 
 class Test_std_consistency(unittest.TestCase):
 
     def setUp(self, seed=42):
-        #np.random.seed(seed)
+        np.random.seed(seed)
         self.m_blocks = 10
         self.shape = (250, 250)
         
     def test(self):
         self.correlation_matrix_U = _generate_square_blocks_matrix(self.shape[0], self.m_blocks, r=1.0)
-        self.stds_U, scaling_factor_sample = _generate_stds(self.shape[0], 'random', normalize=False)
-        
+        self.stds_U, scaling_factor_sample = _generate_stds(self.shape[0], 'random', normalize=True)
         self.U = _generate_covariance(self.correlation_matrix_U, self.stds_U) # sample
-
+        print 'trace U', np.trace(self.U)
+        assert np.allclose(np.sum(self.stds_U**2), 1.0, rtol=1e-5, atol=1e-5)
         pairs_sample = _generate_pairs(self.correlation_matrix_U)
         
-        print 'trace U', np.trace(self.U)
-        #####assert np.allclose(np.sum(self.stds_U**2), 1.0, rtol=1e-5, atol=1e-5)
-        #scaling_factor = float(np.sqrt(1 / float(np.sum(stds**2))))
-        
         self.correlation_matrix_V = _generate_square_blocks_matrix(self.shape[1], self.m_blocks, r=1.0)
-        self.stds_V, scaling_factor_feature = _generate_stds(self.shape[1], 'random', normalize=False) # normalize=False
-        
+        self.stds_V, scaling_factor_feature = _generate_stds(self.shape[1], 'random', normalize=True) 
         self.V = _generate_covariance(self.correlation_matrix_V, self.stds_V) # feature
         print 'trace V', np.trace(self.V)
-        #
-        #for i in xrange(40):
-        #    self.sample = _generate_matrix_normal_sample(self.U, self.V)
-        #    
-
+        assert np.allclose(np.sum(self.stds_U**2), 1.0, rtol=1e-5, atol=1e-5)
         pairs_feature = _generate_pairs(self.correlation_matrix_V)
         
         temp = []
@@ -65,30 +49,18 @@ class Test_std_consistency(unittest.TestCase):
         sample_stds = np.std(self.sample, axis=1)
         feature_stds = np.std(self.sample, axis=0)
 
-        print 'A', (feature_stds[pairs_feature][:, 0] / feature_stds[pairs_feature][:, 1])[:4]
-        print 'B', (sample_stds[pairs_sample][:, 0] / sample_stds[pairs_sample][:, 1])[:4]
+        A = (feature_stds[pairs_feature][:, 0] / feature_stds[pairs_feature][:, 1])[:4]
+        B = (sample_stds[pairs_sample][:, 0] / sample_stds[pairs_sample][:, 1])[:4]
+        true_A = (self.stds_V[pairs_feature][:, 0] / self.stds_V[pairs_feature][:, 1])[:4]
+        true_B = (self.stds_U[pairs_sample][:, 0] / self.stds_U[pairs_sample][:, 1])[:4]
 
-        print 'true A', (self.stds_V[pairs_feature][:, 0] / self.stds_V[pairs_feature][:, 1])[:4]
-        print 'true B', (self.stds_U[pairs_sample][:, 0] / self.stds_U[pairs_sample][:, 1])[:4]
+        assert np.allclose(A, true_A, rtol=1e-5, atol=1e-5)
+        assert np.allclose(B, true_B, rtol=1e-5, atol=1e-5)
         
-        #print 'A', sample_stds
-        #print 'B', self.stds_U # TODO make sure that can estimate stds properly. The factor that the estimated sample stds are smaller depends on the n_feature size, not on n_samples.
-
-        #print 'scaling_factor - sample', scaling_factor_sample, np.mean(feature_stds / self.stds_V)#, np.mean(feature_stds), np.mean(self.stds_V) #np.mean(self.stds_V / feature_stds),
-        #print 'scaling_factor - feature', scaling_factor_feature, np.mean(sample_stds / self.stds_U)#, np.mean(sample_stds), np.mean(self.stds_U) #np.mean(self.stds_U / sample_stds),
-
-        #print sample_stds, np.mean(sample_stds)
-        #print self.stds_U, np.mean(self.stds_U)
-
-        
-        print 'feature', np.mean(feature_stds), np.mean(self.stds_V)
-        print 'sample', np.mean(sample_stds), np.mean(self.stds_U)
-
-        print 'difference feature', np.mean(feature_stds - self.stds_V)
-        print 'difference sample', np.mean(sample_stds - self.stds_U)
-        
-        # TODO only check ratios ... because there might be a non-identifiability factor!
-
+        print 'feature mean stds and raw', np.mean(feature_stds), np.mean(self.stds_V) # NOTE To get macht, should not normalize.
+        print 'sample mean stds and raw', np.mean(sample_stds), np.mean(self.stds_U)
+        print 'difference feature stds', np.mean(feature_stds - self.stds_V)
+        print 'difference sample stds', np.mean(sample_stds - self.stds_U)
         
       
 class Test_generate_covariance(unittest.TestCase):
@@ -115,7 +87,7 @@ class Test_generate_covariance(unittest.TestCase):
         self.m_blocks = 4
         self.shape = (self.n, self.n)
         self.correlation_matrix = _generate_square_blocks_matrix(self.n, self.m_blocks, r=1.0)
-        self.stds, self.scaling_factor = _generate_stds(self.n, 'random')
+        self.stds, self.scaling_factor = _generate_stds(self.n, 'random', normalize=True)
         self.covariance_matrix = _generate_covariance(self.correlation_matrix, self.stds)
         
     def _assert_finite(self, covariance_matrix):
@@ -132,7 +104,7 @@ class Test_generate_covariance(unittest.TestCase):
         self._assert_finite(covariance_matrix)
         self._assert_shape(covariance_matrix)
         self._assert_ndarray(covariance_matrix)
-        _assert_consistency(covariance_matrix, 'a561ebfe676a540e3ae340754fd3cd56')
+        assert_consistency(covariance_matrix, 'a561ebfe676a540e3ae340754fd3cd56')
 
         
 class Test_generate_directions(unittest.TestCase):
@@ -172,7 +144,7 @@ class Test_generate_directions(unittest.TestCase):
         self._assert_finite(directions)
         self._assert_shape(directions, self.pairs)
         self._assert_ndarray(directions)
-        _assert_consistency(directions, '69cc701d865281f105e62450ec0a8a6d')
+        assert_consistency(directions, '69cc701d865281f105e62450ec0a8a6d')
 
         
 class Test_generate_stds(unittest.TestCase):
@@ -204,20 +176,20 @@ class Test_generate_stds(unittest.TestCase):
         assert type(stds) == np.ndarray
         
     def test_random(self):
-        stds, scaling_factor = _generate_stds(self.n, 'random')
+        stds, scaling_factor = _generate_stds(self.n, 'random', normalize=True)
         self._assert_finite(stds)
         self._assert_float(scaling_factor)
         self._assert_shape(stds, self.n)
         self._assert_ndarray(stds)
-        _assert_consistency(stds, '5317374387626efec58ceac7b22db73e')
+        assert_consistency(stds, '5317374387626efec58ceac7b22db73e')
         
     def test_constant(self):
-        stds, scaling_factor = _generate_stds(self.n, 'constant')
+        stds, scaling_factor = _generate_stds(self.n, 'constant', normalize=True)
         self._assert_finite(stds)
         self._assert_float(scaling_factor)
         self._assert_shape(stds, self.n)
         self._assert_ndarray(stds)
-        _assert_consistency(stds, 'aa6d1818a58d8187d49745d5047b1557')
+        assert_consistency(stds, 'aa6d1818a58d8187d49745d5047b1557')
 
     
 class Test_generate_square_blocks_matrix(unittest.TestCase):
@@ -254,7 +226,7 @@ class Test_generate_square_blocks_matrix(unittest.TestCase):
         self._assert_finite(square_blocks_matrix)
         self._assert_shape(square_blocks_matrix)
         self._assert_ndarray(square_blocks_matrix)
-        _assert_consistency(square_blocks_matrix, '089d86cc68efaf7c94ddd1861ebb589e')
+        assert_consistency(square_blocks_matrix, '089d86cc68efaf7c94ddd1861ebb589e')
 
 
 class Test_generate_pairs(unittest.TestCase):
@@ -295,7 +267,7 @@ class Test_generate_pairs(unittest.TestCase):
         self._assert_shape(pairs)
         self._assert_ndarray(pairs)
         self._assert_int(pairs)
-        _assert_consistency(pairs, '63053317a4fb2b8e49e8cabd3b422ca4')
+        assert_consistency(pairs, '63053317a4fb2b8e49e8cabd3b422ca4')
 
 
 class Test_generate_matrix_normal_sample(unittest.TestCase):
@@ -319,10 +291,10 @@ class Test_generate_matrix_normal_sample(unittest.TestCase):
         self.shape = (25, 35)
         self.m_blocks = 4
         self.correlation_matrix_U = _generate_square_blocks_matrix(self.shape[0], self.m_blocks, r=1.0)
-        self.stds_U = _generate_stds(self.shape[0], 'random')[0]
+        self.stds_U = _generate_stds(self.shape[0], 'random', normalize=False)[0]
         self.U = _generate_covariance(self.correlation_matrix_U, self.stds_U)
         self.correlation_matrix_V = _generate_square_blocks_matrix(self.shape[1], self.m_blocks, r=1.0)
-        self.stds_V = _generate_stds(self.shape[1], 'random')[0]
+        self.stds_V = _generate_stds(self.shape[1], 'random', normalize=False)[0]
         self.V = _generate_covariance(self.correlation_matrix_V, self.stds_V)
         
     def _assert_finite(self, sample):
@@ -339,7 +311,7 @@ class Test_generate_matrix_normal_sample(unittest.TestCase):
         self._assert_finite(self.sample)
         self._assert_shape(self.sample)
         self._assert_ndarray(self.sample)
-        _assert_consistency(self.sample, '3180791965339b74b0524eec5d8d2561')
+        assert_consistency(self.sample, 'c5a947371bfd2a1bd819c4e17500bc8b')
 
     
 class TestRedundantSignal(unittest.TestCase):
@@ -380,7 +352,7 @@ class TestRedundantSignal(unittest.TestCase):
         self._assert_finite(signal)
         self._assert_ndarray(signal)
         self._assert_shape(signal)
-        _assert_consistency(signal['X'], 'ecd987f0f79a8ebf73909ad55dc26223')
+        assert_consistency(signal['X'], '2532e89f9137ce60034b3defc9570754')
       
     def test_random(self):
         signal = RedundantSignal(self.shape, 'random', self.m_blocks, self.correlation_strength).generate()
@@ -388,57 +360,8 @@ class TestRedundantSignal(unittest.TestCase):
         self._assert_finite(signal)
         self._assert_ndarray(signal)
         self._assert_shape(signal)
-        _assert_consistency(signal['X'], '5b5cb68873cd8d68329adad3be9da2a2')
+        assert_consistency(signal['X'], 'c1cf0a4ecfbd9d07ff62b3ccbbe3a4d8')
 
-'''        
-class TestRedundantSignalLarge(unittest.TestCase):
-    """Test to verify that everything is still fine for larger matrices.
-
-    Attributes
-    ----------
-    seed : int, default = 42
-        Random seed of the whole test.
-    shape : tuple of int, default = (50, 60)
-        Shape of the output signal matrix in the form of (n_samples, n_features).
-    m_blocks : int, default = 4
-        Number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
-    correlation_strength : float, default = 1.0
-        The strength of correlations between features or samples. Stronger correlations are better for bias recovery.
-    """
-    def setUp(self, seed=42):
-        np.random.seed(seed)
-        self.shape = (1000, 1002)
-        self.m_blocks = 4
-        self.correlation_strength = 1.0
-
-    def _assert_shape(self, signal):
-        assert signal['X'].shape == self.shape
-
-    def _assert_finite(self, signal):
-        assert np.isfinite(signal['X']).all() == True
-
-    def _assert_ndarray(self, signal):
-        assert type(signal['X']) == np.ndarray
-
-    def _assert_dict(self, signal):
-        assert type(signal) == dict
-
-    def test_constant(self):
-        signal = RedundantSignal(self.shape, 'constant', self.m_blocks, self.correlation_strength, std_value=-1.5).generate()
-        self._assert_dict(signal)
-        self._assert_finite(signal)
-        self._assert_ndarray(signal)
-        self._assert_shape(signal)
-        _assert_consistency(signal['X'], 'fcf5082af97b2ed543849986c07e88f1')
-
-    def test_random(self):
-        signal = RedundantSignal(self.shape, 'random', self.m_blocks, self.correlation_strength).generate()
-        self._assert_dict(signal)
-        self._assert_finite(signal)
-        self._assert_ndarray(signal)
-        self._assert_shape(signal)
-        _assert_consistency(signal['X'], 'c41d8335382cfb174607791f9943748b')
-'''
         
 if __name__ == '__main__':
     unittest.main()

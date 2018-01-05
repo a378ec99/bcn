@@ -79,7 +79,7 @@ def pair_overlap(true_pairs, estimated_pairs):
     return d
 
     
-def visualize_absolute(data, space='sample', file_name='out/test_absolute', format='.png', recovered=False):
+def visualize_absolute(data, space='sample', file_name='../../out/test_absolute', format='.png', recovered=False):
     """Visualize absolute values of the dataset, with signal, mixed and bias shown.
 
     Parameters
@@ -152,7 +152,7 @@ def visualize_absolute(data, space='sample', file_name='out/test_absolute', form
         fig.savefig(file_name + format)
         
 
-def visualize_dependences(data, space='sample', file_name='out/test_dependences', truth_available=True, estimate_available=True, recovery_available=True, format='.png', max_plots=10, max_points=40): # '.eps'
+def visualize_dependences(data, space='sample', file_name='../../out/test_dependences', truth_available=True, estimate_available=True, recovery_available=True, format='.png', max_plots=10, max_points=40): # '.eps'
     """Visualizes dependences to diagnose how the original, guess and reconstruction looks like on that backgrounnd.
 
     Parameters
@@ -306,7 +306,7 @@ def visualize_dependences(data, space='sample', file_name='out/test_dependences'
         fig.savefig(file_name + format)
         
 
-def visualize_correlations(data, space='sample', file_name='out/test_correlations', truth_available=True, format='.png'):
+def visualize_correlations(data, space='sample', file_name='../../out/test_correlations', truth_available=True, format='.png'):
     """Visualize estimated or true correlation matrices.
 
     Parameters
@@ -345,7 +345,7 @@ def visualize_correlations(data, space='sample', file_name='out/test_correlation
     fig.savefig(file_name + format)
     
 
-def visualize_performance(errors, x, y, x_name, y_name, file_name='out/test_performance', format='.png'):
+def visualize_performance(errors, x, y, x_name, y_name, file_name='../../out/test_performance', format='.png'):
     """Visualizes the overall performance of multiple runs in the standard diagrams for compressed sensing recovery.
 
     Parameters

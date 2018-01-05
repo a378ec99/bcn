@@ -9,24 +9,18 @@ from __future__ import division, absolute_import
 
 __all__ = ['TestConjugateGradientSolver']
 
-import unittest
-import hashlib
 import sys
-import numpy as np
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
-from bcn.data import DataSimulated#, DataSimulatedLarge
+
+import unittest
+import numpy as np
+from bcn.data import DataSimulated
 from bcn.cost import Cost
 from bcn.solvers import ConjugateGradientSolver
 from bcn.linear_operators import LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom
 from bcn.bias import guess_func
+from bcn.utils.testing import assert_consistency
 
-
-def _assert_consistency(X, true_md5):
-    m = hashlib.md5()
-    m.update(X)
-    current_md5 = m.hexdigest()
-    assert current_md5 == true_md5
-    
 
 class TestConjugateGradientSolver(unittest.TestCase):
     """Test to verify that the conjugate gradient based solver produces the correct result.
@@ -72,7 +66,7 @@ class TestConjugateGradientSolver(unittest.TestCase):
         print 'cost.cost_func(X_true)', cost.cost_func(X_true)
         print '-------------------------------------------------------- '
         assert np.allclose(X_estimated, X_true, rtol=1e-5, atol=1e-5)
-        #_assert_consistency(X_estimated, '1')
+        assert_consistency(X_estimated, 'a4ccf2bc272d6b4c3a4d797c6356e61d')
 
     def test_dense(self):
         operator = LinearOperatorDense(self.data, self.n_measurements).generate()
@@ -90,7 +84,7 @@ class TestConjugateGradientSolver(unittest.TestCase):
         print 'cost.cost_func(X_true)', cost.cost_func(X_true)
         print '-------------------------------------------------------- '
         assert np.allclose(X_estimated, X_true, rtol=1e-5, atol=1e-5)
-        #_assert_consistency(X_estimated, '2')
+        assert_consistency(X_estimated, 'f082ec600a1b3188554758c4010061aa')
         
     def test_ksparse1(self):
         sparsity = 1
@@ -109,7 +103,7 @@ class TestConjugateGradientSolver(unittest.TestCase):
         print 'cost.cost_func(X_true)', cost.cost_func(X_true)
         print '-------------------------------------------------------- '
         assert np.allclose(X_estimated, X_true, rtol=1e-5, atol=1e-5)
-        #_assert_consistency(X_estimated, '3')
+        assert_consistency(X_estimated, '7418dbd052a2a4e00835dd9530c9199d')
         
     def test_ksparse2(self):
         sparsity = 2
@@ -128,7 +122,7 @@ class TestConjugateGradientSolver(unittest.TestCase):
         print 'cost.cost_func(X_true)', cost.cost_func(X_true)
         print '-------------------------------------------------------- '
         assert np.allclose(X_estimated, X_true, rtol=1e-5, atol=1e-5)
-        #_assert_consistency(X_estimated, '4')
+        assert_consistency(X_estimated, '06cc01673cf48472d34b83c08a08089d')
     
     def test_ksparse3(self):
         sparsity = 3
@@ -147,7 +141,7 @@ class TestConjugateGradientSolver(unittest.TestCase):
         print 'cost.cost_func(X_true)', cost.cost_func(X_true)
         print '-------------------------------------------------------- '
         assert np.allclose(X_estimated, X_true, rtol=1e-5, atol=1e-5)
-        #_assert_consistency(X_estimated, '5')
+        assert_consistency(X_estimated, '59bd166bfa201a1976d8d4011eb1449a')
         
     def test_blind(self):
         self.data.estimate(true_stds={'sample': self.data.d['sample']['true_stds'], 'feature': self.data.d['feature']['true_stds']}, true_pairs={'sample': self.data.d['sample']['true_pairs'], 'feature': self.data.d['feature']['true_pairs']}, true_directions={'sample': self.data.d['sample']['true_directions'], 'feature': self.data.d['feature']['true_directions']})
@@ -167,7 +161,7 @@ class TestConjugateGradientSolver(unittest.TestCase):
         print 'cost.cost_func(X_true)', cost.cost_func(X_true)
         print '-------------------------------------------------------- '
         assert np.allclose(X_estimated, X_true, rtol=1e-5, atol=1e-5)
-        #_assert_consistency(X_estimated, '6')
+        assert_consistency(X_estimated, '6')
 
         
 if __name__ == '__main__':
