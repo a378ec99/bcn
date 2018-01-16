@@ -228,17 +228,14 @@ if __name__ == '__main__':
     gpl = 'GPL1261'
     with h5py.File('/home/sohse/projects/NCBI/Normalization_SCAN_{gpl}.h5'.format(gpl=gpl), 'r') as f:
         scan_features1 = np.asarray(clean(np.asarray(f['features'])))
-        scan_samples1 = np.asarray(clean(np.asarray(f['samples'])))[::40]
+        scan_samples1 = np.asarray(clean(np.asarray(f['samples'])))
         scan_X1 = np.asarray(f['SCAN'])
 
     gpl = 'GPL570'
     with h5py.File('/home/sohse/projects/NCBI/Normalization_SCAN_{gpl}.h5'.format(gpl=gpl), 'r') as f:
         scan_features2 = np.asarray(clean(np.asarray(f['features'])))
-        scan_samples2 = np.asarray(clean(np.asarray(f['samples'])))[::100]
+        scan_samples2 = np.asarray(clean(np.asarray(f['samples'])))
         scan_X2 = np.asarray(f['SCAN'])
-
-    labels_batches = {'+': range(len(scan_samples1)), 'o': (np.arange(len(scan_samples2)) + len(scan_samples1)).tolist()} # GPL1261, GPL570
-    samples = np.hstack([scan_samples1, scan_samples2])
 
     '''
     # NOTE The storage in between in order to do the online mapping of features to orthologues.
@@ -251,43 +248,57 @@ if __name__ == '__main__':
         for id_ in scan_features2:
             f.write(id_ + '\n')
     '''
-    
+
+    # NOTE Feature merging based on orthologues.
     scan_features2_mapped = human_to_mouse(scan_features2)
     indices_1, indices_2 = overlapping_feature_indices(scan_features1, scan_features2_mapped)
     scan_features1_subset = scan_features1[indices_1]
     scan_features2_subset = scan_features2_mapped[indices_2]
     np.testing.assert_array_equal(scan_features1_subset, scan_features2_subset)
 
-    scan_X1 = scan_X1[::40, indices_1]
-    scan_X2 = scan_X2[::100, indices_2] 
+    # NOTE Reduction of the dataset to approximately the same size for each plattform and ~1000 each.
+    subset_1 = 4 # 40
+    subset_2 = 10 # 100
+    scan_X1 = scan_X1[::subset_1, indices_1]
+    scan_X2 = scan_X2[::subset_2, indices_2] 
     scan_X = np.vstack([scan_X1, scan_X2])
-    print 'scan_X.shape', scan_X.shape
-
-    tissues = sorted(['liver', 'kidney']) # 'lung', 'skin', 'muscle', 'brain' # , 'all_tissues'
-    d_samples_2 = compute_annotation_samples(tissues, samples, recompute=True) # NOTE Gives indices instead of sample/feature names.
-    tissues = sorted(['liver', 'kidney', 'lung', 'skin', 'muscle', 'brain']) 
-    d_samples_6 = compute_annotation_samples(tissues, samples, recompute=True)
+    #print 'scan_X.shape', scan_X.shape
+    labels_batches = np.asarray(['+'] * len(scan_samples1[::subset_1]) + ['o'] * len(scan_samples2[::subset_2])) # GPL1261, GPL570
+    labels_gsms = np.hstack([scan_samples1[::subset_1], scan_samples2[::subset_2]])
     
-    # TODO Condense the compute_annotation_samples and compute_annotation_features into one.
-    # TODO Get rid of batch effects or really try something other than platform?
+    labels_tissues_2 = sorted(['liver', 'kidney'])
+    labels_tissues_6 = sorted(['liver', 'kidney', 'lung', 'skin', 'muscle', 'brain'])
+
+    Xs, ys, batches, gsms = [], [], [], []
+    for d_samples, labels in zip([compute_annotation(labels_tissues_2, labels_gsms, recompute=True), compute_annotation(labels_tissues_6, labels_gsms, recompute=True)], [labels_tissues_2, labels_tissues_6]):
+        Xs.append(np.vstack([scan_X[d_samples[item]] for item in labels]))
+        ys.append(np.hstack([len(d_samples[item]) * [item] for item in labels]))
+        batches.append(np.hstack([np.asarray(labels_batches)[d_samples[item]] for item in labels]))
+        gsms.append(np.hstack([labels_gsms[d_samples[item]] for item in labels]))
+
+    cPickle.dump(ys, open('../../data/ys.pickle', 'w'))
+    cPickle.dump(Xs, open('../../data/Xs.pickle', 'w'))
+    cPickle.dump(batches, open('../../data/batches.pickle', 'w'))
+    cPickle.dump(gsms, open('../../data/gsms.pickle', 'w'))
+
+    # TODO Estimate stds, pairs and directions (e.g. correlations) on large database and use the best know correlations together with the rows/columns of interest here to estimate batch effects and correct.
+    # TODO Might have to optimize solver, e.g. sparsity stuff and randomization properly.
+    # TODO get also batch effect annotations from mining, not just platforms
 
 
-    # TODO continue maing it classifier mundgerecht!
-    y = d_samples_2
-    X = scan_X[]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
-    for label, index in d_samples_2:
-        X =
-        y =
-        
-    #return X, y
-
-
-
-
-
-
-
-
-
-
