@@ -118,7 +118,7 @@ class ConjugateGradientSolver(object):
         self.data.d[self.space]['guess_usvt'] = guess_usvt
         self.data.d[self.space]['estimated_bias'] = estimated_bias
         self.data.d[self.space]['estimated_signal'] = self.mixed - estimated_bias
-
+        self.data.d[self.space]['final_cost'] = error
         return self.data
 
         

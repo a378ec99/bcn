@@ -255,7 +255,8 @@ if __name__ == '__main__':
     scan_features1_subset = scan_features1[indices_1]
     scan_features2_subset = scan_features2_mapped[indices_2]
     np.testing.assert_array_equal(scan_features1_subset, scan_features2_subset)
-
+    ensembls = scan_features1_subset
+    
     # NOTE Reduction of the dataset to approximately the same size for each plattform and ~1000 each.
     subset_1 = 4 # 40
     subset_2 = 10 # 100
@@ -263,24 +264,26 @@ if __name__ == '__main__':
     scan_X2 = scan_X2[::subset_2, indices_2] 
     scan_X = np.vstack([scan_X1, scan_X2])
     #print 'scan_X.shape', scan_X.shape
-    labels_batches = np.asarray(['+'] * len(scan_samples1[::subset_1]) + ['o'] * len(scan_samples2[::subset_2])) # GPL1261, GPL570
+    scan_X[scan_X < 0.0] = np.nan
+    labels_batches = np.asarray(['GPL1261'] * len(scan_samples1[::subset_1]) + ['GPL570'] * len(scan_samples2[::subset_2])) # GPL1261, GPL570
     labels_gsms = np.hstack([scan_samples1[::subset_1], scan_samples2[::subset_2]])
     
     labels_tissues_2 = sorted(['liver', 'kidney'])
     labels_tissues_6 = sorted(['liver', 'kidney', 'lung', 'skin', 'muscle', 'brain'])
-
+    
     Xs, ys, batches, gsms = [], [], [], []
     for d_samples, labels in zip([compute_annotation(labels_tissues_2, labels_gsms, recompute=True), compute_annotation(labels_tissues_6, labels_gsms, recompute=True)], [labels_tissues_2, labels_tissues_6]):
         Xs.append(np.vstack([scan_X[d_samples[item]] for item in labels]))
         ys.append(np.hstack([len(d_samples[item]) * [item] for item in labels]))
         batches.append(np.hstack([np.asarray(labels_batches)[d_samples[item]] for item in labels]))
         gsms.append(np.hstack([labels_gsms[d_samples[item]] for item in labels]))
-
+    
     cPickle.dump(ys, open('../../data/ys.pickle', 'w'))
     cPickle.dump(Xs, open('../../data/Xs.pickle', 'w'))
     cPickle.dump(batches, open('../../data/batches.pickle', 'w'))
     cPickle.dump(gsms, open('../../data/gsms.pickle', 'w'))
-
+    cPickle.dump(ensembls, open('../../data/ensembls.pickle', 'w'))
+    
     # TODO Estimate stds, pairs and directions (e.g. correlations) on large database and use the best know correlations together with the rows/columns of interest here to estimate batch effects and correct.
     # TODO Might have to optimize solver, e.g. sparsity stuff and randomization properly.
     # TODO get also batch effect annotations from mining, not just platforms
