@@ -17,7 +17,7 @@ from pymanopt.manifolds import FixedRankEmbedded
 
 class ConjugateGradientSolver(object):
 
-    def __init__(self, cost_func, guess_func, data, rank, n_restarts, noise_amplitude=5.0, space='sample', seed=None, verbosity=2):
+    def __init__(self, cost_func, guess_func, data, rank, n_restarts, noise_amplitude=5.0, maxiter=1000, space='sample', seed=None, verbosity=2):
         """Create a solver to recovery bias given observations `X` and cost/guess functions.
 
         Parameters
@@ -48,12 +48,13 @@ class ConjugateGradientSolver(object):
         self.space = space
         self.rank = rank
         self.n_restarts = n_restarts
+        self.maxiter = maxiter
         self.mixed = self.data.d[self.space]['mixed']
         self.shape = self.mixed.shape
         self.manifold = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank)
         self.guess_func = guess_func
         self.problem = Problem(manifold=self.manifold, cost=cost_func, verbosity=verbosity)
-        self.solver = ConjugateGradient(logverbosity=2, maxiter=1000, maxtime=100, mingradnorm=1e-12, minstepsize=1e-12) # , maxiter=None, maxtime=None, mingradnorm=None, minstepsize=None
+        self.solver = ConjugateGradient(logverbosity=2, maxiter=self.maxiter, maxtime=100, mingradnorm=1e-12, minstepsize=1e-12) # , maxiter=None, maxtime=None, mingradnorm=None, minstepsize=None
         self.n_retries_svd = 10
         self.noise_amplitude = noise_amplitude
         

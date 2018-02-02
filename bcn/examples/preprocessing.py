@@ -20,6 +20,8 @@ import sqlite3
 import h5py
 import numpy as np
 
+from bcn.data import estimate_pairs, estimate_correlations
+
 
 class Annotation(object):
     '''
@@ -177,16 +179,22 @@ def compute_annotation(labels, items, column_names=['gsm', 'description'], pickl
         db = Annotation('../../data/GEOmetadb.sqlite')
         d = {}
         for label in labels:
+            counter = 0
             out = db.query('gsm', rows=list(items), cols=column_names) # 'extract_protocol_ch1', 'label_protocol_ch1', 'hyb_protocol', 'label_ch1'
             result = db.search(label, out)
             indices = []
             for i, item in enumerate(items):
                 if item in result:
-                    indices.append(i)
+                    if counter < 16:
+                        indices.append(i)
+                    counter = counter + 1
             d[label] = indices
 
     d = keep_unique_values(d)
     cPickle.dump(d, open(pickle_file_name, 'w'))
+
+    # TODO with 16 from each class (so 4 * 16 = 64) for important run.
+    
     return d
 
 
@@ -252,27 +260,48 @@ if __name__ == '__main__':
     # NOTE Feature merging based on orthologues.
     scan_features2_mapped = human_to_mouse(scan_features2)
     indices_1, indices_2 = overlapping_feature_indices(scan_features1, scan_features2_mapped)
-    scan_features1_subset = scan_features1[indices_1]
-    scan_features2_subset = scan_features2_mapped[indices_2]
+    scan_features1_subset = scan_features1[indices_1[::2]]
+    scan_features2_subset = scan_features2_mapped[indices_2[::2]]
     np.testing.assert_array_equal(scan_features1_subset, scan_features2_subset)
     ensembls = scan_features1_subset
     
     # NOTE Reduction of the dataset to approximately the same size for each plattform and ~1000 each.
     subset_1 = 4 # 40
     subset_2 = 10 # 100
-    scan_X1 = scan_X1[::subset_1, indices_1]
-    scan_X2 = scan_X2[::subset_2, indices_2] 
+    scan_X1 = scan_X1[::subset_1, indices_1[::2]]
+    scan_X2 = scan_X2[::subset_2, indices_2[::2]]
     scan_X = np.vstack([scan_X1, scan_X2])
-    #print 'scan_X.shape', scan_X.shape
+
+    print 1
+    try:
+        correlations = cPickle.load(open('../../data/correlations.pickle', 'r'))
+    except IOError:
+        correlations = estimate_correlations(scan_X.T)
+        cPickle.dump(correlations, open('../../data/correlations.pickle', 'w'))
+
+    print 2
+    pairs = estimate_pairs(correlations, threshold=0.95) # ~1000 features @ 0.8
+
+    print 3
+    indices = np.unique(np.hstack(pairs).ravel())
+
+    print 4
+    scan_X = scan_X[:, indices]
+
+    print 5
+    ensembls = ensembls[indices]
+
+    print 6
     scan_X[scan_X < 0.0] = np.nan
     labels_batches = np.asarray(['GPL1261'] * len(scan_samples1[::subset_1]) + ['GPL570'] * len(scan_samples2[::subset_2])) # GPL1261, GPL570
     labels_gsms = np.hstack([scan_samples1[::subset_1], scan_samples2[::subset_2]])
     
     labels_tissues_2 = sorted(['liver', 'kidney'])
+    labels_tissues_4 = sorted(['liver', 'kidney', 'lung', 'skin'])
     labels_tissues_6 = sorted(['liver', 'kidney', 'lung', 'skin', 'muscle', 'brain'])
     
     Xs, ys, batches, gsms = [], [], [], []
-    for d_samples, labels in zip([compute_annotation(labels_tissues_2, labels_gsms, recompute=True), compute_annotation(labels_tissues_6, labels_gsms, recompute=True)], [labels_tissues_2, labels_tissues_6]):
+    for d_samples, labels in zip([compute_annotation(labels_tissues_2, labels_gsms, recompute=True), compute_annotation(labels_tissues_4, labels_gsms, recompute=True), compute_annotation(labels_tissues_6, labels_gsms, recompute=True)], [labels_tissues_2, labels_tissues_4, labels_tissues_6]):
         Xs.append(np.vstack([scan_X[d_samples[item]] for item in labels]))
         ys.append(np.hstack([len(d_samples[item]) * [item] for item in labels]))
         batches.append(np.hstack([np.asarray(labels_batches)[d_samples[item]] for item in labels]))
@@ -283,6 +312,26 @@ if __name__ == '__main__':
     cPickle.dump(batches, open('../../data/batches.pickle', 'w'))
     cPickle.dump(gsms, open('../../data/gsms.pickle', 'w'))
     cPickle.dump(ensembls, open('../../data/ensembls.pickle', 'w'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
     # TODO Estimate stds, pairs and directions (e.g. correlations) on large database and use the best know correlations together with the rows/columns of interest here to estimate batch effects and correct.
     # TODO Might have to optimize solver, e.g. sparsity stuff and randomization properly.

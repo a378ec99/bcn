@@ -7,7 +7,7 @@ Defines a class that can be used to evaluate bias recovery on high-throughput da
 from __future__ import division, absolute_import
 
 
-__all__ = ['visualize_threshold', 'visualize_2D', 'performance_evaluation']
+__all__ = ['visualize_threshold', 'reduce_dimensions', 'performance_evaluation', 'bias_correction']
 
 import sys # WARNING remove in final version
 sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
@@ -67,7 +67,7 @@ def visualize_threshold(X):
 
 def reduce_dimensions(X, y, model='tSNE'):
     '''
-    Visualizes the dataset with a low-dimensional embedding given batch and tissue annotations and outputs this.
+    Does a low-dimensional embedding to 2D.
 
     Parameters
     ----------
@@ -75,12 +75,8 @@ def reduce_dimensions(X, y, model='tSNE'):
         The input dataset to the PCA or tSNE algorithm.
     y : sequence (of str)
         The labels with respect to tissue type (not digitized).
-    batch = sequence (of str)
-        The labels with respect to batch, e.g. platform type.
     model = str, {'PCA', 'tSNE'}
         The algorithm to be used for the embedding.
-        
-    Returns a plot, with the name ``pca''.
 
     Returns
     -------
@@ -96,38 +92,10 @@ def reduce_dimensions(X, y, model='tSNE'):
     if model == 'PCA':
         pca = PCA(n_components=2, svd_solver='randomized')
         X = pca.fit_transform(X)
-
-    """
-    fig = pl.figure()
-    ax = fig.add_subplot(111)
-    
-    for n, (sample, label_tissue, label_batch) in enumerate(zip(X, y, batch)):
-        if label_batch == 'GPL1261':
-            marker = 'D'
-        if label_batch == 'GPL570':
-            marker = 'o'
-        if n == 1 or n == (len(y) - 1):
-            label = label_batch
-        else:
-            label = None
-        color = pl.cm.Paired(label_tissue) 
-        ax.plot([sample[0]], [sample[1]], marker=marker, alpha=0.8, color=color, label=label)
-        
-    if model == 'PCA':
-        ax.set_title('PCA')
-        ax.set_xlabel('PC 1 ({}% variance)'.format(int(100 * pca.explained_variance_ratio_[0])))
-        ax.set_ylabel('PC 2 ({}% variance)'.format(int(100 * pca.explained_variance_ratio_[1])))
-    if model == 'tSNE':
-        ax.set_title('tSNE')
-        ax.set_xlabel('Component 1')
-        ax.set_ylabel('Component 2')
-    ax.legend(loc='best', numpoints=1)
-    fig.savefig('visualization3')
-    """
     return X
 
 
-def performance_evaluation(X, y, batch, model='naiveBayes'):
+def performance_evaluation(X, y, batch, model='naiveBayes', file_name='test'):
     '''
     Evaluation the performance of a particular dataset with a specific calssification algorithm.
 
@@ -139,7 +107,8 @@ def performance_evaluation(X, y, batch, model='naiveBayes'):
         Labels of the samples, e.g. tissue types.
     model : str {'RF', 'naiveBayes', 'linearSVM'}
         The classification algorithm to be used. At the moment only random forrests (RF).
-        
+    file_name : str
+        String to be added to the file name describing the dataset used.
     Results
     -------
     best : str ?
@@ -175,29 +144,45 @@ def performance_evaluation(X, y, batch, model='naiveBayes'):
     ax.set_xticks(())
     ax.set_yticks(())
     ax.set_title('{} Multi-Class Classification on 2 PCs'.format(model))
-    fig.savefig('classification3')
+    fig.savefig('classification_' + file_name)
     
     scores = cross_val_score(classifier, X, y, cv=5)
     print('Accuracy: %0.2f (+/- %0.2f)' % (scores.mean(), scores.std() * 2))
 
 
-def bias_correction(X, ranks, thresholds, n_restarts=3): # 10
+def bias_correction(X, ranks, thresholds, n_restarts=3):
     '''
+    Blind bias correction with BCN testing different ranks and thresholds.
+    
+    Parameters
+    ----------
+    X : ndarray (n_samples, n_features)
+        Matrix consiting of a mixture of signal and bias.
+    ranks : sequence of int
+        Ranks to be tested for the low rank matrix modelling the bias to be recovered.
+    thresholds : float
+        Threshold used to select correlated pairs (both sample and feature space).
+    n_restarts : int (default = 3)
+        The number of restarts of the conjugate gradient solver.
+
+    Returns
+    -------
+    corrected : ndarray (n_samples, n_features)
+        Bias corrected matrix (ideally pure signal).
     '''
     errors = []
     results = []
     
-    for threshold in thresholds:
-        for rank in ranks:
-            print threshold, 'of', len(thresholds)
-            print rank, 'of', len(ranks)
+    for t, threshold in enumerate(thresholds):
+        for r, rank in enumerate(ranks):
+            print 'threshold', threshold, '-', t + 1, 'of', len(thresholds)
+            print 'rank', rank, '-', r + 1, 'of', len(ranks)
             blind = DataBlind(X, rank, correlation_threshold=threshold) # 0.85
             blind.estimate()
-            visualize_correlations(blind, file_name='correlation_thresholds', truth_available=False)
+            #visualize_correlations(blind, file_name='correlation_thresholds', truth_available=False)
             missing_fraction = np.isnan(X).sum() / X.size
-            possible_measurement_range(X.shape, missing_fraction)
-            n_measurements = len(blind.d['sample']['estimated_pairs']) * (blind.d['sample']['shape'][1] - missing_fraction * blind.d['sample']['shape'][1]) + len(blind.d['feature']['estimated_pairs']) * (blind.d['sample']['shape'][0] - missing_fraction * blind.d['sample']['shape'][0])
-
+            print possible_measurement_range(X.shape, missing_fraction)
+            n_measurements = 200 # len(blind.d['sample']['estimated_pairs']) * (blind.d['sample']['shape'][1] - missing_fraction * blind.d['sample']['shape'][1]) + len(blind.d['feature']['estimated_pairs']) * (blind.d['sample']['shape'][0] - missing_fraction * blind.d['sample']['shape'][0])
             print n_measurements
             
             # NOTE Construction of the measurement operator and measurements from the data.
@@ -207,7 +192,7 @@ def bias_correction(X, ranks, thresholds, n_restarts=3): # 10
             cost = Cost(A, y)
 
             # NOTE Setup and run of the recovery with the standard solver.
-            solver = ConjugateGradientSolver(cost.cost_func, guess_func, blind, rank, n_restarts, verbosity=0)
+            solver = ConjugateGradientSolver(cost.cost_func, guess_func, blind, rank, n_restarts, verbosity=2)
             
             result = solver.recover()
             results.append(result)
@@ -215,7 +200,7 @@ def bias_correction(X, ranks, thresholds, n_restarts=3): # 10
             errors.append(error)
             
     index = np.argmin(errors)
-    corrected = results[index].d[self.space]['estimated_signal']
+    corrected = results[index].d['sample']['estimated_signal']
     return corrected
 
 
@@ -227,17 +212,17 @@ if __name__ == '__main__':
     #gsms = cPickle.load(open('../../data/gsms.pickle', 'r'))
     #ensembls = cPickle.load(open('../../data/ensembls.pickle', 'r'))
 
-    ranks = np.arange(1, 10)
-    thresholds = np.linspace(0.65, 0.95, 5)
-    mixed = scan_Xs[0] # scan_corrected_Xs
-    '''
+    ranks = [2, 3] # np.arange(1, 10)
+    thresholds = [0.95] # np.linspace(0.65, 0.95, 5)
+    mixed = scan_Xs[1]
+    
     scan_corrected_Xs = []
     for scan_X in scan_Xs:
-        scan_corrected_Xs.append(bias_correction(scan_X, ranks, thresholds))
-    scan_corrected_Xs[0]
-    '''
-    y = ys[0]
-    batch = batches[0]
+        scan_corrected_Xs.append(bias_correction(mixed, ranks, thresholds))
+    corrected = scan_corrected_Xs[0]
+    
+    y = ys[1]
+    batch = batches[1]
     
     le = LabelEncoder()
     y = le.fit_transform(y)
@@ -249,129 +234,10 @@ if __name__ == '__main__':
     #visualize_threshold(mixed)
 
     print 'Performance evaluation...'
-    performance_evaluation(reduced, y, batch, model='naiveBayes') # model='RF'
+    performance_evaluation(reduced, y, batch, model='naiveBayes', file_name='before_correction') # model='RF'
     
-    
-    corrected = bias_correction(mixed, ranks, thresholds) # [:20, :10]
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-"""
-
-
-
-    # NOTE Get an overview of the data, then set these parameters and correct.
-
-    # TODO Plot the correlation structure at different thresholds.
-
-    # TODO Plot the absolute look of the data.
-
-    # TODO show with real batch annotation in PCA (visualize full)! Get rid of d and use what is given Xs, ys, etc.
-
-    # TODO docstrings
-
-    # TODO Plot some dependencies.
-
-    # TODO Could also plot unannotated, since using that for bias recovery anyhow!
-
-
-
-    
-
-def select_subset(X, index_dict, annotation, max_size=100):
-    temp = []
-    temp_annotation = []
-    temp_annotation_2 = []
-    for key in sorted(index_dict):
-        for n, index in enumerate(index_dict[key]):
-            if n == max_size:
-                break
-            temp.append(X[index])
-            temp_annotation.append(annotation[index])
-            temp_annotation_2.append(key)
-    X = np.vstack(temp)
-    annotation = np.vstack(temp_annotation).ravel()
-    annotation_2 = np.vstack(temp_annotation_2).ravel()
-    return X, annotation, annotation_2
-
-
-
-def select_subset_both_dimensions(X, index_dict_x, index_dict_y, annotation_x, annotation_y):
-    X, annotation_x, annotation_x_2 = select_subset(X, index_dict_x, annotation_x)
-    Xt, annotation_y, annotation_y_2 = select_subset(X.T, index_dict_y, annotation_y)
-    X = Xt.T
-    return X, annotation_x, annotation_x_2, annotation_y, annotation_y_2
-
-
-
-
-
-    
-visualize_threshold(X_scan_subset, 'SCAN_sample')
-visualize_threshold(X_scan_subset.T, 'SCAN_feature') # WARNING doesn't work
-
-
-visualize_full(scan_X, d_samples, 'sample', 'SCAN_centered', batches_scatter, format='png')
-
-batches_scatter_feature = {'o': range(len(scan_X.T)), '+': []}
-
-visualize_full(scan_X.T, d_features, 'feature', 'SCAN_centered', batches_scatter_feature, format='png')
-
-
-c = Classification()
-
-X_scan_subset, X_scan_subset_annotation_x, X_scan_subset_annotation_x_2, X_scan_subset_annotation_y, X_scan_subset_annotation_y_2 = select_subset_both_dimensions(scan_X, d_samples, d_features, samples, features)
-
-X_scan_subset_annotation_x_numeric_2 = label_encoder(X_scan_subset_annotation_x_2, tissues)
-X_scan_subset_annotation_y_numeric_2 = label_encoder(X_scan_subset_annotation_y_2, GO_terms)
-
-print 'SCAN', 'sample', 'accuracy', c.best_score(X_scan_subset, X_scan_subset_annotation_x_numeric_2, metric='accuracy')
-print 'SCAN', 'feature', 'accuracy', c.best_score(X_scan_subset.T, X_scan_subset_annotation_y_numeric_2, metric='accuracy')
-print 'SCAN', 'sample', 'F1', c.best_score(X_scan_subset, X_scan_subset_annotation_x_numeric_2)
-print 'SCAN', 'feature', 'F1', c.best_score(X_scan_subset.T, X_scan_subset_annotation_y_numeric_2)
-
-
-
-
-    
-for rank in range(1, 5):
-    print rank
-    data = DataBlind(X_scan_subset, rank, noise_amplitude=1.0) #NOTE # noise_amplitude is just for guess!
-    data.estimate()
-    n_measurements = 1000 # TODO max and min non-redundant? Note that random sampling will always yield some ducpicates.
-    operator = LinearOperatorCustom(data.d, n_measurements).generate()
-    A = operator['A']
-    y = operator['y']
-    cost = Cost(A, y)
-    solver = ConjugateGradientSolver(cost.cost_function, data, rank, 10, verbosity=0)
-    data.d = solver.recover()
-    #visualize_dependences(data.d, file_name='test_dependences_estimated_real_data_' + str(rank))
-    X_scan_subset_clean = data.d['sample']['mixed'] - data.d['sample']['estimated_bias']
-
-    print X_scan_subset_clean.shape
-
-    print 'SCAN', 'sample', 'accuracy', c.best_score(X_scan_subset_clean, X_scan_subset_annotation_x_numeric_2, metric='accuracy')
-    #print 'SCAN', 'feature', 'accuracy', c.best_score(X_scan_subset_clean.T, X_scan_subset_annotation_y_numeric_2, metric='accuracy')
-    print 'SCAN', 'sample', 'F1', c.best_score(X_scan_subset_clean, X_scan_subset_annotation_x_numeric_2)
-    #print 'SCAN', 'feature', 'F1', c.best_score(X_scan_subset_clean.T, X_scan_subset_annotation_y_numeric_2)
-
-    # TODO Stop doing the subset thing. scan_X needs to be the cleaned version.
-
-    #visualize_full(scan_X, d_samples, 'sample', 'SCAN_centered_' + str(rank), batches_scatter, format='png')
-
-# TODO increase size and only do with those samples / features that have high correlation... could just do it with same samples but features with high correlation!
-"""
+    print 'Performance evaluation...'
+    performance_evaluation(corrected, y, batch, model='naiveBayes', file_name='after_correction') # model='RF'
 
 
 

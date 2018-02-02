@@ -243,7 +243,7 @@ class Data(object):
     
 class DataSimulated(Data):
 
-    def __init__(self, shape, rank, model='gaussian', correlation_threshold=0.7, m_blocks_factor=2, noise_amplitude=1.0, missing_type='MAR', feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, shape, rank, model='gaussian', correlation_threshold=0.7, m_blocks_factor=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -277,6 +277,7 @@ class DataSimulated(Data):
         self.correlation_threshold = correlation_threshold
         self.m_blocks_factor = m_blocks_factor
         self.noise_amplitude = noise_amplitude
+        self.correlation_strength = correlation_strength
         self.missing_type = missing_type
         self.feature_annotation = feature_annotation
         self.sample_annotation = sample_annotation
@@ -292,7 +293,7 @@ class DataSimulated(Data):
         
         bias = BiasLowRank(self.shape, self.rank, model=self.model, noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate() # BiasUnconstrained(self.shape, model='gaussian', noise_amplitude=1.0).generate()
         missing = Missing(self.shape, self.missing_type, p_random=self.missing_fraction).generate() 
-        signal = RedundantSignal(self.shape, 'random', m_blocks, 1.0).generate()
+        signal = RedundantSignal(self.shape, 'random', m_blocks, self.correlation_strength).generate()
         mixed = signal['X'] + bias['X'] + missing['X']
 
         for space in ['sample', 'feature']:
@@ -307,7 +308,7 @@ class DataSimulated(Data):
             self.d[space]['true_directions'] = signal[space]['directions'] # TODO assert that these are indeed using the same pairs as used in true_stds.
             self.d[space]['correlation_threshold'] = correlation_threshold
             
-    def estimate(self, true_pairs=None, true_directions=None, true_stds=None):
+    def estimate(self, true_pairs=None, true_directions=None, true_stds=None, true_correlations=None):
         """Estimate sucessively correlations, pairs, directions and strandard deviations from a `mixed` matrix.
 
         Parameters
@@ -322,7 +323,10 @@ class DataSimulated(Data):
         for space in ['feature', 'sample']:
             assert self.d[space]['correlation_threshold'] is not None
             assert self.d[space]['mixed'] is not None
-            self.d[space]['estimated_correlations'] = estimate_correlations(self.d[space]['mixed'])
+            if true_correlations is not None:
+                self.d[space]['estimated_correlations'] = true_correlations[space]
+            else:
+                self.d[space]['estimated_correlations'] = estimate_correlations(self.d[space]['mixed'])
             if true_pairs is not None:
                 self.d[space]['estimated_pairs'] = true_pairs[space]
             else:
@@ -378,7 +382,7 @@ class DataBlind(Data):
             self.d[space]['shape'] = self.d[space]['mixed'].shape
             self.d[space]['correlation_threshold'] = correlation_threshold
 
-    def estimate(self, true_pairs=None, true_directions=None, true_stds=None):
+    def estimate(self, true_pairs=None, true_directions=None, true_stds=None, true_correlations=None):
         """Estimate sucessively correlations, pairs, directions and strandard deviations from a `mixed` matrix.
 
         Parameters
@@ -393,7 +397,10 @@ class DataBlind(Data):
         for space in ['feature', 'sample']:
             assert self.d[space]['correlation_threshold'] is not None
             assert self.d[space]['mixed'] is not None
-            self.d[space]['estimated_correlations'] = estimate_correlations(self.d[space]['mixed'])
+            if true_correlations is not None:
+                self.d[space]['estimated_correlations'] = true_correlations[space]
+            else:
+                self.d[space]['estimated_correlations'] = estimate_correlations(self.d[space]['mixed'])
             if true_pairs is not None:
                 self.d[space]['estimated_pairs'] = true_pairs[space]
             else:
