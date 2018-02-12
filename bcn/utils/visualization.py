@@ -244,11 +244,11 @@ def visualize_dependences(data, space='sample', file_name='../../out/test_depend
                 ax.plot(data.d[space]['signal'][data.d[space]['true_pairs'][i][1]][j], data.d[space]['signal'][data.d[space]['true_pairs'][i][0]][j], 'o', color='green', alpha=0.6)
                 ax.plot([data.d[space]['signal'][data.d[space]['true_pairs'][i][1]][j], data.d[space]['mixed'][data.d[space]['true_pairs'][i][1]][j]], [data.d[space]['signal'][data.d[space]['true_pairs'][i][0]][j], data.d[space]['mixed'][data.d[space]['true_pairs'][i][0]][j]], '-', color='red', alpha=0.6)
 
-                direction = data.d[space]['true_directions'][i]
-                std_b, std_a = data.d[space]['true_stds'][i]
-                std_b = std_b * -1 * direction
-                m = -std_b / float(std_a)
-                ax.plot(list(ax.get_xlim()), [m * p + 0.0 for p in ax.get_xlim()], '-', color='orange', alpha=0.6)
+            direction = data.d[space]['true_directions'][i]
+            std_b, std_a = data.d[space]['true_stds'][i]
+            std_b = std_b * -1 * direction
+            m = -std_b / float(std_a)
+            ax.plot(list(ax.get_xlim()), [m * p + 0.0 for p in ax.get_xlim()], '-', color='orange', alpha=0.6)
 
             ax.axis('equal')
         fig.savefig(file_name + format)
@@ -271,11 +271,13 @@ def visualize_dependences(data, space='sample', file_name='../../out/test_depend
                 ax.plot(data.d[space]['estimated_signal'][data.d[space]['estimated_pairs'][i][1]][j], data.d[space]['estimated_signal'][data.d[space]['estimated_pairs'][i][0]][j], 'D', color='blue', alpha=0.6)
                 ax.plot(data.d[space]['guess_X'][data.d[space]['estimated_pairs'][i][1]][j], data.d[space]['guess_X'][data.d[space]['estimated_pairs'][i][0]][j], 'o', color='brown', alpha=0.6)
 
-                direction = data.d[space]['estimated_directions'][i]
-                std_b, std_a = data.d[space]['estimated_stds'][i]
-                std_b = std_b * -1 * direction
-                m = -std_b / float(std_a)
-                ax.plot(list(ax.get_xlim()), [m * p + 0.0 for p in ax.get_xlim()], '--', color='black', alpha=0.6)
+            direction = data.d[space]['estimated_directions'][i]
+            std_b, std_a = data.d[space]['estimated_stds'][i]
+            std_b = std_b * -1 * direction
+            m = -std_b / float(std_a)
+            ax.set_xlim(-5, 5)
+            ax.set_ylim(-5, 5) # WARNING hardcoded.
+            ax.plot(list(ax.get_xlim()), [m * p + 0.0 for p in ax.get_xlim()], '--', color='black', alpha=0.6)
 
             ax.axis('equal')
         fig.savefig(file_name + format)
@@ -296,11 +298,11 @@ def visualize_dependences(data, space='sample', file_name='../../out/test_depend
 
                 ax.plot(data.d[space]['mixed'][data.d[space]['estimated_pairs'][i][1]][j], data.d[space]['mixed'][data.d[space]['estimated_pairs'][i][0]][j], 'o', color='red', alpha=0.6)
 
-                direction = data.d[space]['estimated_directions'][i]
-                std_b, std_a = data.d[space]['estimated_stds'][i]
-                std_b = std_b * -1 * direction
-                m = -std_b / float(std_a)
-                ax.plot(list(ax.get_xlim()), [m * p + 0.0 for p in ax.get_xlim()], '--', color='black', alpha=0.6)
+            direction = data.d[space]['estimated_directions'][i]
+            std_b, std_a = data.d[space]['estimated_stds'][i]
+            std_b = std_b * -1 * direction
+            m = -std_b / float(std_a)
+            ax.plot(list(ax.get_xlim()), [m * p + 0.0 for p in ax.get_xlim()], '--', color='black', alpha=0.6)
 
             ax.axis('equal')
         fig.savefig(file_name + format)

@@ -38,7 +38,6 @@ from bcn.linear_operators import LinearOperatorCustom, possible_measurement_rang
 from bcn.cost import Cost
 from bcn.utils.visualization import visualize_dependences, visualize_correlations
 
-
 def visualize_threshold(X):
     '''
     Visualizes the number of pairs for different correlation cut-off thresholds.
@@ -65,7 +64,7 @@ def visualize_threshold(X):
     fig.savefig('threshold_tuning')
 
 
-def reduce_dimensions(X, y, model='tSNE'):
+def reduce_dimensions(X, model='tSNE'):
     '''
     Does a low-dimensional embedding to 2D.
 
@@ -73,8 +72,6 @@ def reduce_dimensions(X, y, model='tSNE'):
     ----------
     X : ndarray (n_samples, n_features)
         The input dataset to the PCA or tSNE algorithm.
-    y : sequence (of str)
-        The labels with respect to tissue type (not digitized).
     model = str, {'PCA', 'tSNE'}
         The algorithm to be used for the embedding.
 
@@ -144,7 +141,7 @@ def performance_evaluation(X, y, batch, model='naiveBayes', file_name='test'):
     ax.set_xticks(())
     ax.set_yticks(())
     ax.set_title('{} Multi-Class Classification on 2 PCs'.format(model))
-    fig.savefig('classification_' + file_name)
+    fig.savefig('../../out/classification_' + file_name)
     
     scores = cross_val_score(classifier, X, y, cv=5)
     print('Accuracy: %0.2f (+/- %0.2f)' % (scores.mean(), scores.std() * 2))
@@ -182,7 +179,7 @@ def bias_correction(X, ranks, thresholds, n_restarts=3):
             #visualize_correlations(blind, file_name='correlation_thresholds', truth_available=False)
             missing_fraction = np.isnan(X).sum() / X.size
             print possible_measurement_range(X.shape, missing_fraction)
-            n_measurements = 200 # len(blind.d['sample']['estimated_pairs']) * (blind.d['sample']['shape'][1] - missing_fraction * blind.d['sample']['shape'][1]) + len(blind.d['feature']['estimated_pairs']) * (blind.d['sample']['shape'][0] - missing_fraction * blind.d['sample']['shape'][0])
+            n_measurements = 500 # len(blind.d['sample']['estimated_pairs']) * (blind.d['sample']['shape'][1] - missing_fraction * blind.d['sample']['shape'][1]) + len(blind.d['feature']['estimated_pairs']) * (blind.d['sample']['shape'][0] - missing_fraction * blind.d['sample']['shape'][0])
             print n_measurements
             
             # NOTE Construction of the measurement operator and measurements from the data.
@@ -192,7 +189,7 @@ def bias_correction(X, ranks, thresholds, n_restarts=3):
             cost = Cost(A, y)
 
             # NOTE Setup and run of the recovery with the standard solver.
-            solver = ConjugateGradientSolver(cost.cost_func, guess_func, blind, rank, n_restarts, verbosity=2)
+            solver = ConjugateGradientSolver(cost.cost_func, guess_func, blind, rank, n_restarts, verbosity=1)
             
             result = solver.recover()
             results.append(result)
@@ -201,46 +198,41 @@ def bias_correction(X, ranks, thresholds, n_restarts=3):
             
     index = np.argmin(errors)
     corrected = results[index].d['sample']['estimated_signal']
+    visualize_dependences(results[index], file_name='../../out/recovery_blind_rank_{}'.format(rank), truth_available=False, estimate_available=True, recovery_available=True)
+
     return corrected
 
 
 if __name__ == '__main__':
 
-    ys = cPickle.load(open('../../data/ys.pickle', 'r'))
-    scan_Xs = cPickle.load(open('../../data/Xs.pickle', 'r'))
+    y = cPickle.load(open('../../data/y.pickle', 'r'))
+    scan_X = cPickle.load(open('../../data/X.pickle', 'r'))
     batches = cPickle.load(open('../../data/batches.pickle', 'r'))
-    #gsms = cPickle.load(open('../../data/gsms.pickle', 'r'))
-    #ensembls = cPickle.load(open('../../data/ensembls.pickle', 'r'))
-
-    ranks = [2, 3] # np.arange(1, 10)
-    thresholds = [0.95] # np.linspace(0.65, 0.95, 5)
-    mixed = scan_Xs[1]
-    
-    scan_corrected_Xs = []
-    for scan_X in scan_Xs:
-        scan_corrected_Xs.append(bias_correction(mixed, ranks, thresholds))
-    corrected = scan_corrected_Xs[0]
-    
-    y = ys[1]
-    batch = batches[1]
-    
-    le = LabelEncoder()
-    y = le.fit_transform(y)
-    
-    print 'Low dimensional visualization...'
-    reduced = reduce_dimensions(mixed, y, model='tSNE') # model='PCA'
+    gsms = cPickle.load(open('../../data/gsms.pickle', 'r'))
+    ensembls = cPickle.load(open('../../data/ensembls.pickle', 'r'))
+    rank = 10
+    threshold = 0.92 # NOTE Same as in preprocessing.
+    mixed = scan_X
 
     #print 'Threshold visualization...'
     #visualize_threshold(mixed)
-
-    print 'Performance evaluation...'
-    performance_evaluation(reduced, y, batch, model='naiveBayes', file_name='before_correction') # model='RF'
     
-    print 'Performance evaluation...'
-    performance_evaluation(corrected, y, batch, model='naiveBayes', file_name='after_correction') # model='RF'
+    print 'mixed.shape', mixed.shape
 
+    le = LabelEncoder()
+    y = le.fit_transform(y)
 
+    print 'Low dimensional visualization...'
+    reduced = reduce_dimensions(mixed, model='tSNE')
 
+    print 'Performance evaluation no correction...'
+    performance_evaluation(reduced, y, batches, model='naiveBayes', file_name='before_correction_')
 
+    print 'Bias correction...'
+    corrected = bias_correction(mixed, [rank], [threshold])
 
-    
+    print 'Low dimensional visualization...'
+    reduced = reduce_dimensions(corrected, model='tSNE')
+
+    print 'Performance evaluation correction...'
+    performance_evaluation(reduced, y, batches, model='naiveBayes', file_name='after_correction_rank_{}'.format(rank))
