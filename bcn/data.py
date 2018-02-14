@@ -305,7 +305,7 @@ class DataSimulated(Data):
             self.d[space]['true_correlations'] = signal[space]['correlation_matrix']
             self.d[space]['true_pairs'] = signal[space]['pairs']
             self.d[space]['true_stds'] = signal[space]['stds'][signal[space]['pairs']]
-            self.d[space]['true_directions'] = signal[space]['directions'] # TODO assert that these are indeed using the same pairs as used in true_stds.
+            self.d[space]['true_directions'] = signal[space]['directions']
             self.d[space]['correlation_threshold'] = correlation_threshold
             
     def estimate(self, true_pairs=None, true_directions=None, true_stds=None, true_correlations=None):

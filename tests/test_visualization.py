@@ -11,7 +11,7 @@ __all__ = ['TestDependences', 'TestCorrelations']
 
 
 import sys
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+sys.path.append('/home/sohse/projects/bcn')
 
 import unittest
 import numpy as np

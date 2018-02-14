@@ -7,15 +7,15 @@ Task-Pull based on https://github.com/jbornschein/mpi4py-examples/blob/master/09
 from __future__ import absolute_import
 
 
-import sys # WARNING remove in final version
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+import sys
+sys.path.append('/home/sohse/projects/bcn')
 
 import sys
 import json
 import abc
 
 from mpi4py import MPI
-from bcn.examples import figures as parallel # DANGER
+from bcn.examples import figures as parallel # NOTE If parallel needs to be changed, do it here too.
 
 
 if __name__ == '__main__':

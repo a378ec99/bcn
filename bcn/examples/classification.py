@@ -9,8 +9,8 @@ from __future__ import division, absolute_import
 
 __all__ = ['visualize_threshold', 'reduce_dimensions', 'performance_evaluation', 'bias_correction']
 
-import sys # WARNING remove in final version
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+import sys
+sys.path.append('/home/sohse/projects/bcn')
 
 import cPickle
 

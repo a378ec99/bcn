@@ -293,7 +293,7 @@ class LinearOperatorKsparse(LinearOperator):
         y = np.zeros(self.n_measurements)
         for n in xrange(self.n_measurements):
             A_i = np.zeros(shape)
-            indices = _choose_random_matrix_elements(shape, self.sparsity, duplicates=False) # TODO Want to implement possible pairs for all sparsities; for now, just using random sampling here. Use Bence's suggestion.
+            indices = _choose_random_matrix_elements(shape, self.sparsity, duplicates=False)
             values = np.random.normal(0.0, 2.0, size=self.sparsity)
             for k in xrange(self.sparsity):
                 A_i[indices[k][0], indices[k][1]] = values[k]

@@ -121,10 +121,6 @@ def _generate_matrix_normal_sample(U, V):
     Source
     ------
     https://en.wikipedia.org/wiki/Matrix_normal_distribution#Drawing_values_from_the_distribution
-
-    # TODO Check that n_samples, n_features is correct and do so for all other similar instances in this module.
-    # TODO Need to set to zero small eigenvalues for stability after each np.linalg.svd?
-    # TODO Check stability under strain, e.g. LinAlgErrors!
     """
     n = len(U)
     m = len(V)
@@ -163,7 +159,7 @@ def _generate_stds(n, model, std_value=1.5, normalize=False):
     if normalize:
         scaling_factor = float(np.sqrt(1 / float(np.sum(stds**2))))
         stds = stds * scaling_factor
-        return stds, scaling_factor # NOTE WARNING is the scaling factor still used?
+        return stds, scaling_factor
     else:
         return stds, None
     
@@ -182,7 +178,7 @@ def _generate_directions(correlation_matrix, pairs):
     directions : ndarray, (dimensions = 1, e.g. like list)
         The directions of the correlations based on the signs given by the correlation matrix for the pairs of interest.
     """
-    directions = np.sign(correlation_matrix[pairs[:, 0], pairs[:, 1]]) # TODO Check that this is the same as used in data class for the gerneation of stds pairs.
+    directions = np.sign(correlation_matrix[pairs[:, 0], pairs[:, 1]])
     return directions
 
     
@@ -223,9 +219,6 @@ class RedundantSignal(object):
             Value to use as a constant standard deviation for both sample and feature space.
         normalize_stds : bool, optional (default = True)
             Whether to normalize the standard deviations to sum to one in feature and sample space, respetively. This makes the generation of the matrix-variate normal sample simpler.
-            
-        # TODO Check that n_samples, n_features is correct and do so for all other similar instances in this module.
-        # TODO Check for LinAlg convergence under stress.
         """
         self.shape = shape
         self.model = model

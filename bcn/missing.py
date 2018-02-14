@@ -30,8 +30,7 @@ class Missing(object):
 
         Notes
         -----
-        # TODO The `SCAN` model is currently not yet implemented.
-        # TODO Check that n_samples, n_features is correct and do so for all other similar instances in this module.
+        # NOTE The `SCAN` model is currently not yet implemented.
         """
         self.shape = tuple(shape)
         self.model = model

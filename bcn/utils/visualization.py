@@ -16,8 +16,6 @@ import matplotlib.pyplot as pl
 import seaborn.apionly as sb
 
 
-
-
 def pair_index(pairs, pair):
     """ Determines the index of a pair in a list of pairs.
 
@@ -55,8 +53,6 @@ def pair_overlap(true_pairs, estimated_pairs):
     -------
     d : dict
         Dictionary of the 3 groups of overlap.
-
-    # WARNING  Are there even order issues? (1,2) (2,1) ?
     """
     only_in_estimated = []
     for pair in estimated_pairs:
@@ -69,7 +65,7 @@ def pair_overlap(true_pairs, estimated_pairs):
             only_in_true.append(pair)
 
     in_both = []
-    for pair in set([(item[0], item[1]) for item in estimated_pairs] + [(item[0], item[1]) for item in true_pairs]): # TODO find out assertion error!
+    for pair in set([(item[0], item[1]) for item in estimated_pairs] + [(item[0], item[1]) for item in true_pairs]):
         pair = np.asarray(pair)
         if (pair_index(true_pairs, pair) is not None) and (pair_index(estimated_pairs, pair) is not None):
             in_both.append(pair)
@@ -204,11 +200,6 @@ def visualize_dependences(data, space='sample', file_name='../../out/test_depend
                     if recovery_available:
                         ax.plot([data.d[space]['signal'][pairs[i][1]][j], data.d[space]['estimated_signal'][pairs[i][1]][j]], [data.d[space]['signal'][pairs[i][0]][j], data.d[space]['estimated_signal'][pairs[i][0]][j]], '-', color='blue', alpha=0.6) # , zorder=10
 
-                #print '1', pairs_name
-                #print '2', pairs[i]
-                #print '3 true', pair_index(data.d[space]['true_pairs'], pairs[i])
-                #print '4 estimated', pair_index(data.d[space]['estimated_pairs'], pairs[i])
-                
                 if pairs_name == 'only_in_true' or pairs_name == 'in_both':
                     direction = data.d[space]['true_directions'][pair_index(data.d[space]['true_pairs'], pairs[i])]
                     std_b, std_a = data.d[space]['true_stds'][pair_index(data.d[space]['true_pairs'], pairs[i])]
@@ -343,7 +334,6 @@ def visualize_correlations(data, space='sample', file_name='../../out/test_corre
     ax.set_ylabel('n pairs')
     ax.plot(trimmed, np.arange(1, len(trimmed) + 1)[::-1], '-', alpha=0.8)
 
-    #ax.set_ylim(0, 250)
     fig.savefig(file_name + format)
     
 

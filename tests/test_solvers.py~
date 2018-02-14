@@ -161,7 +161,7 @@ class TestConjugateGradientSolver(unittest.TestCase):
         print 'cost.cost_func(X_true)', cost.cost_func(X_true)
         print '-------------------------------------------------------- '
         assert np.allclose(X_estimated, X_true, rtol=1e-5, atol=1e-5)
-        assert_consistency(X_estimated, '6')
+        assert_consistency(X_estimated, '41c05f45f27ca42dbc89186ecc0c7f22')
 
         
 if __name__ == '__main__':

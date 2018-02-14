@@ -10,7 +10,7 @@ from __future__ import division, absolute_import
 __all__ = ['TestLinearOperatorEntry', 'TestLinearOperatorDense', 'TestLinearOperatorKsparse', 'Test_choose_random_matrix_elements', 'TestLinearOperatorCustom']
 
 import sys
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+sys.path.append('/home/sohse/projects/bcn')
 
 import unittest
 import hashlib
@@ -54,7 +54,7 @@ class Test_choose_random_matrix_elements(unittest.TestCase):
 
     def _assert_consistency(self, element_indices, true_md5):
         m = hashlib.md5()
-        element_indices = np.asarray(element_indices, order='C') # WARNING Interesting case of ValueError: ndarray is not C-contiguous. Why?
+        element_indices = np.asarray(element_indices, order='C') # NOTE Interesting case of ValueError: ndarray is not C-contiguous. Why?
         m.update(element_indices) 
         current_md5 = m.hexdigest()
         assert current_md5 == true_md5

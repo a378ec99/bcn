@@ -9,7 +9,7 @@ from __future__ import division, absolute_import
 __all__ = ['TestMissing']
 
 import sys
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+sys.path.append('/home/sohse/projects/bcn')
 
 import unittest
 import numpy as np

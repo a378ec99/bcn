@@ -9,8 +9,8 @@ from __future__ import division, absolute_import
 
 __all__ = ['Figure1, Figure2, Figure3, Figure4, Figure5, Figure6, Figure7, Figure8', 'shuffle_some_pairs', 'generate_random_pairs']
 
-import sys # WARNING remove in final version
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+import sys
+sys.path.append('/home/sohse/projects/bcn')
 
 from abc import ABCMeta, abstractmethod
 import subprocess
@@ -158,7 +158,6 @@ class Figure1(TaskPull):
         zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
-        #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
         return error_true, error_solver, i, j
 
     def store(self, result):
@@ -205,7 +204,7 @@ class Figure2(TaskPull):
         np.random.seed(secondary_seed)
 
         m = int(m * dimension[0] * dimension[1])
-        m = min(m, 4000) # WARNING Hardcoded max
+        m = min(m, 4000) # WARNING Hardcoded max.
 
         data = DataSimulated(dimension, self.rank, noise_amplitude=self.noise_amplitude)
         data.estimate(true_stds={'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']}, true_pairs={'sample': data.d['sample']['true_pairs'], 'feature': data.d['feature']['true_pairs']}, true_directions={'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']})
@@ -221,7 +220,6 @@ class Figure2(TaskPull):
         zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
-        #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
         return error_true, error_solver, i, j
 
     def store(self, result):
@@ -281,7 +279,6 @@ class Figure3(TaskPull):
         zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
-        #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
         return error_true, error_solver, i, j
 
     def store(self, result):
@@ -340,7 +337,6 @@ class Figure4(TaskPull):
         zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
-        #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
         return error_true, error_solver, i, j
 
     def store(self, result):
@@ -391,7 +387,7 @@ class Figure5(TaskPull):
         data.estimate(true_stds={'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']}, true_pairs={'sample': data.d['sample']['true_pairs'], 'feature': data.d['feature']['true_pairs']}, true_directions={'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']})
         operator = LinearOperatorKsparse(data, m, self.sparsity).generate()
         A, y = operator['A'], operator['y']
-        y = y + np.random.normal(0.0, y_noise, size=y.shape) # NOTE
+        y = y + np.random.normal(0.0, y_noise, size=y.shape)
         cost = Cost(A, y)
         solver = ConjugateGradientSolver(cost.cost_func, guess_func, data, self.rank, self.n_restarts, noise_amplitude=self.noise_amplitude, verbosity=self.verbosity)
         data = solver.recover()
@@ -402,7 +398,6 @@ class Figure5(TaskPull):
         zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
-        #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
         return error_true, error_solver, i, j
 
     def store(self, result):
@@ -463,7 +458,6 @@ class Figure6(TaskPull):
         zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
-        #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
         return error_true, error_solver, i, j
 
     def store(self, result):
@@ -530,7 +524,6 @@ class Figure7(TaskPull):
         zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
-        #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
         return error_true, error_solver, i, j, replicate
 
     def store(self, result):
@@ -559,7 +552,7 @@ class Figure8(TaskPull):
         self.file_name = file_name
         self.rank = 2
         self.random_pairs = random_pairs
-        self.m_blocks_factor = self.shape[0] // 2 # should result in two large blocks, since m_blocks = self.shape[0] // self.m_blocks_factor
+        self.m_blocks_factor = self.shape[0] // 2 # NOTE should result in two large blocks, since m_blocks = self.shape[0] // self.m_blocks_factor
         self.replicates = 5
         
     def allocate(self):
@@ -590,12 +583,7 @@ class Figure8(TaskPull):
         sample_pairs = shuffle_some_pairs(data.d['sample']['true_pairs'], random_pair, data.d['sample']['shape'][0])
         feature_pairs = shuffle_some_pairs(data.d['feature']['true_pairs'], random_pair, data.d['feature']['shape'][0])
         
-        #print "random_pair", random_pair # "random_fraction * data.d['sample']['shape'][0]", random_fraction * data.d['sample']['shape'][0]
-        #print "data.d['sample']['true_pairs'][:5]", "sample_pairs[:5]", sample_pairs[:5], data.d['sample']['true_pairs'][:5]
-        #print "data.d['sample']['true_pairs'][-5:]", "sample_pairs[-5:]", sample_pairs[-5:], data.d['sample']['true_pairs'][-5:]
-        
         data.estimate(true_pairs={'sample': sample_pairs, 'feature': feature_pairs}, true_directions={'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']}, true_stds={'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']})
-        #data.estimate(true_pairs={'sample': data.d['sample']['true_pairs'], 'feature': data.d['feature']['true_pairs']}, true_directions={'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']}, true_stds={'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']})
         operator = LinearOperatorCustom(data, m).generate()
         A, y = operator['A'], operator['y']
         cost = Cost(A, y)
@@ -608,7 +596,6 @@ class Figure8(TaskPull):
         zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
-        #print error_true, error_solver, i, j, 'error_true, error_solver, i, j'
         return error_true, error_solver, i, j, replicate
 
     def store(self, result):
@@ -677,7 +664,7 @@ def submit(kwargs, run_class, mode='local', ppn=1, hours=10000, nodes=1, path='/
 
 
 if __name__ == '__main__':
-    '''
+
     run_class = 'Figure3'
     file_name = '../out/' + run_class
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e3), 8), dtype=int)), 'ranks': list(np.asarray(np.linspace(1, 8, 8), dtype=int)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
@@ -689,21 +676,18 @@ if __name__ == '__main__':
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e3), 8), dtype=int)), 'ranks': list(np.asarray(np.linspace(1, 8, 8), dtype=int)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
-
     
-    run_class = 'Figure2' # WARNING Max. of 2 processes per node, otherwise memory error. # WARNING Also hardcoded number of measurements for solver convergence issues.
+    run_class = 'Figure2' # NOTE Max. of 2 processes per node, otherwise memory error. Also hardcoded number of measurements for solver convergence issues.
     file_name = '../out/' + run_class
     kwargs = {'measurement_percentages': list(np.asarray(np.logspace(np.log10(0.01), np.log10(1.0), 8))), 'dimensions': [(10, 10), (25, 25), (50, 50), (100, 100), (200, 200)], 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name} # , (400, 400), (800, 800)
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
-
     
     run_class = 'Figure1'
     file_name = '../out/' + run_class
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(300), np.log10(1900), 8), dtype=int)), 'sparsities': list(np.asarray(np.arange(1, 9), dtype=int)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
-
     
     run_class = 'Figure5'
     file_name = '../out/' + run_class
@@ -716,21 +700,17 @@ if __name__ == '__main__':
     kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(500), np.log10(1300), 8), dtype=int)), 'y_noises': list(np.logspace(np.log10(0.001), np.log10(0.2), 8)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs
-    '''
-    '''
+
     run_class = 'Figure7' 
     file_name = '../out/' + run_class
     kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
-    #list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e4), 8), dtype=int)) # 'random_fractions': list(np.logspace(np.log10(0.01), np.log10(1.0), 8))
     submit(kwargs, mode='parallel', nodes=12, ppn=6, run_class=run_class)
     print run_class, kwargs
-    '''
    
     run_class = 'Figure8'
     file_name = '../out/' + run_class
     kwargs = {'measurements': [200, 400, 1000, 1200, 1500, 2000, 3000, 10000], 'random_pairs': [ 0, 1, 2, 3, 4, 5, 10, 50], 'seed': 8, 'noise_amplitude': 5.0, 'file_name': file_name + '_seed=8_replicates=5'}
-    # list(np.logspace(np.log10(0.001), np.log10(0.5), 8))[:2] # list(np.logspace(np.log10(0.0001), np.log10(0.4), 8))
-    submit(kwargs, mode='local', ppn=2, nodes=20, run_class=run_class)
+    submit(kwargs, mode='parallel', ppn=2, nodes=20, run_class=run_class)
     print run_class, kwargs
 
     

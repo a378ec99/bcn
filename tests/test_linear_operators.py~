@@ -9,9 +9,8 @@ from __future__ import division, absolute_import
 
 __all__ = ['TestLinearOperatorEntry', 'TestLinearOperatorDense', 'TestLinearOperatorKsparse', 'Test_choose_random_matrix_elements', 'TestLinearOperatorCustom']
 
-
 import sys
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+sys.path.append('/home/sohse/projects/bcn')
 
 import unittest
 import hashlib

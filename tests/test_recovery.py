@@ -10,7 +10,7 @@ from __future__ import division, absolute_import
 __all__ = ['TestRecoveryFullRank']
 
 import sys
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+sys.path.append('/home/sohse/projects/bcn')
 
 import unittest
 import numpy as np
@@ -73,7 +73,7 @@ class TestRecoveryFullRank(unittest.TestCase):
         y = operator['y']
         cost = Cost(A, y)
 
-        solver = ConjugateGradientSolver(cost.cost_func, guess_func, self.data, 10, 3, maxiter=1000, verbosity=2) # self.shape[0]
+        solver = ConjugateGradientSolver(cost.cost_func, guess_func, self.data, 10, 3, maxiter=1000, verbosity=2)
         self.data = solver.recover()
         X_estimated = self.data.d['sample']['estimated_bias']
         X_true = self.data.d['sample']['true_bias']

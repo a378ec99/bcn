@@ -4,8 +4,8 @@
 from __future__ import division, absolute_import
 
 
-import sys # WARNING remove in final version
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+import sys
+sys.path.append('/home/sohse/projects/bcn')
 
 import numpy as np
 
@@ -32,10 +32,9 @@ if __name__ == '__main__':
 
     # Creation of the test data and blind estimation of the dependency structure.
     truth = DataSimulated(shape, rank, model='image', correlation_threshold=0.9, m_blocks_factor=shape[0] // 2, noise_amplitude=noise_amplitude)
-    #FIXME visualize_absolute(truth, file_name='../../out/test_absolute_truth_{}'.format(n_measurements))
     mixed = truth.d['sample']['mixed']
     blind = DataBlind(mixed, rank, correlation_threshold=0.9) # 0.85
-    blind.estimate() # true_pairs={'sample': truth.d['sample']['true_pairs'], 'feature':truth.d['feature']['true_pairs']}, true_directions={'sample': truth.d['sample']['true_directions'], 'feature': truth.d['feature']['true_directions']}, true_stds={'sample': truth.d['sample']['true_stds'], 'feature': truth.d['feature']['true_stds']}
+    blind.estimate()
     visualize_correlations(blind, file_name='../../out/test_image_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
 
     # Construction of the measurement operator and measurements from the data.
@@ -67,7 +66,7 @@ if __name__ == '__main__':
     error_ideal = np.nansum(np.absolute(recovered.d['sample']['signal'] - (recovered.d['sample']['mixed'] - recovered.d['sample']['true_bias']))) / divisor
     error = np.nansum(np.absolute(recovered.d['sample']['signal'] - (recovered.d['sample']['mixed'] - recovered.d['sample']['estimated_bias']))) / divisor
     zero_error = np.nansum(np.absolute(recovered.d['sample']['signal'] - recovered.d['sample']['mixed'])) / divisor
-    error_true = error / zero_error #np.sqrt(np.mean((recovered.d['sample']['estimated_bias'] - recovered.d['sample']['true_bias'])**2))
+    error_true = error / zero_error
     
     print 'error_ideal', error_ideal
     print 'zero_error', zero_error

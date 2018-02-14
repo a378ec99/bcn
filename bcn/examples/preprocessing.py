@@ -9,8 +9,8 @@ from __future__ import division, absolute_import
 
 __all__ = ['Annotation']
 
-import sys # WARNING remove in final version
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+import sys 
+sys.path.append('/home/sohse/projects/bcn')
 
 from os import path
 import re
@@ -54,7 +54,7 @@ class Annotation(object):
 
     def query(self, table, cols='*', rows=None):
         '''
-        Queries database for a list of columns (or all, e.g. *) in a table and return dictionary with result. # WARNING Assumes GSM of each row is unique.
+        Queries database for a list of columns (or all, e.g. *) in a table and return dictionary with result. # NOTE Assumes GSM of each row is unique.
         '''
         if rows:
             self.cursor.execute('SELECT {cols} FROM {table} WHERE gsm in ("{rows}")'.format(cols=', '.join(cols), table=table, rows='", "'.join(rows)))
@@ -65,7 +65,7 @@ class Annotation(object):
 
     def search(self, pattern, result):
         '''
-        Checks for occurance of a regular expression pattern in a query result. Ignores case and returns matches if >= 1 are found. # WARNING record must have GSM key.
+        Checks for occurance of a regular expression pattern in a query result. Ignores case and returns matches if >= 1 are found. # NOTE record must have GSM key.
         '''
         matches = []
         for record in result:
@@ -119,7 +119,7 @@ def human_to_mouse(features):
     return mapped
 
 
-def overlapping_feature_indices(a, b): # TODO might have to do cross-species with mapping_8-5-17.txt
+def overlapping_feature_indices(a, b): 
     '''
     Selects an overlap of features and returns the corresponding indices.
 
@@ -195,12 +195,10 @@ def compute_annotation(labels, items, column_names=['gsm', 'description'], pickl
     d = keep_unique_values(d)
     cPickle.dump(d, open(pickle_file_name, 'w'))
 
-    # TODO with 16 from each class (so 4 * 16 = 64) for important run.
-    
     return d
 
 
-def keep_unique_values(d): # NOTE Sort of validated!
+def keep_unique_values(d):
     '''
     Removes non-unique items in the values from a dictionary.
 

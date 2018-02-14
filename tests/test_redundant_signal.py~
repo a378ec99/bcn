@@ -59,8 +59,8 @@ class Test_std_consistency(unittest.TestCase):
         
         print 'feature mean stds and raw', np.mean(feature_stds), np.mean(self.stds_V) # NOTE To get macht, should not normalize.
         print 'sample mean stds and raw', np.mean(sample_stds), np.mean(self.stds_U)
-        print 'difference feature stds', np.mean(feature_stds - self.stds_V)
-        print 'difference sample stds', np.mean(sample_stds - self.stds_U)
+        print 'difference feature stds and raw', np.mean(feature_stds - self.stds_V)
+        print 'difference sample stds and raw', np.mean(sample_stds - self.stds_U)
         
       
 class Test_generate_covariance(unittest.TestCase):

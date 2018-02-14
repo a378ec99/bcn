@@ -9,8 +9,8 @@ from __future__ import division, absolute_import
 
 __all__ = ['visualize_threshold', 'reduce_dimensions', 'performance_evaluation', 'bias_correction']
 
-import sys # WARNING remove in final version
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+import sys
+sys.path.append('/home/sohse/projects/bcn')
 
 import cPickle
 
@@ -210,7 +210,7 @@ if __name__ == '__main__':
     batches = cPickle.load(open('../../data/batches.pickle', 'r'))
     gsms = cPickle.load(open('../../data/gsms.pickle', 'r'))
     ensembls = cPickle.load(open('../../data/ensembls.pickle', 'r'))
-    rank = 6
+    rank = 8
     threshold = 0.92 # NOTE Same as in preprocessing.
     mixed = scan_X
 

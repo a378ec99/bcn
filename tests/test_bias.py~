@@ -62,7 +62,7 @@ class TestBiasLowRank(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        assert_consistency(bias['X'], '1b321768958469659a3f65bd19f096cf')
+        assert_consistency(bias['X'], 'c393adcf9d466c25a2997ed619fc03a0')
         
     def test_gaussian(self):
         bias = BiasLowRank(self.shape, self.rank, model='gaussian', noise_amplitude=1.0).generate()

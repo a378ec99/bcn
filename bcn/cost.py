@@ -42,7 +42,7 @@ class Cost(object):
 
         Note
         ----
-        The size scaling is not nessesary for convergence. # TODO Use ag.sqrt to get RMSE?
+        The size scaling is not nessesary for convergence.
         """
         if len(X) == 3:
             usvt = X

@@ -10,7 +10,7 @@ from __future__ import division, absolute_import
 __all__ = ['TestRedundantSignal', 'Test_generate_square_blocks_matrix', 'Test_generate_pairs', 'Test_generate_stds', 'Test_generate_matrix_normal_sample', 'Test_generate_covariance', 'Test_generate_directions']
 
 import sys
-sys.path.append('/home/sohse/projects/PUBLICATION/GITssh/bcn')
+sys.path.append('/home/sohse/projects/bcn')
 
 import unittest
 import numpy as np

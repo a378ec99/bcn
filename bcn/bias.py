@@ -91,7 +91,6 @@ class BiasLowRank(object):
             X = imread(self.image_source, flatten=True, mode='L')
             if X.shape != self.shape:
                 X = imresize(X, self.shape)
-            # TODO Need this normalization below? Can do better?
             X = 0.5 * ((X / np.absolute(X).max()) - 0.5)
             usvt = np.linalg.svd(X)
             usvt = usvt[0][:, :self.rank], usvt[1][
@@ -101,7 +100,6 @@ class BiasLowRank(object):
         if self.model == 'bicluster':
             X, rows, columns = make_checkerboard(
                 shape=self.shape, n_clusters=self.n_clusters, noise=0, shuffle=False)
-            # TODO Need this normalization below? Can do better?
             X = (X / X.max()) - 0.5
             usvt = np.linalg.svd(X)
             usvt = usvt[0][:, :self.rank], usvt[1][

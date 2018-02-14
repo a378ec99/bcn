@@ -107,7 +107,7 @@ class TestCorrelations(unittest.TestCase):
     def test_correlations(self):
         visualize_correlations(self.data, file_name='../out/test_correlations')
         self.data.estimate(true_stds={'sample': self.data.d['sample']['true_stds'], 'feature': self.data.d['feature']['true_stds']}, true_pairs={'sample': self.data.d['sample']['true_pairs'], 'feature': self.data.d['feature']['true_pairs']}, true_directions={'sample': self.data.d['sample']['true_directions'], 'feature': self.data.d['feature']['true_directions']})
-        assert_consistency(self.data.d['sample']['estimated_correlations'], '5e1a8a1db319261f0cf28e9292cfc812')
+        assert_consistency(self.data.d['sample']['estimated_correlations'], '4b06c6d6b4dc1f1b3c4895241a19c492')
 
     
 if __name__ == '__main__':
