@@ -210,7 +210,7 @@ if __name__ == '__main__':
     batches = cPickle.load(open('../../data/batches.pickle', 'r'))
     gsms = cPickle.load(open('../../data/gsms.pickle', 'r'))
     ensembls = cPickle.load(open('../../data/ensembls.pickle', 'r'))
-    rank = 10
+    rank = 8
     threshold = 0.92 # NOTE Same as in preprocessing.
     mixed = scan_X
 
@@ -226,7 +226,7 @@ if __name__ == '__main__':
     reduced = reduce_dimensions(mixed, model='tSNE')
 
     print 'Performance evaluation no correction...'
-    performance_evaluation(reduced, y, batches, model='naiveBayes', file_name='before_correction_')
+    performance_evaluation(reduced, y, batches, model='naiveBayes', file_name='before_correction_{}'.format(rank))
 
     print 'Bias correction...'
     corrected = bias_correction(mixed, [rank], [threshold])
