@@ -6,10 +6,8 @@ Defines a class that can solve a pymanopt `problem`. Currently only supports Con
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['ConjugateGradientSolver']
-
 import numpy as np
+
 from pymanopt import Problem
 from pymanopt.solvers import ConjugateGradient # ,SteepestDescent
 from pymanopt.manifolds import FixedRankEmbedded
