@@ -6,17 +6,13 @@ Defines a test class that assert the functioning of the `data` module.
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['TestDataSimulated', 'TestDataBlind']
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import unittest
+
 import matplotlib
 matplotlib.use('Agg')
 import numpy as np
 import pylab as pl
+
 from bcn.data import DataSimulated, DataBlind
 from bcn.utils.testing import assert_consistency
 
