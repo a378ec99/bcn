@@ -11,7 +11,8 @@ __all__ = ['BiasLowRank', 'BiasUnconstrained', 'guess_func']
 
 import numpy as np
 
-from scipy.misc import imread, imresize
+from skimage.transform import resize
+from skimage.io import imread
 from sklearn.datasets import make_checkerboard
 from pymanopt.manifolds import FixedRankEmbedded, Euclidean
 
