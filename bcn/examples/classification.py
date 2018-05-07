@@ -6,12 +6,6 @@ Defines a class that can be used to evaluate bias recovery on high-throughput da
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['visualize_threshold', 'reduce_dimensions', 'performance_evaluation', 'bias_correction']
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import cPickle
 
 import numpy as np
