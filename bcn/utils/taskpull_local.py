@@ -4,11 +4,7 @@ Note
 ----
 Profile with cProfile and store as .prof to be visualized with https://jiffyclub.github.io/snakeviz/.
 """
-from __future__ import absolute_import
-
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
+from __future__ import division, absolute_import
 
 import sys
 import json
