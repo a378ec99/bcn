@@ -6,13 +6,12 @@ Defines a class that is used thoughout for storage, processing and visualization
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['DataSimulated', 'DataSimulatedLarge', 'DataBlind', 'DataBlindLarge', 'estimate_pairs', 'estimate_correlations', 'estimate_directions', 'estimate_stds']
-
-from copy import deepcopy
-import numpy as np
 import abc
+from copy import deepcopy
+
+import numpy as np
 from scipy.stats import pearsonr
+
 from bcn.bias import BiasLowRank, BiasUnconstrained
 from bcn.redundant_signal import RedundantSignal
 from bcn.missing import Missing
