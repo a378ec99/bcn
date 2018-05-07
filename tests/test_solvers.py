@@ -6,14 +6,10 @@ Defines a class that assert the functioning of the `solvers` module. Currently o
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['TestConjugateGradientSolver']
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import unittest
+
 import numpy as np
+
 from bcn.data import DataSimulated
 from bcn.cost import Cost
 from bcn.solvers import ConjugateGradientSolver
