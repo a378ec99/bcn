@@ -6,9 +6,6 @@ Defines classes that generate the measurement operator A and measurement y from 
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['LinearOperatorEntry', 'LinearOperatorDense', 'LinearOperatorKsparse', 'LinearOperatorCustom', 'possible_measurement_range', '_print_size', '_pop_pairs_with_indices_randomly', '_choose_random_matrix_elements']
-
 import abc
 import numpy as np
 
