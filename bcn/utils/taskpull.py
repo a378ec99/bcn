@@ -6,15 +6,12 @@ Task-Pull based on https://github.com/jbornschein/mpi4py-examples/blob/master/09
 """
 from __future__ import absolute_import
 
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import sys
 import json
 import abc
 
 from mpi4py import MPI
+
 from bcn.examples import figures as parallel # NOTE If parallel needs to be changed, do it here too.
 
 
