@@ -6,14 +6,10 @@ Defines a test class that asserts the functioning of the `signal` module and its
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['TestRedundantSignal', 'Test_generate_square_blocks_matrix', 'Test_generate_pairs', 'Test_generate_stds', 'Test_generate_matrix_normal_sample', 'Test_generate_covariance', 'Test_generate_directions']
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import unittest
+
 import numpy as np
+
 from bcn.redundant_signal import RedundantSignal, _generate_square_blocks_matrix, _generate_pairs, _generate_stds, _generate_directions, _generate_covariance, _generate_matrix_normal_sample
 from bcn.utils.testing import assert_consistency
 
