@@ -6,9 +6,6 @@ Defines a class that can generate a cost function.
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['Cost']
-
 import autograd.numpy as ag
 
 
