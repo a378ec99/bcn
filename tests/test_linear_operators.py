@@ -6,15 +6,11 @@ Defines a test class that asserts the functioning of the `linear_operator` modul
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['TestLinearOperatorEntry', 'TestLinearOperatorDense', 'TestLinearOperatorKsparse', 'Test_choose_random_matrix_elements', 'TestLinearOperatorCustom']
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import unittest
 import hashlib
+
 import numpy as np
+
 from bcn.linear_operators import _choose_random_matrix_elements, LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom
 from bcn.data import DataSimulated
 from bcn.utils.testing import assert_consistency
