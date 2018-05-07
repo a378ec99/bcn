@@ -3,10 +3,6 @@
 
 from __future__ import division, absolute_import
 
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import numpy as np
 
 from bcn.bias import guess_func
