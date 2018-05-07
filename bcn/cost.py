@@ -13,14 +13,14 @@ import autograd.numpy as ag
 class Cost(object):
 
     def __init__(self, A, y):
-        """Creates a cost function based on autograd with given linear operator A and measurements y.
+        """Creates a cost function based on autograd with a linear operator A and target y.
         
         Parameters
         ----------
         A : list; elements=dict, len=n_measurements
-            Linear operator.
+            Linear operator stored as sparse matrices.
         y : list; elements=float, len=n_measuremnts
-            Measurement vector.
+            Target vector.
         """
         self.A = A
         self.y = np.array(y)
@@ -31,7 +31,7 @@ class Cost(object):
         Parameters
         ----------
         X : numpy.ndarray; shape=(n_samples, n_features)
-            Measured data matrix with mixed signal and noise.
+            Measured data matrix containing mixed signal and noise.
 
         Returns
         -------
@@ -41,8 +41,6 @@ class Cost(object):
         Note
         ----
         Size scaling with ag.mean is not nessesary for convergence.
-        
-        #TODO Make nan safe.
         """
         
         if isinstance(X, tuple):
@@ -50,8 +48,9 @@ class Cost(object):
             X = ag.dot(usvt[0], ag.dot(ag.diag(usvt[1]), usvt[2]))
 
         if np.isnan(X).any():
+            print 'Warning: X contains nan values. Converting those to zero.'
             X = np.nan_to_num(X, copy=False)
-
+            
         y_est = []
         for measurement in self.A:
             sum_ = 0.0
