@@ -88,7 +88,7 @@ class BiasLowRank(object):
         if self.model == 'image':
             X = imread(self.image_source, flatten=True, mode='L')
             if X.shape != self.shape:
-                X = imresize(X, self.shape)
+                X = resize(X, self.shape)
             X = 0.5 * ((X / np.absolute(X).max()) - 0.5)
             usvt = np.linalg.svd(X)
             usvt = usvt[0][:, :self.rank], usvt[1][
