@@ -6,15 +6,10 @@ Defines a classes that tests the functioning of the `visualization` module and i
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['TestDependences', 'TestCorrelations']
-
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import unittest
+
 import numpy as np
+
 from bcn.data import DataSimulated
 from bcn.utils.visualization import visualize_dependences, visualize_correlations
 from bcn.cost import Cost
