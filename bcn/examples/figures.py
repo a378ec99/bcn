@@ -6,12 +6,6 @@ Defines classes that are used to run multiple bias recoveries in parallel to gen
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['Figure1, Figure2, Figure3, Figure4, Figure5, Figure6, Figure7, Figure8', 'shuffle_some_pairs', 'generate_random_pairs']
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 from abc import ABCMeta, abstractmethod
 import subprocess
 import json
@@ -26,8 +20,6 @@ from bcn.solvers import ConjugateGradientSolver
 from bcn.cost import Cost
 from bcn.linear_operators import LinearOperatorCustom, LinearOperatorKsparse
 from bcn.bias import guess_func
-
-
 
 
 class TaskPull(object):
