@@ -9,6 +9,7 @@ The algorithm recovers bias from a high-throughput database without the use of p
 - numpy >= 1.11.3
 - sklearn >= 0.18.1
 - pymanopt >= 0.2.3
+- autograd >= 1.1.6
 
 - matplotlib >= 1.5.3 (optional for visualization)
 - seaborn >= 0.7.1 (optional for visualization)
