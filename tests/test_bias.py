@@ -6,14 +6,10 @@ Defines two test classes that assert the functioning of the `bias` module.
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['TestBiasLowRank', 'TestBiasUnconstrained']
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import unittest
+
 import numpy as np
+
 from bcn.bias import BiasLowRank, BiasUnconstrained
 from bcn.utils.testing import assert_consistency
 
