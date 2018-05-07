@@ -6,12 +6,6 @@ Defines a classes that can be used to annotate high-throughput data and conducts
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['Annotation']
-
-import sys 
-sys.path.append('/home/sohse/projects/bcn')
-
 from os import path
 import re
 import cPickle
