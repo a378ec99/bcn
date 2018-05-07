@@ -6,9 +6,6 @@ Defines a class that can generate different variations of a high-dimensional sig
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['RedundantSignal']
-
 import numpy as np
 
 
