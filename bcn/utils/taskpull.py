@@ -4,7 +4,7 @@ Note
 ----
 Task-Pull based on https://github.com/jbornschein/mpi4py-examples/blob/master/09-task-pull.py
 """
-from __future__ import absolute_import
+from __future__ import division, absolute_import
 
 import sys
 import json
