@@ -13,13 +13,15 @@ class Cost(object):
 
     def __init__(self, A, y):
         """Creates a cost function based on autograd with given linear operator A and measurements y.
-
+        
         Parameters
         ----------
-        A : 2d-array (generally sparse)
+        A : numpy.ndarray; shape=(n_measurements, n_samples, n_features); dtype=float 
             Linear operator.
-        y : 1d-array
+        y : numpy.ndarray; shape=(n_measuremnts), dtype=int
             Measurement vector.
+
+        #TODO Allow input as csr_matrix and convert to indices and values for quick multiplication with X.
         """
         self.A = A
         self.y = y
@@ -29,21 +31,25 @@ class Cost(object):
 
         Parameters
         ----------
-        X : 2d-array
-            Given data matrix (mixed).
+        X : numpy.ndarray; shape=(n_samples, n_features)
+            Measured data matrix with mixed signal and noise.
 
         Returns
         -------
         error : float
-            The squared mean error of y - y_est, where y_est = A * X summed.
+            Squared mean error.
 
         Note
         ----
-        The size scaling is not nessesary for convergence.
+        Size scaling with ag.mean is not nessesary for convergence.
+        
+        #TODO Make nan safe.
         """
         if len(X) == 3:
             usvt = X
             X = ag.dot(usvt[0], ag.dot(ag.diag(usvt[1]), usvt[2]))
-        error = ag.mean((ag.sum(self.A * X, axis=(1, 2)) - self.y)**2) 
+        sum_ = ag.sum(self.A * X, axis=(1, 2))
+        print sum_.shape, sum_ 
+        error = ag.mean((sum_ - self.y)**2)
         return error
 
