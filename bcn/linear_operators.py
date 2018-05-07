@@ -9,6 +9,8 @@ from __future__ import division, absolute_import
 import abc
 import numpy as np
 
+from scipy.sparse import issparse, coo_matrix
+
 
 def possible_measurement_range(shape, missing_fraction):
     '''
@@ -55,7 +57,10 @@ def _print_size(name, X):
     X : ndarray, shape (n_samples, n_features)
         Input data matrix.
     """
-    print str(name), X.nbytes * 1.0e-6, 'MB'
+    if issparse(X):
+        print '{}: {} MB'.format(name, (X.data.nbytes + X.row.nbytes + X.col.nbytes) * 1.0e-6)
+    else:
+        print '{}: {} MB'.format(name, X.nbytes * 1.0e-6)
 
 
 def _pop_pairs_with_indices_randomly(n_pairs, n, max_pops):
@@ -160,9 +165,9 @@ class LinearOperator(object):
 
         Returns
         -------
-        A : ndarray, shape (n_operators, n_samples, n_features)
+        A : ndarray, shape (n_measurements, n_samples, n_features)
             Linear operators.
-        y : ndarray, shape (n_operators)
+        y : ndarray, shape (n_measurements)
             Measurements.
         """
         pass
@@ -186,9 +191,9 @@ class LinearOperatorEntry(LinearOperator):
 
         Returns
         -------
-        out : dict, {A: ndarray, shape (n_operators, n_samples, n_features)
+        out : dict, {A: ndarray, shape (n_measurements, n_samples, n_features)
                         Linear operators.
-                     y : ndarray, shape (n_operators)
+                     y : ndarray, shape (n_measurements)
                         Measurements.}
 
         Note
@@ -197,15 +202,12 @@ class LinearOperatorEntry(LinearOperator):
         """
         true_bias = self.data.d['sample']['true_bias']
         shape = true_bias.shape
-        A = np.zeros((self.n_measurements, shape[0], shape[1]))
-        A = np.array(A, dtype=int)
-        y = np.zeros(self.n_measurements)
+        A = []
+        y = []
         random_element_indices = _choose_random_matrix_elements(true_bias.shape, self.n_measurements, duplicates=False) # NOTE Also here same element can be sampled multiple times if duplicatese is True. That setting might be handy for comparisons, but doesn't make sense in the bigger picture.
-        for n, element_index in enumerate(random_element_indices):
-            A[n, element_index[0], element_index[1]] = 1
-            y[n] = true_bias[element_index[0], element_index[1]]
-        _print_size('A', A)
-        _print_size('y', y)
+        for element_index in enumerate(random_element_indices):
+            A.append({'row':[element_index[0]], 'col': [element_index[1]], 'value': [1.0]})
+            y.append(true_bias[element_index[0], element_index[1]])
         out = {'A': A, 'y': y}
         return out
 
@@ -228,9 +230,9 @@ class LinearOperatorDense(LinearOperator):
 
         Returns
         -------
-        out : dict, {A: ndarray, shape (n_operators, n_samples, n_features)
+        out : dict, {A: ndarray, shape (n_measurements, n_samples, n_features)
                         Linear operators.
-                     y : ndarray, shape (n_operators)
+                     y : ndarray, shape (n_measurements)
                         Measurements.}
 
         Note
@@ -239,16 +241,14 @@ class LinearOperatorDense(LinearOperator):
         """
         true_bias = self.data.d['sample']['true_bias']
         shape = true_bias.shape
-        A = np.zeros((self.n_measurements, shape[0], shape[1]))
-        A = np.array(A, dtype=float)
-        y = np.zeros(self.n_measurements)
+        A = []
+        y = []
         for n in xrange(self.n_measurements):
             A_i = np.random.normal(0.0, 2.0, size=shape) # WARNING, could be too small or too large for float and subsequent computations, but unlikely.
+            A_i = coo_matrix(A_i)
+            A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
             y_i = np.sum(A_i * true_bias)
-            A[n, :, :] = A_i 
-            y[n] = y_i
-        _print_size('A', A)
-        _print_size('y', y)
+            y.append(y_i)
         out = {'A': A, 'y': y}
         return out
 
@@ -274,9 +274,9 @@ class LinearOperatorKsparse(LinearOperator):
             
         Returns
         -------
-        out : dict, {A: ndarray, shape (n_operators, n_samples, n_features)
+        out : dict, {A: ndarray, shape (n_measurements, n_samples, n_features)
                         Linear operators.
-                     y : ndarray, shape (n_operators)
+                     y : ndarray, shape (n_measurements)
                         Measurements.}
 
         Note
@@ -285,20 +285,17 @@ class LinearOperatorKsparse(LinearOperator):
         """
         true_bias = self.data.d['sample']['true_bias']
         shape = true_bias.shape
-        A = np.zeros((self.n_measurements, shape[0], shape[1]))
-        A = np.array(A, dtype=float)
-        y = np.zeros(self.n_measurements)
-        for n in xrange(self.n_measurements):
-            A_i = np.zeros(shape)
+        A = []
+        y = []
+        for n in xrange(self.n_measurements):            
             indices = _choose_random_matrix_elements(shape, self.sparsity, duplicates=False)
             values = np.random.normal(0.0, 2.0, size=self.sparsity)
-            for k in xrange(self.sparsity):
-                A_i[indices[k][0], indices[k][1]] = values[k]
+            A_i_row = list(indices[:, 0])
+            A_i_col = list(indices[:, 1])
+            A_i_data = list(values)
+            A.append({'row': A_i_row, 'col': A_i_col, 'value': A_i_data})
             y_i = np.sum(A_i * true_bias)
-            A[n, :, :] = A_i
-            y[n] = y_i
-        _print_size('A', A)
-        _print_size('y', y)
+            y.append(y_i)
         out = {'A': A, 'y': y}
         return out
 
@@ -404,14 +401,13 @@ class LinearOperatorCustom(LinearOperator):
 
         Returns
         -------
-        out : dict, {A: ndarray, shape (n_operators, n_samples, n_features)
+        out : dict, {A: ndarray, shape (n_measurements, n_samples, n_features)
                         Linear operators.
-                     y : ndarray, shape (n_operators)
+                     y : ndarray, shape (n_measurements)
                         Measurements.}
         """
-        A = np.zeros((self.n_measurements, self.data.d['sample']['shape'][0], self.data.d['sample']['shape'][1]))
-        A = np.array(A, dtype=float)
-        y = np.zeros(self.n_measurements)
+        A = []
+        y = []
 
         indices = {'sample': _pop_pairs_with_indices_randomly(len(self.data.d['sample']['estimated_pairs']), self.data.d['sample']['shape'][1], self.n_measurements // 2), 'feature': _pop_pairs_with_indices_randomly(len(self.data.d['feature']['estimated_pairs']), self.data.d['feature']['shape'][1], self.n_measurements // 2)}
         
@@ -425,16 +421,17 @@ class LinearOperatorCustom(LinearOperator):
             assert np.isfinite(stds[0])
             assert np.isfinite(stds[1])
             assert np.isfinite(direction)
+
+            # NOTE Checking for nan and inf values in measured data matrix.
             if np.isfinite(self.data.d[space]['mixed'][pair[0], j]) == False:
                 continue
             if np.isfinite(self.data.d[space]['mixed'][pair[1], j]) == False:
                 continue
             
             A_i, y_i = self._construct_measurement(pair, j, stds, direction, space)
-            A[n, :, :] = A_i
-            y[n] = y_i
-        _print_size('A', A)
-        _print_size('y', y)
+            A_i = coo_matrix(A_i)
+            A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
+            y.append(y_i)
         out = {'A': A, 'y': y}
         return out
 

@@ -20,7 +20,7 @@ if __name__ == '__main__':
     # General setup of the recovery experiment.
     n_restarts = 10 # 15
     rank = 6
-    n_measurements = 10000    
+    n_measurements = 10000
     shape = (100, 110) #NOTE samples, features
     missing_fraction = 0.1
     noise_amplitude = 30.0
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     mixed = truth.d['sample']['mixed']
     blind = DataBlind(mixed, rank, correlation_threshold=0.9) # 0.85
     blind.estimate()
-    visualize_correlations(blind, file_name='../../out/test_image_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
+    ###visualize_correlations(blind, file_name='../../out/test_image_correlations_estimated_blind_{}'.format(n_measurements), truth_available=False)
 
     # Construction of the measurement operator and measurements from the data.
     operator = LinearOperatorCustom(blind, n_measurements).generate()

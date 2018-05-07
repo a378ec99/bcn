@@ -6,6 +6,7 @@ Defines a class that can generate a cost function.
 """
 from __future__ import division, absolute_import
 
+import numpy as np
 import autograd.numpy as ag
 
 
@@ -16,15 +17,13 @@ class Cost(object):
         
         Parameters
         ----------
-        A : numpy.ndarray; shape=(n_measurements, n_samples, n_features); dtype=float 
+        A : list; elements=dict, len=n_measurements
             Linear operator.
-        y : numpy.ndarray; shape=(n_measuremnts), dtype=int
+        y : list; elements=float, len=n_measuremnts
             Measurement vector.
-
-        #TODO Allow input as csr_matrix and convert to indices and values for quick multiplication with X.
         """
         self.A = A
-        self.y = y
+        self.y = np.array(y)
 
     def cost_func(self, X):
         """Cost function for evaluationg linear operator A and measurements y at X.
@@ -45,11 +44,22 @@ class Cost(object):
         
         #TODO Make nan safe.
         """
-        if len(X) == 3:
+        
+        if isinstance(X, tuple):
             usvt = X
             X = ag.dot(usvt[0], ag.dot(ag.diag(usvt[1]), usvt[2]))
-        sum_ = ag.sum(self.A * X, axis=(1, 2))
-        print sum_.shape, sum_ 
-        error = ag.mean((sum_ - self.y)**2)
+
+        if np.isnan(X).any():
+            X = np.nan_to_num(X, copy=False)
+
+        y_est = []
+        for measurement in self.A:
+            sum_ = 0.0
+            for i, j, value in zip(measurement['row'], measurement['col'], measurement['value']):
+                sum_ = sum_ + value * X[i, j]
+            y_est.append(sum_)
+            
+        y_est = np.array(y_est)
+        error = ag.mean((y_est - self.y)**2)
         return error
 
