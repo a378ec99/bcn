@@ -6,9 +6,6 @@ Defines several functions that can generate different types of visualizations fo
 """
 from __future__ import division, absolute_import
 
-
-__all__ = ['visualize_dependences', 'visualize_correlations', 'visualize_performance', 'visualize_absolute', 'pair_index', 'pair_overlap']
-
 import matplotlib
 matplotlib.use('Agg')
 import numpy as np
