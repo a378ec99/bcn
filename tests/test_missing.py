@@ -6,13 +6,10 @@ Defines a test class that assert the functioning of the `missing` module.
 """
 from __future__ import division, absolute_import
 
-__all__ = ['TestMissing']
-
-import sys
-sys.path.append('/home/sohse/projects/bcn')
-
 import unittest
+
 import numpy as np
+
 from bcn.missing import Missing
 from bcn.utils.testing import assert_consistency
 
