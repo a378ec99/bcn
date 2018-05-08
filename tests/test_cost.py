@@ -56,14 +56,12 @@ class TestSimple(unittest.TestCase):
                   {'row': [9], 'col': [7], 'value': [0.0]}]
         cost = Cost(A_zero, self.y)
         expected = np.mean([0.0, (4.0 - 0.0)**2])
-        print expected
         assert cost.cost_func(self.X) == expected
         
     def test_zero_X(self):
         X_zero = np.zeros((10, 9))
         cost = Cost(self.A, self.y)
         expected = np.mean([0.0, (4.0 - 0.0)**2])
-        print expected 
         assert cost.cost_func(X_zero) == expected
         
 '''    
