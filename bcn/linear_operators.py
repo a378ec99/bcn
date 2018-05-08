@@ -143,161 +143,165 @@ def _choose_random_matrix_elements(shape, n, duplicates=False):
         
     return element_indices
 
+
     
 class LinearOperator(object):
 
     __metaclass__ = abc.ABCMeta
         
-    def __init__(self, data):
-        """Abstract base class for the generation of linear operators and their measurements.
-
-        Parameters
-        ----------
-        data : Data object
-                Contains a dictionary with all the data that is needed for the linear operator and measurment creation.
-                
+    def __init__(self):
+        """Abstract base class for the generation of linear operators and corresponding targets.
         """
-        self.data = data
-
+        pass
+    
     @abc.abstractmethod
     def generate(self):
-        """Generates the linear operators and corresponding measurements.
+        """Generates linear operators and corresponding targets.
 
         Returns
         -------
-        A : ndarray, shape (n_measurements, n_samples, n_features)
-            Linear operators.
-        y : ndarray, shape (n_measurements)
-            Measurements.
+        A : dict, elements=list, len=n_measurements
+            Linear operator stored as sparse matrices.
+        y : list, elements=float, len=n_measurements
+            Target vector.
         """
         pass
 
     
 class LinearOperatorEntry(LinearOperator):
 
-    def __init__(self, data, n_measurements):
-        super(LinearOperatorEntry, self).__init__(data)
-        self.n_measurements = n_measurements
+    def __init__(self, n):
+        """
+        Parameters
+        ----------
+        n : int
+            Number of linear operators / targets to be generated, e.g. measurements.
+        """
+        self.n = n
         
-    def generate(self):
-        """Generate linear operators A and measurements y from entries of a signal matrix.
+    def generate(self, signal):
+        """Generate linear operators A and targets y from entry sampling of a clean signal matrix.
 
         Parameters
         ----------
-        data : Data object
-                Contains a dictionary with all the data that is needed for the linear operator and measurement creation.
-        n_measurements : int
-            Number of linear operators and measurements to be generated.
-
+        signal : numpy.ndarray, shape=(n_samples, n_features)
+            Clean signal matrix to sample the known entries from.
+            
         Returns
         -------
-        out : dict, {A: ndarray, shape (n_measurements, n_samples, n_features)
-                        Linear operators.
-                     y : ndarray, shape (n_measurements)
-                        Measurements.}
+        measurements : dict, elements={A : dict, elements=list, len=n
+                                        Linear operator stored as sparse matrices.
+                                       y : list, elements=float, len=n
+                                        Target vector.}
 
         Note
         ----
-        Does not work with missing values.
+        Allows for nan values in signal matrix.
         """
-        true_bias = self.data.d['sample']['true_bias']
-        shape = true_bias.shape
-        A = []
-        y = []
-        random_element_indices = _choose_random_matrix_elements(true_bias.shape, self.n_measurements, duplicates=False) # NOTE Also here same element can be sampled multiple times if duplicatese is True. That setting might be handy for comparisons, but doesn't make sense in the bigger picture.
-        for element_index in enumerate(random_element_indices):
-            A.append({'row':[element_index[0]], 'col': [element_index[1]], 'value': [1.0]})
-            y.append(true_bias[element_index[0], element_index[1]])
-        out = {'A': A, 'y': y}
-        return out
+        A, y = [], []
+        indices = _choose_random_matrix_elements(signal.shape, self.n, duplicates=False) # NOTE Also here same element can be sampled multiple times if duplicatese is True.
+        for index in indices:
+            entry = signal[index[0], index[1]]
+            if np.isfinite(entry):
+                A.append({'row':[index[0]], 'col': [index[1]], 'value': [1.0]})
+                y.append(entry)
+        measurements = {'A': A, 'y': y}
+        return measurements
 
 
 class LinearOperatorDense(LinearOperator):
 
-    def __init__(self, data, n_measurements):
-        super(LinearOperatorDense, self).__init__(data)
-        self.n_measurements = n_measurements
+    def __init__(self, n):
+        """
+        Parameters
+        ----------
+        n : int
+            Number of linear operators / targets to be generated, e.g. measurements.
+        """   
+        self.n = n
 
-    def generate(self):
-        """Generate linear operators A and measurements y from a dense sampling of a signal matrix.
+    def generate(self, signal):
+        """Generate linear operators A and targets y from dense sampling of a clean signal matrix.
 
         Parameters
         ----------
-        data : Data object
-            Contains a dictionary with all the data that is needed for the linear operator and measurement creation.
-        n_measurements : int
-            Number of linear operators and measurements to be generated.
+        signal : numpy.ndarray, shape=(n_samples, n_features)
+            Clean signal matrix to sample the known entries from.
 
         Returns
         -------
-        out : dict, {A: ndarray, shape (n_measurements, n_samples, n_features)
-                        Linear operators.
-                     y : ndarray, shape (n_measurements)
-                        Measurements.}
+        measurements : dict, elements={A : dict, elements=list, len=n
+                                        Linear operator stored as sparse matrices.
+                                       y : list, elements=float, len=n
+                                        Target vector.}
 
         Note
         ----
-        Does not work with missing values.
+        Allows for nan values in signal matrix.
         """
-        true_bias = self.data.d['sample']['true_bias']
-        shape = true_bias.shape
-        A = []
-        y = []
-        for n in xrange(self.n_measurements):
-            A_i = np.random.normal(0.0, 2.0, size=shape) # WARNING, could be too small or too large for float and subsequent computations, but unlikely.
+        A, y = [], []
+        for n in xrange(self.n):
+            A_i = np.random.standard_normal(signal.shape)
             A_i = coo_matrix(A_i)
             A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
-            y_i = np.sum(A_i * true_bias)
+            y_i = np.nansum(A_i * signal)
             y.append(y_i)
-        out = {'A': A, 'y': y}
-        return out
+        measurements = {'A': A, 'y': y}
+        return measurements
 
 
 class LinearOperatorKsparse(LinearOperator):
 
-    def __init__(self, data, n_measurements, sparsity):
-        super(LinearOperatorKsparse, self).__init__(data)
-        self.n_measurements = n_measurements
+    def __init__(self, n, sparsity):
+        """
+        Parameters
+        ----------
+        n : int
+            Number of linear operators and measurements to be generated.
+        sparsity : int
+            Sparsity of the measuremnt operator, e.g. if 2-sparse then only 2 entries in `A_i` are non-zero.
+        """
+        self.n = n
         self.sparsity = sparsity
         
-    def generate(self):
+    def generate(self, signal):
         """Generate linear operators A and measurements y from a dense sampling of a signal matrix.
 
         Parameters
         ----------
-        data : Data object
-            Contains a dictionary with all the data that is needed for the linear operator and measurement creation.
-        n_measurements : int
-            Number of linear operators and measurements to be generated.
-        sparsity : int
-            Sparsity of the measuremnt operator, e.g. if 2-sparse then only 2 entries in `A_i` are non-zero.
+        signal : numpy.ndarray, shape=(n_samples, n_features)
+            Clean signal matrix to sample the known entries from.
             
         Returns
         -------
-        out : dict, {A: ndarray, shape (n_measurements, n_samples, n_features)
-                        Linear operators.
-                     y : ndarray, shape (n_measurements)
-                        Measurements.}
+        measurements : dict, elements={A : dict, elements=list, len=n
+                                        Linear operator stored as sparse matrices.
+                                       y : list, elements=float, len=n
+                                        Target vector.}
 
         Note
         ----
         Does not consider missing values. Directly based on true bias. Same pair can be sampled multiple times (but within a pair elements can't be the same).
         """
-        true_bias = self.data.d['sample']['true_bias']
-        shape = true_bias.shape
-        A = []
-        y = []
-        for n in xrange(self.n_measurements):            
-            indices = _choose_random_matrix_elements(shape, self.sparsity, duplicates=False)
-            values = np.random.normal(0.0, 2.0, size=self.sparsity)
+        A, y = [], []
+        for n in xrange(self.n):
+            indices = _choose_random_matrix_elements(signal.shape, self.sparsity, duplicates=False)
+            values = np.random.standard_normal(self.sparsity)
+
             A_i_row = list(indices[:, 0])
             A_i_col = list(indices[:, 1])
             A_i_data = list(values)
-            A.append({'row': A_i_row, 'col': A_i_col, 'value': A_i_data})
-            y_i = np.sum(A_i * true_bias)
+
+            for i, j, value in zip(A_i_row, A_i_col, A_i_data):
+                
+            A.append({'row': list(indices[:, 0]), 'col': list(indices[:, 1]), 'value': list(values)})
+
+                
+            y_i = np.nansum(A_i * signal)
             y.append(y_i)
-        out = {'A': A, 'y': y}
-        return out
+            
+        measurements = {'A': A, 'y': y}
+        return measurements
 
         
 class LinearOperatorCustom(LinearOperator):
