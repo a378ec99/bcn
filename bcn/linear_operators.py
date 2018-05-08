@@ -10,8 +10,57 @@ import abc
 import numpy as np
 
 from scipy.sparse import issparse, coo_matrix
+from scipy.special import comb
 
 
+def sample_n_choose_k(n_samples, n_features, k, n):
+    """
+    Source
+    ------
+    https://stats.stackexchange.com/questions/315087/how-can-one-generate-a-sequence-of-unique-k-sparse-matrices-without-rejection-sa
+    """
+    assert n_samples * n_features >= k
+    max_ = comb(n_samples * n_features, k, exact=True)
+    assert max_ >= n
+    samples = []
+    while len(samples) < n:
+        i = np.random.randint(max_)
+        if not i in samples:
+            samples.append(i)
+    return samples
+
+    
+def integer_to_matrix(i, k, n_samples, n_features):
+    """
+    Use the combinatorial number system to map from i \in {1,2,..., N_choose_k} to corresponding N-dimensional binary vector with k ones.
+
+    See: https://en.wikipedia.org/wiki/Combinatorial_number_system#Finding_the_k-combination_for_a_given_number
+
+    Source
+    ------
+    https://stats.stackexchange.com/questions/315087/how-can-one-generate-a-sequence-of-unique-k-sparse-matrices-without-rejection-sa
+    """
+    flat_matrix = np.zeros(n_samples * n_features, dtype=int)
+    for h in range(k, 0, -1): # h means how many entries still to set to 1
+        j = h - 1
+        found = False
+        while not found:
+            testvalue = comb(j, h, exact=True) # Its first value is 0 == ((h-1) choose h)
+            if testvalue == i:
+                found = True
+                flat_matrix[j] = 1
+                i = i - testvalue
+            elif testvalue > i:
+                found = True
+                flat_matrix[j - 1] = 1
+                i = i - testvalue_prev
+            else:
+                j = j + 1
+                testvalue_prev = testvalue
+    matrix = flat_matrix.reshape((n_samples, n_features))
+    return matrix
+
+        
 def possible_measurement_range(shape, missing_fraction):
     '''
     Computes the range of the possible number of measurements for a particular shaped matrix.
@@ -241,10 +290,10 @@ class LinearOperatorDense(LinearOperator):
         """
         A, y = [], []
         for n in xrange(self.n):
-            A_i = np.random.standard_normal(signal.shape)
-            A_i = coo_matrix(A_i)
+            A_i_original = np.random.standard_normal(signal.shape)
+            A_i = coo_matrix(A_i_original, copy=True)
             A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
-            y_i = np.nansum(A_i * signal)
+            y_i = np.nansum(A_i_original * signal)
             y.append(y_i)
         measurements = {'A': A, 'y': y}
         return measurements
@@ -278,28 +327,18 @@ class LinearOperatorKsparse(LinearOperator):
                                         Linear operator stored as sparse matrices.
                                        y : list, elements=float, len=n
                                         Target vector.}
-
-        Note
-        ----
-        Does not consider missing values. Directly based on true bias. Same pair can be sampled multiple times (but within a pair elements can't be the same).
         """
         A, y = [], []
-        for n in xrange(self.n):
-            indices = _choose_random_matrix_elements(signal.shape, self.sparsity, duplicates=False)
-            values = np.random.standard_normal(self.sparsity)
-
-            A_i_row = list(indices[:, 0])
-            A_i_col = list(indices[:, 1])
-            A_i_data = list(values)
-
-            for i, j, value in zip(A_i_row, A_i_col, A_i_data):
-                
-            A.append({'row': list(indices[:, 0]), 'col': list(indices[:, 1]), 'value': list(values)})
-
-                
-            y_i = np.nansum(A_i * signal)
-            y.append(y_i)
-            
+        for i in sample_n_choose_k(signal.shape[0], signal.shape[1], self.sparsity, self.n):
+            A_i = integer_to_matrix(i, self.sparsity, signal.shape[0], signal.shape[1])
+            A_i = coo_matrix(A_i)
+            if np.isfinite(signal[A_i.row, A_i.col]).any():
+                value = np.random.standard_normal(self.sparsity)
+                A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': value})
+                y_i = np.nansum(value * signal[A_i.row, A_i.col])
+                y.append(y_i)
+            else:
+                continue
         measurements = {'A': A, 'y': y}
         return measurements
 

@@ -54,7 +54,7 @@ if __name__ == '__main__':
         recovered.d[space]['true_stds'] = truth.d[space]['true_stds']
         recovered.d[space]['true_directions'] = truth.d[space]['true_directions']
         recovered.noise_amplitude = noise_amplitude
-    visualize_dependences(recovered, file_name='../../out/test_image_dependences_blind_{}'.format(n_measurements), truth_available=True, estimate_available=True, recovery_available=True)
+    ###visualize_dependences(recovered, file_name='../../out/test_image_dependences_blind_{}'.format(n_measurements), truth_available=True, estimate_available=True, recovery_available=True)
     
     # Print and visualize the recovery performance statistics.
     error_solver = cost.cost_func(recovered.d['sample']['estimated_bias'])
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     print 'error_true_ratio', error_true
     print 'error_solver', error_solver
 
-    visualize_absolute(recovered, file_name='../../out/test_image_absolute_recovered_{}'.format(n_measurements), recovered=True)
+    ###visualize_absolute(recovered, file_name='../../out/test_image_absolute_recovered_{}'.format(n_measurements), recovered=True)
 
 
 

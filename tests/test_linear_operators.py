@@ -11,15 +11,45 @@ import unittest
 
 import numpy as np
 
-from bcn.linear_operators import LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom
+from bcn.linear_operators import LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse#, LinearOperatorCustom
 #from bcn.data import DataSimulated
 #from bcn.utils.testing import assert_consistency
 
 class TestSimple(unittest.TestCase):
 
     def setUp(self):
-        
+        self.n_samples = 10
+        self.n_features = 9
+        self.sparsity = 2
+        self.n = 70
+        self.signal = np.asarray(np.arange(90), dtype=float).reshape((self.n_samples, self.n_features))
+        self.signal_with_nan = np.array(self.signal)
+        self.signal_with_nan[0, 0] = np.nan
 
+    def test_entry(self):
+        operator = LinearOperatorEntry(self.n)
+        out = operator.generate(self.signal)
+        assert len(out['y']) == self.n
+        assert len(out['A'][0]['value']) == 1
+
+    def test_dense(self):
+        operator = LinearOperatorDense(self.n)
+        out = operator.generate(self.signal)
+        assert len(out['A']) == self.n
+        assert len(out['A'][0]['value']) == self.n_samples * self.n_features
+
+    def test_ksparse(self):
+        operator = LinearOperatorKsparse(self.n, self.sparsity)
+        out = operator.generate(self.signal)
+        assert len(out['A']) == self.n
+        assert len(out['A'][0]['value']) == 2
+        print out
+
+
+    # TODO assert no overlaps at full at full sampling of small matrix for ksparse.
+    # TODO check that nan gives the right sums
+    # TODO assert that the values are correct?
+    
 '''
 class Test_choose_random_matrix_elements(unittest.TestCase):
     """Test to verify that random matrix elements are chosen correctly.
