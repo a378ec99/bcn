@@ -12,7 +12,7 @@ import autograd.numpy as ag
 
 class Cost(object):
 
-    def __init__(self, A, y):
+    def __init__(self, A, y, sparsity):
         """Creates a cost function based on autograd with a linear operator A and target y.
         
         Parameters
@@ -22,16 +22,19 @@ class Cost(object):
         y : list; elements=float, len=n_measuremnts
             Target vector.
         """
-        self.A = A
-        self.y = np.array(y)
-
+        self.sparsity = sparsity
+        self.A_rows = ag.array([a['row'] for a in A])
+        self.A_cols = ag.array([a['col'] for a in A])
+        self.A_values = ag.array([a['value'] for a in A])
+        self.y = ag.array(y)
+        
     def cost_func(self, X):
-        """Cost function for evaluationg linear operator A and measurements y at X.
+        """Cost function for evaluationg linear operator A and targets y at X.
 
         Parameters
         ----------
         X : numpy.ndarray; shape=(n_samples, n_features)
-            Measured data matrix containing mixed signal and noise.
+            Estimated bias matrix.
 
         Returns
         -------
@@ -39,26 +42,15 @@ class Cost(object):
             Squared mean error.
 
         Note
-        ----
+        ----        
         Size scaling with ag.mean is not nessesary for convergence.
         """
-        
-        if isinstance(X, tuple):
+        if len(X) == 3: # WARNING type changes from list to autograd.builtins.SequenceBox after first run.
             usvt = X
             X = ag.dot(usvt[0], ag.dot(ag.diag(usvt[1]), usvt[2]))
-
-        if np.isnan(X).any():
-            print 'Warning: X contains nan values. Converting those to zero.'
-            X = np.nan_to_num(X, copy=False)
-            
-        y_est = []
-        for measurement in self.A:
-            sum_ = 0.0
-            for i, j, value in zip(measurement['row'], measurement['col'], measurement['value']):
-                sum_ = sum_ + value * X[i, j]
-            y_est.append(sum_)
-            
-        y_est = np.array(y_est)
+        else:
+            assert np.isfinite(X).all()
+        y_est = ag.sum(self.A_values * X[self.A_rows, self.A_cols].reshape(-1, self.sparsity), axis=1)
         error = ag.mean((y_est - self.y)**2)
         return error
 
