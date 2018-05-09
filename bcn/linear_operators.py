@@ -482,10 +482,8 @@ class LinearOperatorCustom(LinearOperator):
             assert np.isfinite(stds[1])
             assert np.isfinite(direction)
 
-            # NOTE Checking for nan and inf values in corrupted signal matrix.
-            if np.isfinite(mixed[space][pair[0], j]) == False:
-                continue
-            if np.isfinite(mixed[space][pair[1], j]) == False:
+            # NOTE Checking for nan and inf values in corrupted signal matrix (if one then can't use pair).
+            if ~np.isfinite(mixed[space][pair, [j, j]]).all():
                 continue
             
             A_i, y_i = self._construct_measurement(pair, j, stds, direction, space, estimated, mixed)

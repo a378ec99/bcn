@@ -254,7 +254,7 @@ class DataSimulated(Data):
         correlation_threshold : float
             The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
         m_blocks_factor : int, default = 2
-            Factor to determine the number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
+            Size of each block (e.g. number of pairs). Factor to determine the number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
         noise_amplitude : float, default = None
             Scale/amptitude of the bias (noise).
         missing_type : {'MAR', 'NMAR', 'no-missing', 'SCAN'}
@@ -288,7 +288,8 @@ class DataSimulated(Data):
 
         m_blocks = self.shape[0] // self.m_blocks_factor # NOTE using the sample space to determine the m_blocks here.
 
-        print 'm_blocks', m_blocks
+        #print 'm_blocks', m_blocks
+        #print 'shape', shape
         
         bias = BiasLowRank(self.shape, self.rank, model=self.model, noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate() # BiasUnconstrained(self.shape, model='gaussian', noise_amplitude=1.0).generate()
         missing = Missing(self.shape, self.missing_type, p_random=self.missing_fraction).generate() 
