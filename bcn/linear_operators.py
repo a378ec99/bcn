@@ -12,6 +12,8 @@ import numpy as np
 from scipy.sparse import issparse, coo_matrix
 from scipy.special import comb
 
+#TODO Check that always random order of element samples!
+#TODO Check that at least 1 measurement is returend (if lots of nans)
 
 def sample_n_choose_k(n_samples, n_features, k, n):
     """
@@ -112,7 +114,7 @@ def _print_size(name, X):
         print '{}: {} MB'.format(name, X.nbytes * 1.0e-6)
 
 
-def _pop_pairs_with_indices_randomly(n_pairs, n, max_pops):
+def pop_pairs_with_indices_randomly(n_pairs, n, max_pops):
     """ Does popping of indices to create measurements randomly and without replacement.
 
     Parameters
@@ -143,7 +145,7 @@ def _pop_pairs_with_indices_randomly(n_pairs, n, max_pops):
         yield pair_index, sample_index
 
     
-def _choose_random_matrix_elements(shape, n, duplicates=False):
+def choose_random_matrix_elements(shape, n, duplicates=False):
     """Choose `n` random matrix element indices for a matrix with a given `shape`.
 
     Random element indices are never chosen more than once and the maximum number is the total number of elements in shape. The returned random element indices are always shuffled.
@@ -248,7 +250,7 @@ class LinearOperatorEntry(LinearOperator):
         Allows for nan values in signal matrix.
         """
         A, y = [], []
-        indices = _choose_random_matrix_elements(signal.shape, self.n, duplicates=False) # NOTE Also here same element can be sampled multiple times if duplicatese is True.
+        indices = choose_random_matrix_elements(signal.shape, self.n, duplicates=False) # NOTE Also here same element can be sampled multiple times if duplicatese is True.
         for index in indices:
             entry = signal[index[0], index[1]]
             if np.isfinite(entry):
@@ -306,7 +308,7 @@ class LinearOperatorKsparse(LinearOperator):
         Parameters
         ----------
         n : int
-            Number of linear operators and measurements to be generated.
+            Number of linear operators / targets to be generated, e.g. measurements.
         sparsity : int
             Sparsity of the measuremnt operator, e.g. if 2-sparse then only 2 entries in `A_i` are non-zero.
         """
@@ -314,7 +316,7 @@ class LinearOperatorKsparse(LinearOperator):
         self.sparsity = sparsity
         
     def generate(self, signal):
-        """Generate linear operators A and measurements y from a dense sampling of a signal matrix.
+        """Generate linear operators A and targets y from dense sampling of a clean signal matrix.
 
         Parameters
         ----------
@@ -327,6 +329,10 @@ class LinearOperatorKsparse(LinearOperator):
                                         Linear operator stored as sparse matrices.
                                        y : list, elements=float, len=n
                                         Target vector.}
+
+        Note
+        ----
+        Allows for nan values in signal matrix.
         """
         A, y = [], []
         for i in sample_n_choose_k(signal.shape[0], signal.shape[1], self.sparsity, self.n):
@@ -345,9 +351,14 @@ class LinearOperatorKsparse(LinearOperator):
         
 class LinearOperatorCustom(LinearOperator):
 
-    def __init__(self, data, n_measurements):
-        super(LinearOperatorCustom, self).__init__(data)
-        self.n_measurements = n_measurements
+    def __init__(self, n):
+        """
+        Parameters
+        ----------
+        n : int
+            Number of linear operators / targets to be generated, e.g. measurements.
+        """
+        self.n = n
         
     def _solve(self, a, b, d):
         """Solve a linear equation ay + bx + c for c.
@@ -398,7 +409,7 @@ class LinearOperatorCustom(LinearOperator):
         d = np.asarray([y - y0, x - x0])
         return d
 
-    def _construct_measurement(self, pair, j, stds, direction, space):
+    def _construct_measurement(self, pair, j, stds, direction, space, estimated, mixed):
         """Creates linear operator A and measurement y in the framework of compressed sensing.
 
         Parameters
@@ -419,10 +430,10 @@ class LinearOperatorCustom(LinearOperator):
         A, y : 2d-array, 1d-array
             Measurment operator, measurements.
         """
-        A = np.zeros(self.data.d[space]['shape'])
+        A = np.zeros(estimated[space]['shape'])
         std_b, std_a = stds
         signed_std_b = -direction * std_b
-        y0, x0 = self.data.d[space]['mixed'][pair, j]
+        y0, x0 = mixed[space][pair, j]
         d = self._distance(std_a, signed_std_b, x0, y0)
         c = self._solve(std_a, signed_std_b, d)
         A[pair[0], j] = std_a
@@ -432,49 +443,55 @@ class LinearOperatorCustom(LinearOperator):
             A = A.T
         return A, y
         
-    def generate(self):
-        """Generate linear operators A and measurements y from a dense sampling of a signal matrix.
+    def generate(self, mixed, estimated):
+        """Generate linear operators A and targets y from a corrupted signal matrix.
 
         Parameters
         ----------
-        data : Data object
-            Contains a dictionary with all the data that is needed for the linear operator and measurement creation.
-        n_measurements : int
-            Number of linear operators and measurements to be generated.
-
+        mixed : numpy.ndarray, shape=(n_samples, n_features)
+            Corrupted signal matrix to generate the measurements from.
+        estimated : dict, elements={feature : dict, elements=dict
+                                        Estimated pairs, directions, standard deviations and shape of the feature space.
+                                    sample : dict, elements=dict
+                                        Estimated pairs, directions, standard deviations and shape of the sample space.}
+        
         Returns
         -------
-        out : dict, {A: ndarray, shape (n_measurements, n_samples, n_features)
-                        Linear operators.
-                     y : ndarray, shape (n_measurements)
-                        Measurements.}
-        """
-        A = []
-        y = []
+        measurements : dict, elements={A : dict, elements=list, len=n
+                                        Linear operator stored as sparse matrices.
+                                       y : list, elements=float, len=n
+                                        Target vector.}
 
-        indices = {'sample': _pop_pairs_with_indices_randomly(len(self.data.d['sample']['estimated_pairs']), self.data.d['sample']['shape'][1], self.n_measurements // 2), 'feature': _pop_pairs_with_indices_randomly(len(self.data.d['feature']['estimated_pairs']), self.data.d['feature']['shape'][1], self.n_measurements // 2)}
+        Note
+        ----
+        Allows for nan values in signal matrix.
+        """
+        mixed = {'sample': mixed, 'feature': mixed.T}
+        A, y = [], []
+        indices = {'sample': pop_pairs_with_indices_randomly(len(estimated['sample']['estimated_pairs']), estimated['sample']['shape'][1], self.n // 2), 'feature': pop_pairs_with_indices_randomly(len(estimated['feature']['estimated_pairs']), estimated['feature']['shape'][1], self.n // 2)}
         
-        for n in xrange(self.n_measurements):
+        for n in xrange(self.n):
             space = np.random.choice(['feature', 'sample'])
             index, j = indices[space].next()
-            pair = self.data.d[space]['estimated_pairs'][index]
-            stds = self.data.d[space]['estimated_stds'][index]
-            direction = self.data.d[space]['estimated_directions'][index]
+            pair = estimated[space]['estimated_pairs'][index]
+            stds = estimated[space]['estimated_stds'][index]
+            direction = estimated[space]['estimated_directions'][index]
 
+            # NOTE Checking for nan and inf values in estimations.
             assert np.isfinite(stds[0])
             assert np.isfinite(stds[1])
             assert np.isfinite(direction)
 
-            # NOTE Checking for nan and inf values in measured data matrix.
-            if np.isfinite(self.data.d[space]['mixed'][pair[0], j]) == False:
+            # NOTE Checking for nan and inf values in corrupted signal matrix.
+            if np.isfinite(mixed[space][pair[0], j]) == False:
                 continue
-            if np.isfinite(self.data.d[space]['mixed'][pair[1], j]) == False:
+            if np.isfinite(mixed[space][pair[1], j]) == False:
                 continue
             
-            A_i, y_i = self._construct_measurement(pair, j, stds, direction, space)
+            A_i, y_i = self._construct_measurement(pair, j, stds, direction, space, estimated, mixed)
             A_i = coo_matrix(A_i)
             A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
             y.append(y_i)
-        out = {'A': A, 'y': y}
-        return out
+        measurements = {'A': A, 'y': y}
+        return measurements
 
