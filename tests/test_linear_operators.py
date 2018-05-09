@@ -33,7 +33,13 @@ class TestSimple(unittest.TestCase):
         assert len(out['A'][0]['value']) == 1
         out = operator.generate(self.signal_with_nan)
         assert len(out['y']) == self.n - 2
-        
+
+    def test_custom(self):
+        operator = LinearOperatorCustom(self.n)
+        mixed =
+        estimated = 
+        out = operator.generate(mixed, estimated)
+
     def test_dense(self):
         operator = LinearOperatorDense(self.n)
         out = operator.generate(self.signal)

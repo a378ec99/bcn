@@ -2,7 +2,7 @@
 
 Notes
 -----
-Defines classes that generate the measurement operator A and measurement y from the input of a Data object.
+Defines classes that generate the measurement operator A and targets y.
 """
 from __future__ import division, absolute_import
 
