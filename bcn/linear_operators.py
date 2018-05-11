@@ -13,7 +13,6 @@ from scipy.sparse import issparse, coo_matrix
 from scipy.special import comb
 
 #TODO Check that always random order of element samples!
-#TODO Check that at least 1 measurement is returend (if lots of nans)
 
 def sample_n_choose_k(n_samples, n_features, k, n):
     """
@@ -260,6 +259,7 @@ class LinearOperatorEntry(LinearOperator):
             if np.isfinite(entry):
                 A.append({'row':[index[0]], 'col': [index[1]], 'value': [1.0]})
                 y.append(entry)
+        assert len(y) > 0
         measurements = {'A': A, 'y': y}
         return measurements
 
@@ -301,6 +301,7 @@ class LinearOperatorDense(LinearOperator):
             A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
             y_i = np.nansum(A_i_original * signal)
             y.append(y_i)
+        assert len(y) > 0
         measurements = {'A': A, 'y': y}
         return measurements
 
@@ -349,6 +350,7 @@ class LinearOperatorKsparse(LinearOperator):
                 y.append(y_i)
             else:
                 continue
+        assert len(y) > 0
         measurements = {'A': A, 'y': y}
         return measurements
 
@@ -493,6 +495,7 @@ class LinearOperatorCustom(LinearOperator):
             A_i = coo_matrix(A_i)
             A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
             y.append(y_i)
+        assert len(y) > 0
         measurements = {'A': A, 'y': y}
         return measurements
 
