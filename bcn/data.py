@@ -17,6 +17,45 @@ from bcn.redundant_signal import RedundantSignal
 from bcn.missing import Missing
 
 
+def estimate_partial_signal_characterists(mixed, correlation_threshold, true_pairs=None, true_directions=None, true_stds=None, true_correlations=None):
+    """Estimate correlations, pairs, directions and strandard deviations from a corrupted signal.
+
+    Parameters
+    ----------
+    mixed : numpy.ndarray, shape=(n_samples, n_features)
+        The bias corrupted low-rank matrix from which the bias is to be recovered.
+    correlation_threshold : float
+        The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
+    true_pairs : numpy.ndarray, elements=int, shape=(n, 2)
+        Sequence of true pairs given as tuples.
+    true_directions : numpy.ndarray, elements=int, len=n
+        Sequence of true directions, e.g. -1, +1.
+    true_stds : numpy.ndarray, elements=int, shape=(n, 2)
+        Sequence of true standard deviations of each pair.
+    """
+    estimates = {'feature': {'mixed': mixed.T, 'shape': mixed.T.shape}, 'sample': {'mixed': mixed, 'shape': mixed.shape}}
+    
+    for space in ['feature', 'sample']: 
+        if true_correlations is not None:
+            estimates[space]['estimated_correlations'] = true_correlations[space]
+        else:
+            estimates[space]['estimated_correlations'] = estimate_correlations(estimates[space]['mixed'])
+        if true_pairs is not None:
+            estimates[space]['estimated_pairs'] = true_pairs[space]
+        else:
+            estimates[space]['estimated_pairs'] = estimate_pairs(estimates[space]['estimated_correlations'], correlation_threshold)
+        if true_stds is not None:
+            estimates[space]['estimated_stds'] = true_stds[space]
+        else:
+            estimates[space]['estimated_stds'] = estimate_stds(estimates[space]['mixed'], estimates[space]['estimated_pairs'])
+        if true_directions is not None:
+            estimates[space]['estimated_directions'] = true_directions[space]
+        else:
+            estimates[space]['estimated_directions'] = estimate_directions(estimates[space]['estimated_correlations'], estimates[space]['estimated_pairs'])
+
+    return estimates
+
+
 def transpose_view(X, space):
     """Small helper function to return transpose of in imput matrix if required.
 
@@ -242,7 +281,7 @@ class Data(object):
     
 class DataSimulated(Data):
 
-    def __init__(self, shape, rank, model='gaussian', correlation_threshold=0.7, m_blocks_factor=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, shape, rank, bias_model='gaussian', correlation_threshold=0.7, m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -253,7 +292,7 @@ class DataSimulated(Data):
             Rank of the low-rank decomposition.
         correlation_threshold : float
             The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
-        m_blocks_factor : int, default = 2
+        m_blocks_size : int, default = 2
             Size of each block (e.g. number of pairs). Factor to determine the number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
         noise_amplitude : float, default = None
             Scale/amptitude of the bias (noise).
@@ -274,7 +313,7 @@ class DataSimulated(Data):
         self.shape = shape
         self.rank = rank
         self.correlation_threshold = correlation_threshold
-        self.m_blocks_factor = m_blocks_factor
+        self.m_blocks_size = m_blocks_size
         self.noise_amplitude = noise_amplitude
         self.correlation_strength = correlation_strength
         self.missing_type = missing_type
@@ -282,16 +321,16 @@ class DataSimulated(Data):
         self.sample_annotation = sample_annotation
         self.feature_annotation_batch = feature_annotation_batch
         self.sample_annotation_batch = sample_annotation_batch
-        self.missing_fraction = 0.1 # NOTE fraction of missing values set here in hardcoded fashion.
-        self.model = model
-        self.image_source = '../../tests/trump.png'# NOTE Hardcoded.
+        self.missing_fraction = missing_fraction
+        self.bias_model = bias_model
+        self.image_source = 'bcn/tests/trump.png'# NOTE Hardcoded.
 
-        m_blocks = self.shape[0] // self.m_blocks_factor # NOTE using the sample space to determine the m_blocks here.
+        m_blocks = self.shape[0] // self.m_blocks_size # NOTE using the sample space to determine the m_blocks here.
 
         #print 'm_blocks', m_blocks
         #print 'shape', shape
         
-        bias = BiasLowRank(self.shape, self.rank, model=self.model, noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate() # BiasUnconstrained(self.shape, model='gaussian', noise_amplitude=1.0).generate()
+        bias = BiasLowRank(self.shape, self.rank, bias_model=self.bias_model, noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate() # BiasUnconstrained(self.shape, bias_model='gaussian', noise_amplitude=1.0).generate()
         missing = Missing(self.shape, self.missing_type, p_random=self.missing_fraction).generate() 
         signal = RedundantSignal(self.shape, 'random', m_blocks, self.correlation_strength).generate()
         mixed = signal['X'] + bias['X'] + missing['X']
@@ -340,7 +379,7 @@ class DataSimulated(Data):
             else:
                 self.d[space]['estimated_directions'] = estimate_directions(self.d[space]['estimated_correlations'], self.d[space]['estimated_pairs'])
 
-
+'''
 class DataBlind(Data):
 
     def __init__(self, mixed, rank, correlation_threshold=0.7, noise_amplitude=1.0, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
@@ -414,5 +453,5 @@ class DataBlind(Data):
             else:
                 self.d[space]['estimated_directions'] = estimate_directions(self.d[space]['estimated_correlations'], self.d[space]['estimated_pairs'])
 
-                
+'''                
 

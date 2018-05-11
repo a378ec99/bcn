@@ -15,7 +15,7 @@ from pymanopt.manifolds import FixedRankEmbedded
 
 class ConjugateGradientSolver(object):
 
-    def __init__(self, cost_func, guess_func, data, rank, n_restarts, noise_amplitude=5.0, maxiter=1000, space='sample', seed=None, verbosity=2):
+    def __init__(self, mixed, cost_func, guess_func, rank, n_restarts, noise_amplitude=5.0, maxiter=1000, space='sample', seed=None, verbosity=2):
         """Create a solver to recovery bias given observations `X` and cost/guess functions.
 
         Parameters
@@ -24,8 +24,8 @@ class ConjugateGradientSolver(object):
             Cost function that has information about linear operator `A` and measurement `y` and takes observation `X` as input.
         guess_func : func
             Guess function that guesses an intial point for the solver to start optimizing at.
-        data : Data object
-            Contains a dictionary with all the data for the intial bias recovery run (including randomly created signal, bias, missing matrices).
+        mixed : numpy.ndarray, shape=(n_samples, n_features)
+            Corrupted signal to be cleaned.
         rank : int
             Rank of the manifold (presumably the same rank of the true bias matrix to be recovered) and rank of the initial guess.
         n_restarts : int
@@ -42,12 +42,10 @@ class ConjugateGradientSolver(object):
         self.seed = seed
         if self.seed is not None:
             np.random.seed(self.seed)
-        self.data = data
-        self.space = space
+        self.mixed = mixed
         self.rank = rank
         self.n_restarts = n_restarts
         self.maxiter = maxiter
-        self.mixed = self.data.d[self.space]['mixed']
         self.shape = self.mixed.shape
         self.manifold = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank)
         self.guess_func = guess_func
@@ -107,17 +105,14 @@ class ConjugateGradientSolver(object):
             guesses_usvt.append(guess['usvt'])
             errors.append(final_cost)
         index = np.argmin(errors)
-
         error = errors[index]
         estimated_bias = estimates[index] 
         guess_X = guesses_X[index]
         guess_usvt = guesses_usvt[index]
-
-        self.data.d[self.space]['guess_X'] = guess_X
-        self.data.d[self.space]['guess_usvt'] = guess_usvt
-        self.data.d[self.space]['estimated_bias'] = estimated_bias
-        self.data.d[self.space]['estimated_signal'] = self.mixed - estimated_bias
-        self.data.d[self.space]['final_cost'] = error
-        return self.data
-
+        results = {'guess_X': guess_X,
+                   'guess_usvt': guess_usvt,
+                   'estimated_bias': estimated_bias,
+                   'estimated_signal': self.mixed - estimated_bias,
+                   'final_cost': error}
+        return results
         

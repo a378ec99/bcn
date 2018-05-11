@@ -9,30 +9,43 @@ from bcn.bias import guess_func
 from bcn.data import DataSimulated, DataBlind
 from bcn.cost import Cost
 from bcn.solvers import ConjugateGradientSolver
-from bcn.linear_operators import LinearOperatorCustom, possible_measurement_range
-from bcn.utils.visualization import visualize_dependences, visualize_correlations, visualize_absolute
+from bcn.linear_operators import LinearOperatorCustom, possible_measurements
+#from bcn.utils.visualization import visualize_dependences, visualize_correlations, visualize_absolute
 
+import pylab as pl
 
 if __name__ == '__main__':
     
     np.random.seed(seed=42)
 
-    # General setup of the recovery experiment.
+    fig = pl.figure(figsize=(10, 10))
+    ax = fig.add_subplot(111)
+    ax.plot([1,2,3,4], [5, 6, 7, 8], '.')
+    ax.set_xlabel('features')
+    ax.set_ylabel('samples')
+    fig.savefig('test')
+    
+    # Setup of general parameters for the recovery experiment.
     sparsity = 2
-    n_restarts = 10 # 15
+    n_restarts = 10
     rank = 6
-    n_measurements = 10000
-    shape = (100, 110) #NOTE samples, features
+    n_measurements = 100
+    shape = (100, 110) # samples, features
     missing_fraction = 0.1
     noise_amplitude = 30.0
+    m_blocks_size = 50 # size of each block
+    correlation_threshold = 0.9
+    bias_model = 'image'
+    
+    print possible_measurements(shape, missing_fraction, m_blocks_size=m_blocks_size)
 
-    print 'possible_measurement_range', possible_measurement_range(shape, missing_fraction)
-
-    # Creation of the test data and blind estimation of the dependency structure.
-    truth = DataSimulated(shape, rank, model='image', correlation_threshold=0.9, m_blocks_factor=shape[0] // 2, noise_amplitude=noise_amplitude)
+    # Creation of the corrupted signal.
+    truth = DataSimulated(shape, rank, bias_model=bias_model, correlation_threshold=correlation_threshold, m_blocks_size=m_blocks_size, noise_amplitude=noise_amplitude, missing_fraction=missing_fraction)
     mixed = truth.d['sample']['mixed']
 
     # print mixed, mixed.dtype
+
+    # WARNING Not identical to notebook!
     
     blind = DataBlind(mixed, rank, correlation_threshold=0.9) # 0.85
     blind.estimate()

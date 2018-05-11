@@ -63,7 +63,7 @@ def integer_to_matrix(i, k, n_samples, n_features):
     return matrix
 
         
-def possible_measurement_range(shape, missing_fraction):
+def possible_measurements(shape, missing_fraction, m_blocks_size=None):
     '''
     Computes the range of the possible number of measurements for a particular shaped matrix.
 
@@ -88,15 +88,19 @@ def possible_measurement_range(shape, missing_fraction):
     a, b = shape
 
     n_worst_case = int(((a / 2) * b) + ((b / 2) * a))
-    n_worst_case  = n_worst_case - (missing_fraction * n_worst_case)
+    n_worst_case  = int(n_worst_case - (missing_fraction * n_worst_case))
     
     a_pairs = (a / 2)**2 - (a / 2)
     b_pairs = (b / 2)**2 - (b / 2)
     n_best_case = int((a_pairs * b) + (b_pairs * a))
-    n_best_case = n_best_case - (missing_fraction * n_best_case)
-    
-    return n_worst_case, n_best_case
+    n_best_case = int(n_best_case - (missing_fraction * n_best_case))
 
+    d = {'m_blocks={}/{} (best case)'.format(shape[0] // 2, shape[1] // 2): n_worst_case, 'm_blocks={}/{} (worst case)'.format(2, 2): n_best_case}
+
+    if m_blocks_size:
+        # TODO
+        d['m_blocks={}/{} (actual case)'.format(shape[0] // m_blocks_size, shape[1] // m_blocks_size)] = 'TODO'
+    return d
 
 def _print_size(name, X):
     """Print the memory footprint in MB of a particular data matrix.
@@ -409,7 +413,7 @@ class LinearOperatorCustom(LinearOperator):
         d = np.asarray([y - y0, x - x0])
         return d
 
-    def _construct_measurement(self, pair, j, stds, direction, space, estimated, mixed):
+    def _construct_measurement(self, pair, j, stds, direction, space, estimated):
         """Creates linear operator A and measurement y in the framework of compressed sensing.
 
         Parameters
@@ -424,7 +428,9 @@ class LinearOperatorCustom(LinearOperator):
             Direction of the dependency, e.g. -1 anticorrelated.
         space : {'feature', 'sample'}
             The space of the array to be used.
-
+        estimated : dict
+            Contains the mixed signal and its shape characteristics among others deatils.
+        
         Returns
         -------
         A, y : 2d-array, 1d-array
@@ -433,7 +439,7 @@ class LinearOperatorCustom(LinearOperator):
         A = np.zeros(estimated[space]['shape'])
         std_b, std_a = stds
         signed_std_b = -direction * std_b
-        y0, x0 = mixed[space][pair, j]
+        y0, x0 = estimated[space]['mixed'][pair, j]
         d = self._distance(std_a, signed_std_b, x0, y0)
         c = self._solve(std_a, signed_std_b, d)
         A[pair[0], j] = std_a
@@ -443,17 +449,15 @@ class LinearOperatorCustom(LinearOperator):
             A = A.T
         return A, y
         
-    def generate(self, mixed, estimated):
+    def generate(self, estimated):
         """Generate linear operators A and targets y from a corrupted signal matrix.
 
         Parameters
         ----------
-        mixed : numpy.ndarray, shape=(n_samples, n_features)
-            Corrupted signal matrix to generate the measurements from.
         estimated : dict, elements={feature : dict, elements=dict
-                                        Estimated pairs, directions, standard deviations and shape of the feature space.
+                                        Estimated pairs, directions, standard deviations, mixed and shape of the feature space.
                                     sample : dict, elements=dict
-                                        Estimated pairs, directions, standard deviations and shape of the sample space.}
+                                        Estimated pairs, directions, standard deviations, mixed and shape of the sample space.}
         
         Returns
         -------
@@ -466,7 +470,6 @@ class LinearOperatorCustom(LinearOperator):
         ----
         Allows for nan values in signal matrix.
         """
-        mixed = {'sample': mixed, 'feature': mixed.T}
         A, y = [], []
         indices = {'sample': pop_pairs_with_indices_randomly(len(estimated['sample']['estimated_pairs']), estimated['sample']['shape'][1], self.n // 2), 'feature': pop_pairs_with_indices_randomly(len(estimated['feature']['estimated_pairs']), estimated['feature']['shape'][1], self.n // 2)}
         
@@ -483,10 +486,10 @@ class LinearOperatorCustom(LinearOperator):
             assert np.isfinite(direction)
 
             # NOTE Checking for nan and inf values in corrupted signal matrix (if one then can't use pair).
-            if ~np.isfinite(mixed[space][pair, [j, j]]).all():
+            if ~np.isfinite(estimated[space]['mixed'][pair, [j, j]]).all():
                 continue
             
-            A_i, y_i = self._construct_measurement(pair, j, stds, direction, space, estimated, mixed)
+            A_i, y_i = self._construct_measurement(pair, j, stds, direction, space, estimated)
             A_i = coo_matrix(A_i)
             A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
             y.append(y_i)
