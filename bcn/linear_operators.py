@@ -12,7 +12,6 @@ import numpy as np
 from scipy.sparse import issparse, coo_matrix
 from scipy.special import comb
 
-#TODO Check that always random order of element samples!
 
 def sample_n_choose_k(n_samples, n_features, k, n):
     """
