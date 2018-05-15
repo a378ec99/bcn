@@ -93,6 +93,7 @@ class BiasLowRank(object):
             usvt = np.linalg.svd(X)
             usvt = usvt[0][:, :self.rank], usvt[1][
                 :self.rank], usvt[2][:self.rank, :]
+            usvt = usvt[0], usvt[1] * self.noise_amplitude, usvt[2]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
 
         if self.bias_model == 'bicluster':

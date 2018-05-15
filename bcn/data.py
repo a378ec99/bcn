@@ -281,7 +281,7 @@ class Data(object):
     
 class DataSimulated(Data):
 
-    def __init__(self, shape, rank, bias_model='gaussian', correlation_threshold=0.7, m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None):
+    def __init__(self, shape, rank, bias_model='gaussian', correlation_threshold=0.7, m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None, image_source='../../tests/trump.png'):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -323,7 +323,7 @@ class DataSimulated(Data):
         self.sample_annotation_batch = sample_annotation_batch
         self.missing_fraction = missing_fraction
         self.bias_model = bias_model
-        self.image_source = 'bcn/tests/trump.png'# NOTE Hardcoded.
+        self.image_source = image_source
 
         m_blocks = self.shape[0] // self.m_blocks_size # NOTE using the sample space to determine the m_blocks here.
 
