@@ -6,6 +6,100 @@ Defines several functions that can generate different types of visualizations fo
 """
 from __future__ import division, absolute_import
 
+import numpy as np
+
+import pylab as pl
+import seaborn as sb
+
+
+def show_absolute(signal, kind, shuffle=True, map_backward=None):
+    indices_x = np.arange(signal.shape[0], dtype=int)
+    indices_y = np.arange(signal.shape[1], dtype=int)
+    fig = pl.figure(figsize=(6 * (signal.shape[1] / signal.shape[0]), 6))
+    ax = fig.add_subplot(111)
+    if shuffle:
+        ax.set_title('{} (shuffled)'.format(kind))
+    else:
+        ax.set_title('{}'.format(kind))
+        indices_x = np.asarray([map_backward['sample'][i] for i in indices_x])
+        indices_y = np.asarray([map_backward['feature'][i] for i in indices_y])
+    ax_seaborn = sb.heatmap(signal, vmin=-4, vmax=4, cmap=pl.cm.seismic, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=indices_y, yticklabels=indices_x)
+    ax.tick_params(axis='both', which='both', length=0)
+    ax.set_xlabel('Features')
+    ax.set_ylabel('Samples')
+
+    
+def show_dependences(signal, pairs, space, n_pairs=5, n_points=50):
+    if space == 'feature':
+        shape = signal.T.shape
+    if space == 'sample':
+        shape = signal.shape
+    pairs = pairs[space]
+    for n, i in enumerate(np.random.choice(np.arange(len(pairs), dtype=int), min(n_pairs, len(pairs)), replace=False)):
+        j = np.random.choice(np.arange(shape[1], dtype=int), min(n_points, shape[1]), replace=False)
+        if space == 'sample':
+            grid = sb.jointplot(signal[np.atleast_2d(pairs[i][1]), j], signal[np.atleast_2d(pairs[i][0]), j], ylim=(-4, 4), xlim=(-4, 4), alpha=0.6, stat_func=None, color='black')
+            grid.set_axis_labels('Sample {}'.format(pairs[i][1]), 'Sample {}'.format(pairs[i][0]))
+        if space == 'feature':
+            grid = sb.jointplot(signal[j[:, None], pairs[i][1]], signal[j[:, None], pairs[i][0]], ylim=(-4, 4), xlim=(-4, 4), alpha=0.6, stat_func=None, color='black')
+            grid.set_axis_labels('Feature {}'.format(pairs[i][1]), 'Feature {}'.format(pairs[i][0]))
+
+     
+def show_independences(signal, pairs, space, n_pairs=5, n_points=50):
+    if space == 'feature':
+        shape = signal.T.shape
+    if space == 'sample':
+        shape = signal.shape
+    true_pairs = set()
+    for pair in pairs[space]:
+        true_pairs.add((pair[0], pair[1]))
+        true_pairs.add((pair[1], pair[0]))
+    all_pairs = set()
+    for i in xrange(shape[0]):
+        for j in range(shape[0]):
+            all_pairs.add((i, j))
+            all_pairs.add((j, i))
+    non_pairs = all_pairs - true_pairs
+    pairs = {space: np.asarray(list(non_pairs), dtype=int)}
+    show_dependences(signal, pairs, space, n_pairs=n_pairs, n_points=n_points)
+
+
+def show_dependence_structure(correlations, space, shuffle=True, map_backward=None):
+    indices = np.arange(correlations[space].shape[0], dtype=int)
+    if space == 'feature':
+        size = 6 * (correlations['feature'].shape[0] / correlations['sample'].shape[0])
+    if space == 'sample':
+        size = 6
+    fig = pl.figure(figsize=(size, size))
+    ax = fig.add_subplot(111)
+    if shuffle:
+        ax.set_title('Correlations (shuffled)')
+    else:
+        ax.set_title('Correlations')
+        indices = np.asarray([map_backward[space][i] for i in indices])
+    sb.heatmap(correlations[space], cmap=pl.cm.seismic, vmin=-1, vmax=1, square=True, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=indices, yticklabels=indices)
+    if space == 'feature':
+        ax.set_xlabel('Features')
+        ax.set_ylabel('Features')
+    if space == 'sample':
+        ax.set_xlabel('Samples')
+        ax.set_ylabel('Samples')
+
+        
+def show_threshold(correlations, space):
+    fig = pl.figure(figsize=(6, 6))
+    ax = fig.add_subplot(111)
+    trimmed = np.trim_zeros(np.sort(np.tril(np.absolute(correlations[space]), -1).ravel()))
+    ax.set_xlabel('Threshold')
+    ax.set_ylabel('# pairs')
+    ax.plot(trimmed, np.arange(1, len(trimmed) + 1)[::-1], '-', alpha=0.8, color='black')
+    sb.despine()
+
+
+    
+'''
+from __future__ import division, absolute_import
+
 import matplotlib
 matplotlib.use('Agg')
 import numpy as np
@@ -382,7 +476,7 @@ def visualize_performance(errors, x, y, x_name, y_name, file_name='../../out/tes
     fig.savefig(file_name + format)
 
 
-
+'''
 
 
 
