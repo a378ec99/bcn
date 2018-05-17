@@ -382,7 +382,8 @@ class DataSimulated(Data):
             self.d[space]['true_bias'] = transpose_view(bias, space)
             self.d[space]['true_correlations_unshuffled'] = signal_unshuffled[space]['correlation_matrix']
             self.d[space]['true_correlations'] = shuffle_matrix(signal_unshuffled[space]['correlation_matrix'], self.map_forward[space])
-            self.d[space]['true_pairs'] = shuffle_pairs(signal_unshuffled[space]['pairs'], self.map_forward[space])
+            self.d[space]['true_pairs_unshuffled'] = signal_unshuffled[space]['pairs']
+            self.d[space]['true_pairs'] = shuffle_pairs(signal_unshuffled[space]['pairs'], self.map_backward[space])
             self.d[space]['true_stds'] = signal_unshuffled[space]['stds'][signal_unshuffled[space]['pairs']] # WARNING Could be wrong!
             self.d[space]['true_directions'] = signal_unshuffled[space]['directions'] # WARNING Could be wrong!
             self.d[space]['correlation_threshold'] = correlation_threshold

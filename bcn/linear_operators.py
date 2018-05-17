@@ -85,15 +85,15 @@ def possible_measurements(shape, missing_fraction, m_blocks_size=None):
     assert shape[1] % 2 == 0
     a, b = shape
 
-    n_worst_case = int(((a / 2) * b) + ((b / 2) * a))
-    n_worst_case  = int(n_worst_case - (missing_fraction * n_worst_case))
+    n_best = int(((a / 2) * b) + ((b / 2) * a))
+    n_best  = int(n_best - (missing_fraction * n_best))
     
     a_pairs = (a / 2)**2 - (a / 2)
     b_pairs = (b / 2)**2 - (b / 2)
-    n_best_case = int((a_pairs * b) + (b_pairs * a))
-    n_best_case = int(n_best_case - (missing_fraction * n_best_case))
+    n_worst = int((a_pairs * b) + (b_pairs * a))
+    n_worst = int(n_worst - (missing_fraction * n_worst))
 
-    d = {'m_blocks={}/{} (best case)'.format(shape[0] // 2, shape[1] // 2): n_worst_case, 'm_blocks={}/{} (worst case)'.format(2, 2): n_best_case}
+    d = {'m_blocks={}/{} (best case)'.format(shape[0] // 2, shape[1] // 2): n_best, 'm_blocks={}/{} (worst case)'.format(2, 2): n_worst}
 
     if m_blocks_size:
         # TODO
