@@ -11,19 +11,27 @@ import numpy as np
 import pylab as pl
 import seaborn as sb
 
+sb.set(font_scale=0.7, style='white')
 
-def show_absolute(signal, kind, unshuffled=False, map_backward=None, vmin=-4, vmax=4):
+
+def show_absolute(signal, kind, unshuffled=False, unshuffle=False, map_backward=None, vmin=-4, vmax=4):
     cmap = sb.diverging_palette(250, 15, s=75, l=40, as_cmap=True, center="dark")
     indices_x = np.arange(signal.shape[0], dtype=int)
     indices_y = np.arange(signal.shape[1], dtype=int)
-    fig = pl.figure(figsize=(6 * (signal.shape[1] / signal.shape[0]), 6))
+    fig = pl.figure(figsize=(7 * (signal.shape[1] / signal.shape[0]), 7))
     ax = fig.add_subplot(111)
+    if unshuffle:
+        ax.set_title('{} (unshuffled)'.format(kind))
+        indices_x = np.asarray([map_backward['sample'][i] for i in indices_x])
+        indices_y = np.asarray([map_backward['feature'][i] for i in indices_y])
+        signal = signal[indices_x]
+        signal = signal[:, indices_y]
     if unshuffled:
-        ax.set_title('{}'.format(kind))
+        ax.set_title('{} (unshuffled)'.format(kind))
         indices_x = np.asarray([map_backward['sample'][i] for i in indices_x])
         indices_y = np.asarray([map_backward['feature'][i] for i in indices_y])
     else:
-        ax.set_title('{} (shuffled)'.format(kind))
+        ax.set_title('{}'.format(kind))
     ax_seaborn = sb.heatmap(signal, vmin=vmin, vmax=vmax, cmap=cmap, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=indices_y, yticklabels=indices_x)
     ax.tick_params(axis='both', which='both', length=0)
     ax.set_xlabel('Features')
@@ -40,10 +48,10 @@ def show_dependences(signal, pairs, space, n_pairs=5, n_points=50):
     for n, i in enumerate(np.random.choice(np.arange(len(pairs), dtype=int), min(n_pairs, len(pairs)), replace=False)):
         j = np.random.choice(np.arange(shape[1], dtype=int), min(n_points, shape[1]), replace=False)
         if space == 'sample':
-            grid = sb.jointplot(signal[np.atleast_2d(pairs[i][1]), j], signal[np.atleast_2d(pairs[i][0]), j], ylim=(-4, 4), xlim=(-4, 4), alpha=0.6, stat_func=None, color='black')
+            grid = sb.jointplot(signal[np.atleast_2d(pairs[i][1]), j], signal[np.atleast_2d(pairs[i][0]), j], ylim=(-4, 4), xlim=(-4, 4), alpha=0.6, size=5, stat_func=None, color='black')
             grid.set_axis_labels('Sample {}'.format(pairs[i][1]), 'Sample {}'.format(pairs[i][0]))
         if space == 'feature':
-            grid = sb.jointplot(signal[j[:, None], pairs[i][1]], signal[j[:, None], pairs[i][0]], ylim=(-4, 4), xlim=(-4, 4), alpha=0.6, stat_func=None, color='black')
+            grid = sb.jointplot(signal[j[:, None], pairs[i][1]], signal[j[:, None], pairs[i][0]], ylim=(-4, 4), xlim=(-4, 4), alpha=0.6, size=5, stat_func=None, color='black')
             grid.set_axis_labels('Feature {}'.format(pairs[i][1]), 'Feature {}'.format(pairs[i][0]))
         pl.setp(grid.ax_marg_y.patches, color=cmap[2])
         pl.setp(grid.ax_marg_x.patches, color=cmap[-2])
@@ -63,7 +71,8 @@ def show_independences(signal, pairs, space, n_pairs=5, n_points=50):
         for j in range(shape[0]):
             all_pairs.add((i, j))
             all_pairs.add((j, i))
-    non_pairs = all_pairs - true_pairs
+    identical = set([(i, i) for i in range(shape[0])])
+    non_pairs = all_pairs - true_pairs - identical
     pairs = {space: np.asarray(list(non_pairs), dtype=int)}
     show_dependences(signal, pairs, space, n_pairs=n_pairs, n_points=n_points)
 
@@ -72,16 +81,16 @@ def show_dependence_structure(correlations, space, unshuffled=False, map_backwar
     cmap = sb.diverging_palette(250, 15, s=75, l=40, as_cmap=True, center="dark")
     indices = np.arange(correlations[space].shape[0], dtype=int)
     if space == 'feature':
-        size = 6 * (correlations['feature'].shape[0] / correlations['sample'].shape[0])
+        size = 7 * (correlations['feature'].shape[0] / correlations['sample'].shape[0])
     if space == 'sample':
-        size = 6
+        size = 7
     fig = pl.figure(figsize=(size, size))
     ax = fig.add_subplot(111)
     if unshuffled:
-        ax.set_title('Correlations')
+        ax.set_title('Correlations (unshuffled)')
         indices = np.asarray([map_backward[space][i] for i in indices])
     else:
-        ax.set_title('Correlations (shuffled)')
+        ax.set_title('Correlations')
     sb.heatmap(correlations[space], cmap=cmap, vmin=-1, vmax=1, square=True, ax=ax, cbar_kws={'shrink': 0.5}, xticklabels=indices, yticklabels=indices)
     if space == 'feature':
         ax.set_xlabel('Features')
@@ -93,7 +102,7 @@ def show_dependence_structure(correlations, space, unshuffled=False, map_backwar
         
 def show_threshold(correlations, threshold, space):
     cmap = sb.diverging_palette(250, 15, s=75, l=40, n=10, center="dark")
-    fig = pl.figure(figsize=(6, 6))
+    fig = pl.figure(figsize=(5, 5))
     ax = fig.add_subplot(111)
     trimmed = np.trim_zeros(np.sort(np.tril(np.absolute(correlations[space]), -1).ravel()))
     ax.set_xlabel('Threshold')

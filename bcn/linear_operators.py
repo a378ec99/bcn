@@ -93,11 +93,11 @@ def possible_measurements(shape, missing_fraction, m_blocks_size=None):
     n_worst = int((a_pairs * b) + (b_pairs * a))
     n_worst = int(n_worst - (missing_fraction * n_worst))
 
-    d = {'m_blocks={}/{} (best case)'.format(shape[0] // 2, shape[1] // 2): n_best, 'm_blocks={}/{} (worst case)'.format(2, 2): n_worst}
+    d = {'m_blocks=({}, {}) (best case)'.format(shape[0] // 2, shape[1] // 2): n_worst, 'm_blocks=({}, {}) (worst case)'.format(2, 2): n_best}
 
     if m_blocks_size:
         # TODO
-        d['m_blocks={}/{} (actual case)'.format(shape[0] // m_blocks_size, shape[1] // m_blocks_size)] = 'TODO'
+        d['m_blocks=({}, {}) (actual case)'.format(shape[0] // m_blocks_size, shape[1] // m_blocks_size)] = 'TODO'
     return d
 
 def _print_size(name, X):

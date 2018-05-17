@@ -361,8 +361,8 @@ class DataSimulated(Data):
         #print 'shape', shape
 
         bias_unshuffled = BiasLowRank(self.shape, self.rank, bias_model=self.bias_model, noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate() # BiasUnconstrained(self.shape, bias_model='gaussian', noise_amplitude=1.0).generate()
-        map_forward, map_backward = random_permutation(bias_unshuffled['X'].shape)
-        bias = shuffle_matrix(bias_unshuffled['X'], map_forward['sample'], map_forward['feature'])
+        self.map_forward_bias, self.map_backward_bias = random_permutation(bias_unshuffled['X'].shape)
+        bias = shuffle_matrix(bias_unshuffled['X'], self.map_forward_bias['sample'], self.map_forward_bias['feature'])
         
         missing = Missing(self.shape, self.missing_type, p_random=self.missing_fraction).generate()['X']
 
