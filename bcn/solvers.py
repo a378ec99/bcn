@@ -1,4 +1,4 @@
-"""Solver for matrix recovery.
+"""Solvers for matrix recovery.
 
 Note
 ----
@@ -106,7 +106,6 @@ class ConjugateGradientSolver(object):
         for k in xrange(self.n_restarts):
             guess = self.guess_func(self.shape, self.rank, noise_amplitude=self.guess_noise_amplitude)
             X, stopping_reason, final_cost = self.solve(guess['usvt'])
-            #print final_cost
             estimates.append(X)
             guesses_X.append(guess['X'])
             guesses_usvt.append(guess['usvt'])
