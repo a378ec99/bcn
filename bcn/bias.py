@@ -42,7 +42,7 @@ def guess_func(shape, rank, **kwargs):
 
 class BiasLowRank(object):
 
-    def __init__(self, shape, rank, model='gaussian', noise_amplitude=1.0, n_clusters=2, image_source=None):
+    def __init__(self, shape, rank, bias_model='gaussian', noise_amplitude=1.0, n_clusters=2, image_source=None):
         """Generate bias according to a low-rank (sparse) model.
 
         Parameters
@@ -51,7 +51,7 @@ class BiasLowRank(object):
             Shape of the output bias matrix in the form of (n_samples, n_features).
         rank : int
             Rank of the low-rank decomposition.
-        model : {'image', 'bicluster', 'gaussian'}
+        bias_model : {'image', 'bicluster', 'gaussian'}
             Three bias models are supported, `gaussian` which is based on a QR decomposition of a random Gaussian matrix, `image` which is based on a prespecified image that is then rank reduced, and `bicluster` which is based on `sklearn's` checkerboard function that is then rank reduced.
         noise_amplitude : float, optional unless model `gaussian`
             Sets the level of the bias.
@@ -61,13 +61,13 @@ class BiasLowRank(object):
             File location of the image to be used for the model `image`.
         """
         self.shape = shape
-        self.model = model
+        self.bias_model = bias_model
         self.rank = rank
         self.noise_amplitude = noise_amplitude
         self.image_source = image_source
         self.n_clusters = n_clusters
 
-        assert self.model in ['image', 'bicluster', 'gaussian']
+        assert self.bias_model in ['image', 'bicluster', 'gaussian']
 
     def generate(self):
         """Generate bias according to a low-rank (sparse) model.
@@ -77,7 +77,7 @@ class BiasLowRank(object):
         bias : dict, {'X': ndarray, shape (n_sample, n_features), 'usvt': tuple of ndarray, (U, S, Vt), shape ((n_samples, rank), rank, (rank, n_samples))}
             Contains low-rank bias matrix `X` and it's corresponding decomposition `usvt`.
         """
-        if self.model == 'gaussian':
+        if self.bias_model == 'gaussian':
             usvt = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank).rand()
             # NOTE Eigenvalues are normalized so that the bias level is
             # approximately consistent over differing rank matrices.
@@ -85,7 +85,7 @@ class BiasLowRank(object):
             usvt = usvt[0], usvt[1] * self.noise_amplitude, usvt[2]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
 
-        if self.model == 'image':
+        if self.bias_model == 'image':
             X = imread(self.image_source, flatten=True, mode='L')
             if X.shape != self.shape:
                 X = resize(X, self.shape)
@@ -93,9 +93,10 @@ class BiasLowRank(object):
             usvt = np.linalg.svd(X)
             usvt = usvt[0][:, :self.rank], usvt[1][
                 :self.rank], usvt[2][:self.rank, :]
+            usvt = usvt[0], usvt[1] * self.noise_amplitude, usvt[2]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
 
-        if self.model == 'bicluster':
+        if self.bias_model == 'bicluster':
             X, rows, columns = make_checkerboard(
                 shape=self.shape, n_clusters=self.n_clusters, noise=0, shuffle=False)
             X = (X / X.max()) - 0.5
@@ -110,14 +111,14 @@ class BiasLowRank(object):
 
 class BiasUnconstrained(object):
 
-    def __init__(self, shape, model='gaussian', noise_amplitude=1.0, fill_value=42):
+    def __init__(self, shape, bias_model='gaussian', noise_amplitude=1.0, fill_value=42):
         """Generate bias according to an unconstrained (non-sparse) model.
 
         Parameters
         ----------
         shape : tuple of int
             Shape of the output bias matrix in the form of (n_samples, n_features).
-        model : {'gaussian', 'uniform'}
+        bias_model : {'gaussian', 'uniform'}
             Two bias models are supported, `gaussian` which is based on random sampling of a Gaussian matrix and `uniform` which is based on repetition of a prespecified fill value.
         noise_amplitude : float, optional unless model `gaussian`
             Sets the level of the bias.
@@ -125,11 +126,11 @@ class BiasUnconstrained(object):
             Sets the fill value for the uniform bias model.
         """
         self.shape = shape
-        self.model = model
+        self.bias_model = bias_model
         self.noise_amplitude = noise_amplitude
         self.fill_value = fill_value
 
-        assert self.model in ['gaussian', 'uniform']
+        assert self.bias_model in ['gaussian', 'uniform']
 
     def generate(self):
         """Generate bias according to an unconstrained (non-sparse) model.
@@ -139,11 +140,11 @@ class BiasUnconstrained(object):
         bias : dict, {'X': ndarray, shape (n_sample, n_features)}
             Contains low-rank bias matrix `X` and it's corresponding decomposition `usvt`.
         """
-        if self.model == 'gaussian':
+        if self.bias_model == 'gaussian':
             X = Euclidean(self.shape[0], self.shape[1]).rand()
             X = X * self.noise_amplitude
 
-        if self.model == 'uniform':
+        if self.bias_model == 'uniform':
             X = np.full(self.shape, self.fill_value)
 
         bias = {'X': X}

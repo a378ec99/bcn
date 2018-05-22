@@ -1,8 +1,4 @@
-"""Cost function construction.
-
-Notes
------
-Defines a class that can generate a cost function.
+"""Cost function for matrix recovery.
 """
 from __future__ import division, absolute_import
 
@@ -11,39 +7,47 @@ import autograd.numpy as ag
 
 class Cost(object):
 
-    def __init__(self, A, y):
-        """Creates a cost function based on autograd with given linear operator A and measurements y.
-
+    def __init__(self, A, y, sparsity=1):
+        """Creates a cost function with autograd based on linear operators A and targets y.
+        
         Parameters
         ----------
-        A : 2d-array (generally sparse)
-            Linear operator.
-        y : 1d-array
-            Measurement vector.
+        A : list; elements=dict, len=n_measurements
+            Linear operators stored as sparse matrices.
+        y : list; elements=float, len=n_measuremnts
+            Target vector.
+        sparsity : int, (1=entry sensing, 2=blind recovery, A.size=dense sensing)
+            Level of sparsity of the linear operators.
         """
-        self.A = A
-        self.y = y
-
+        self.sparsity = sparsity
+        self.A_rows = ag.array([a['row'] for a in A])
+        self.A_cols = ag.array([a['col'] for a in A])
+        self.A_values = ag.array([a['value'] for a in A])
+        self.y = ag.array(y)
+        
     def cost_func(self, X):
-        """Cost function for evaluationg linear operator A and measurements y at X.
+        """Cost function for evaluation at X.
 
         Parameters
         ----------
-        X : 2d-array
-            Given data matrix (mixed).
+        X : numpy.ndarray; shape=(n_samples, n_features)
+            Estimated bias matrix.
 
         Returns
         -------
         error : float
-            The squared mean error of y - y_est, where y_est = A * X summed.
+            Squared mean error.
 
         Note
-        ----
-        The size scaling is not nessesary for convergence.
+        ----        
+        Size scaling with ag.mean is not nessesary for convergence but useful for comparison of error magnitude.
         """
-        if len(X) == 3:
+        if len(X) == 3: # WARNING type changes from list to autograd.builtins.SequenceBox after first run.
             usvt = X
             X = ag.dot(usvt[0], ag.dot(ag.diag(usvt[1]), usvt[2]))
-        error = ag.mean((ag.sum(self.A * X, axis=(1, 2)) - self.y)**2) 
+        else:
+            assert ag.isfinite(X).all()
+        y_est = ag.sum(self.A_values * X[self.A_rows, self.A_cols].reshape(-1, self.sparsity), axis=1)
+        error = ag.mean((y_est - self.y)**2)
         return error
 
