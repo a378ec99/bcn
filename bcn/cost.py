@@ -12,7 +12,7 @@ import autograd.numpy as ag
 
 class Cost(object):
 
-    def __init__(self, A, y, sparsity):
+    def __init__(self, A, y, sparsity=1):
         """Creates a cost function based on autograd with a linear operator A and target y.
         
         Parameters

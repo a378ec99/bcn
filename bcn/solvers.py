@@ -1,75 +1,82 @@
-"""Solver construction.
+"""Solver for matrix recovery.
 
-Notes
------
-Defines a class that can solve a pymanopt `problem`. Currently only supports ConjugateGradient.
+Note
+----
+Currently only supports conjugate gradient methods.
 """
 from __future__ import division, absolute_import
 
 import numpy as np
 
 from pymanopt import Problem
-from pymanopt.solvers import ConjugateGradient # ,SteepestDescent
+from pymanopt.solvers import ConjugateGradient
 from pymanopt.manifolds import FixedRankEmbedded
 
 
 class ConjugateGradientSolver(object):
 
-    def __init__(self, mixed, cost_func, guess_func, rank, n_restarts, noise_amplitude=5.0, maxiter=1000, space='sample', seed=None, verbosity=2):
-        """Create a solver to recovery bias given observations `X` and cost/guess functions.
+    def __init__(self, mixed, cost_func, guess_func, rank, n_restarts=10, guess_noise_amplitude=5.0, maxiter=1000, maxtime=100, mingradnorm=1e-12, minstepsize=1e-12, n_retries_svd=10, verbosity=2):
+        """Solver for matrix recovery.
 
         Parameters
         ----------
-        cost_func : func
-            Cost function that has information about linear operator `A` and measurement `y` and takes observation `X` as input.
-        guess_func : func
-            Guess function that guesses an intial point for the solver to start optimizing at.
         mixed : numpy.ndarray, shape=(n_samples, n_features)
             Corrupted signal to be cleaned.
+        cost_func : func
+            Cost function based on linear operators A and targets y.
+        guess_func : func
+            Guess function that guesses an intial point for the solver to start optimizing at.
         rank : int
-            Rank of the manifold (presumably the same rank of the true bias matrix to be recovered) and rank of the initial guess.
+            Rank of the matrix to be recovered and of the initial guess.
         n_restarts : int
-            Number of restats of the solver (more needed the larger the bias matrix).
-        noise_amplitude : float
-            Noise level needed to make a guess
-        space = str, {feature, sample}
-            To be used as reference for the input mixed.
-        seed : int, default = 42
-            The random see with wich to run the recovery.
-        verbosiy : {0, 1, 2}
-            Level of information the gets printed during solver run. A higher number means more.
+            Number of restats of the solver with a fresh initial guess.
+        guess_noise_amplitude : float
+            Noise amplitude for the random low-rank initial guess.
+        maxiter : int
+            Maximum number of iterations of solver.
+        maxtime : int
+            Maximum run time of solver in seconds.
+        mingradnorm : float
+            Minimal gradient norm of solver (before stopping).
+        minstepsize : int
+            Minimal step size of solver (before stopping).
+        n_retries_svd : int
+            Number of retries when LinAlgError.
+        verbosiy : int, values=(0, 1, 2)
+            Higher verbosity means more information printed.
         """
-        self.seed = seed
-        if self.seed is not None:
-            np.random.seed(self.seed)
         self.mixed = mixed
+        self.shape = self.mixed.shape
+        self.guess_func = guess_func
+        self.cost_func = cost_func
         self.rank = rank
         self.n_restarts = n_restarts
-        self.maxiter = maxiter
-        self.shape = self.mixed.shape
+        self.guess_noise_amplitude = guess_noise_amplitude
         self.manifold = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank)
-        self.guess_func = guess_func
-        self.problem = Problem(manifold=self.manifold, cost=cost_func, verbosity=verbosity)
-        self.solver = ConjugateGradient(logverbosity=2, maxiter=self.maxiter, maxtime=100, mingradnorm=1e-12, minstepsize=1e-12) # , maxiter=None, maxtime=None, mingradnorm=None, minstepsize=None
-        self.n_retries_svd = 10
-        self.noise_amplitude = noise_amplitude
+        self.problem = Problem(manifold=self.manifold, cost=self.cost_func, verbosity=verbosity)
+        self.maxiter = maxiter
+        self.maxtime = maxtime
+        self.mingradnorm = mingradnorm
+        self.minstepsize = minstepsize
+        self.solver = ConjugateGradient(logverbosity=2, maxiter=self.maxiter, maxtime=self.maxtime, mingradnorm=self.mingradnorm, minstepsize=self.minstepsize)
+        self.n_retries_svd = n_retries_svd
         
     def solve(self, guess):
-        """ Solve a particular recovery problem based on the given initial guess.
+        """ Solve a matrix recovery problem based on the given constraints and an initial guess.
         
         Parameters
         ----------
-        guess : tuple, (u, s, vt)
-            Descomposed random low-rank matrix as initial guess.
+        guess : tuple, values=(u, s, vt)
+            Descomposed random low-rank matrix.
             
         Returns
         -------
-        X : ndarray, (n_samples, n_features)
+        X : numpy.ndarray, shape=(n_samples, n_features)
             Solution of the recovery problem.
         stopping_reason : str
             Why the solver finished, e.g. out of time, out of steps, etc.
         final_cost : float
-            Final value of the objective function.
+            Final value of the cost function.
         """
         worked = False
         for n in xrange(self.n_retries_svd):
@@ -92,12 +99,12 @@ class ConjugateGradientSolver(object):
         
         Returns
         -------
-        self.data : Data object
-            Updated data object with solution from solver and intial guess, plus estimates of correlations, directions and standard deviations.
+        results : dict
+            Results of the recovery with initial guess, estimated signal, estimated bias and final cost.
         """
         estimates, errors, guesses_X, guesses_usvt = [], [], [], []
         for k in xrange(self.n_restarts):
-            guess = self.guess_func(self.shape, self.rank, noise_amplitude=self.noise_amplitude)
+            guess = self.guess_func(self.shape, self.rank, noise_amplitude=self.guess_noise_amplitude)
             X, stopping_reason, final_cost = self.solve(guess['usvt'])
             #print final_cost
             estimates.append(X)
