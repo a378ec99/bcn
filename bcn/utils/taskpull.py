@@ -1,4 +1,4 @@
-"""Task-pull routine for bias recovery.
+"""Parallel task-pull (Torque).
 
 Note
 ----

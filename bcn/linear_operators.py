@@ -1,12 +1,9 @@
-"""Linear operator and measurement generation.
-
-Notes
------
-Defines classes that generate the measurement operator A and targets y.
+"""Linear operators from entry to dense and k-sparse sensing.
 """
 from __future__ import division, absolute_import
 
 import abc
+
 import numpy as np
 
 from scipy.sparse import issparse, coo_matrix
@@ -15,6 +12,24 @@ from scipy.special import comb
 
 def sample_n_choose_k(n_samples, n_features, k, n):
     """
+    Sample n choose k (see source).
+
+    Parameters
+    ----------
+    n_samples : int
+        First dimension of the sparse matrix.
+    n_features : int
+        Second dimension of the sparse matrix.
+    k : int
+        Sparsity level.
+    n : int
+        Number of samples to draw.
+
+    Returns
+    -------
+    samples : list, len=n
+        Sequence of samples drawn from n choose k.
+        
     Source
     ------
     https://stats.stackexchange.com/questions/315087/how-can-one-generate-a-sequence-of-unique-k-sparse-matrices-without-rejection-sa
@@ -32,13 +47,27 @@ def sample_n_choose_k(n_samples, n_features, k, n):
     
 def integer_to_matrix(i, k, n_samples, n_features):
     """
-    Use the combinatorial number system to map from i \in {1,2,..., N_choose_k} to corresponding N-dimensional binary vector with k ones.
+    Use the combinatorial number system to map from an integer i to a corresponding k-sparse matrix.
 
-    See: https://en.wikipedia.org/wiki/Combinatorial_number_system#Finding_the_k-combination_for_a_given_number
-
+    Parameters
+    ----------
+    i : int
+        Integer to be converted into a sparse matrix.
+    k : int
+        Sparsity level.
+    n_samples : int
+        First dimension of the sparse matrix.
+    n_features : int
+        Second dimension of the sparse matrix.
+        
+    Returns
+    -------
+    matrix : numpy.ndarray, shape=(n_samples, n_features)
+        Randomly sampled sparse matrix.
+    
     Source
     ------
-    https://stats.stackexchange.com/questions/315087/how-can-one-generate-a-sequence-of-unique-k-sparse-matrices-without-rejection-sa
+    https://en.wikipedia.org/wiki/Combinatorial_number_system#Finding_the_k-combination_for_a_given_number
     """
     flat_matrix = np.zeros(n_samples * n_features, dtype=int)
     for h in range(k, 0, -1): # h means how many entries still to set to 1
@@ -63,7 +92,7 @@ def integer_to_matrix(i, k, n_samples, n_features):
         
 def possible_measurements(shape, missing_fraction, m_blocks_size=None):
     '''
-    Computes the range of the possible number of measurements for a particular shaped matrix.
+    Computes the range of the possible number of measurements for a matrix.
 
     Parameters
     ----------
@@ -71,10 +100,13 @@ def possible_measurements(shape, missing_fraction, m_blocks_size=None):
         Dimensions of the array to be recovered.
     missing_fraction : float
         Fraction of missing values in mixed matrix to be used for recovery.
+    m_blocks_size : int
+        Specific block size.
+    
     Returns
     -------
-    n_worst_case, n_best_case : (int, int)
-        Number of measurements possible in the worst case and the best case.
+    d : dict
+        Number of measurements possible in the worst case, best case and current case.
     
     Note
     ----
@@ -96,10 +128,11 @@ def possible_measurements(shape, missing_fraction, m_blocks_size=None):
     d = {'m_blocks=({}, {}) (best case)'.format(shape[0] // 2, shape[1] // 2): n_worst, 'm_blocks=({}, {}) (worst case)'.format(2, 2): n_best}
 
     if m_blocks_size:
-        # TODO
+        # TODO Implement.
         d['m_blocks=({}, {}) (actual case)'.format(shape[0] // m_blocks_size, shape[1] // m_blocks_size)] = 'TODO'
     return d
 
+    
 def _print_size(name, X):
     """Print the memory footprint in MB of a particular data matrix.
 
@@ -107,7 +140,7 @@ def _print_size(name, X):
     ----------
     name : str
         Name of data matrix.
-    X : ndarray, shape (n_samples, n_features)
+    X : numpy.ndarray, shape=(n_samples, n_features)
         Input data matrix.
     """
     if issparse(X):
@@ -148,9 +181,7 @@ def pop_pairs_with_indices_randomly(n_pairs, n, max_pops):
 
     
 def choose_random_matrix_elements(shape, n, duplicates=False):
-    """Choose `n` random matrix element indices for a matrix with a given `shape`.
-
-    Random element indices are never chosen more than once and the maximum number is the total number of elements in shape. The returned random element indices are always shuffled.
+    """Choose n random matrix element indices for a matrix with a given shape.
 
     Parameters
     ----------
@@ -163,8 +194,12 @@ def choose_random_matrix_elements(shape, n, duplicates=False):
     
     Returns
     -------
-    element_indices : ndarray, shape (n, 2)
-        Matrix indices of `n` elements.
+    element_indices : numpy.ndarray, shape=(n, 2)
+        Matrix indices of n elements.
+
+    Note
+    ----
+    Random element indices are never chosen more than once and the maximum number is the total number of elements in shape. The returned random element indices are always shuffled.
     """
     size = shape[0] * shape[1]
 
@@ -195,7 +230,6 @@ def choose_random_matrix_elements(shape, n, duplicates=False):
         element_indices = np.asarray(element_indices)
         
     return element_indices
-
 
     
 class LinearOperator(object):
@@ -242,9 +276,9 @@ class LinearOperatorEntry(LinearOperator):
             
         Returns
         -------
-        measurements : dict, elements={A : dict, elements=list, len=n
+        measurements : dict, elements={'A' : dict, elements=list, len=n
                                         Linear operator stored as sparse matrices.
-                                       y : list, elements=float, len=n
+                                       'y' : list, elements=float, len=n
                                         Target vector.}
 
         Note
@@ -284,9 +318,9 @@ class LinearOperatorDense(LinearOperator):
 
         Returns
         -------
-        measurements : dict, elements={A : dict, elements=list, len=n
+        measurements : dict, elements={'A' : dict, elements=list, len=n
                                         Linear operator stored as sparse matrices.
-                                       y : list, elements=float, len=n
+                                       'y' : list, elements=float, len=n
                                         Target vector.}
 
         Note
@@ -314,7 +348,7 @@ class LinearOperatorKsparse(LinearOperator):
         n : int
             Number of linear operators / targets to be generated, e.g. measurements.
         sparsity : int
-            Sparsity of the measuremnt operator, e.g. if 2-sparse then only 2 entries in `A_i` are non-zero.
+            Sparsity of the measuremnt operator, e.g. if 2-sparse then only 2 entries in A_i are non-zero.
         """
         self.n = n
         self.sparsity = sparsity
@@ -329,9 +363,9 @@ class LinearOperatorKsparse(LinearOperator):
             
         Returns
         -------
-        measurements : dict, elements={A : dict, elements=list, len=n
+        measurements : dict, elements={'A' : dict, elements=list, len=n
                                         Linear operator stored as sparse matrices.
-                                       y : list, elements=float, len=n
+                                       'y' : list, elements=float, len=n
                                         Target vector.}
 
         Note
@@ -430,7 +464,7 @@ class LinearOperatorCustom(LinearOperator):
         space : {'feature', 'sample'}
             The space of the array to be used.
         estimated : dict
-            Contains the mixed signal and its shape characteristics among others deatils.
+            Contains the mixed signal and its shape characteristics among others details.
         
         Returns
         -------

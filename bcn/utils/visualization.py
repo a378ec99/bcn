@@ -1,8 +1,4 @@
-"""Visualization of data and recovery.
-
-Notes
------
-Defines several functions that can generate different types of visualizations for diagnostic purposes.
+"""Plotting functions.
 """
 from __future__ import division, absolute_import
 
@@ -15,6 +11,24 @@ sb.set(font_scale=0.7, style='white')
 
 
 def recovery_performance(mixed, cost_func, true_bias, estimated_signal, true_signal, estimated_bias):
+    """
+    Print recovery performance statistics.
+
+    Parameters
+    ----------
+    mixed :
+
+    cost_func :
+
+    true_bias :
+
+    estimated_signal :
+    
+    true_signal :
+
+    estimated_bias:
+    
+    """
     error_cost_func_true_bias = cost_func(true_bias)
     error_cost_func_estimated_bias = cost_func(estimated_bias)
     print 'Error cost function (true bias):', error_cost_func_true_bias
@@ -32,6 +46,26 @@ def recovery_performance(mixed, cost_func, true_bias, estimated_signal, true_sig
 
 
 def show_absolute(signal, kind, unshuffled=False, unshuffle=False, map_backward=None, vmin=-4, vmax=4):
+    """
+    Plot the absolute values of the given signal matrix.
+
+    Parameters
+    ----------
+    signal :
+
+    kind :
+
+    unshuffled : 
+
+    unshuffle :
+
+    map_backward :
+
+    vmin : int
+
+    vmax : int
+    
+    """
     cmap = sb.diverging_palette(250, 15, s=75, l=40, as_cmap=True, center="dark")
     indices_x = np.arange(signal.shape[0], dtype=int)
     indices_y = np.arange(signal.shape[1], dtype=int)
@@ -56,6 +90,22 @@ def show_absolute(signal, kind, unshuffled=False, unshuffle=False, map_backward=
 
     
 def show_dependences(signal, pairs, space, n_pairs=5, n_points=50):
+    """
+    Plot the signal dependences for a subset of correlated pairs.
+
+    Parameters
+    ----------
+    signal :
+
+    pairs :
+
+    space :
+
+    n_pairs : int
+
+    n_points : int
+    
+    """
     cmap = sb.diverging_palette(250, 15, s=75, l=40, n=10, center="dark")
     if space == 'feature':
         shape = signal.T.shape
@@ -75,7 +125,36 @@ def show_dependences(signal, pairs, space, n_pairs=5, n_points=50):
 
 
 def show_recovery(mixed, guess_X, true_signal, estimated_signal, true_pairs, estimated_pairs, true_stds, estimated_stds, true_directions, estimated_directions, n_pairs=5, n_points=50):
+    """
+    Plot the signal dependences for a subset of correlated pairs overlayed with the estimated and true values. 
+    
+    Parameters
+    ----------
+    mixed :
 
+    guess_X :
+
+    true_signal :
+
+    estimated_signal :
+
+    true_pairs :
+
+    estimated_pairs :
+
+    true_stds :
+
+    estimated_stds :
+
+    true_directions :
+
+    estimated_directions :
+
+    n_pairs :
+
+    n_points :
+    
+    """
     def pair_index(pairs, pair):
         index = np.where(np.all(pairs == pair, axis=1))
         try:
@@ -117,6 +196,22 @@ def show_recovery(mixed, guess_X, true_signal, estimated_signal, true_pairs, est
 
     
 def show_independences(signal, pairs, space, n_pairs=5, n_points=50):
+    """
+    Plot the signal dependences for a subset of uncorrelated pairs.
+    
+    Parameters
+    ----------
+    signal :
+
+    pairs :
+
+    space : str
+
+    n_pairs : int
+
+    n_points : int
+    
+    """
     if space == 'feature':
         shape = signal.T.shape
     if space == 'sample':
@@ -137,6 +232,20 @@ def show_independences(signal, pairs, space, n_pairs=5, n_points=50):
 
 
 def show_dependence_structure(correlations, space, unshuffled=False, map_backward=None):
+    """
+    Plot a correlation matrix.
+    
+    Parameters
+    ----------
+    correlations :
+
+    space :
+
+    unshuffled : bool
+
+    map_backward : bool
+    
+    """
     cmap = sb.diverging_palette(250, 15, s=75, l=40, as_cmap=True, center="dark")
     indices = np.arange(correlations[space].shape[0], dtype=int)
     if space == 'feature':
@@ -160,6 +269,18 @@ def show_dependence_structure(correlations, space, unshuffled=False, map_backwar
 
         
 def show_threshold(correlations, threshold, space):
+    """
+    Plot the number of estimated pairs at a particular correlation threshold.
+
+    Parameters
+    ----------
+    correlations :
+
+    threshold :
+
+    space : str
+    
+    """
     cmap = sb.diverging_palette(250, 15, s=75, l=40, n=10, center="dark")
     fig = pl.figure(figsize=(5, 5))
     ax = fig.add_subplot(111)

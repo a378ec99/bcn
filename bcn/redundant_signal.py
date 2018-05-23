@@ -1,8 +1,4 @@
-"""Signal generation.
-
-Notes
------
-Defines a class that can generate different variations of a high-dimensional signal.
+"""Redundant signal matrix.
 """
 from __future__ import division, absolute_import
 
@@ -10,7 +6,17 @@ import numpy as np
 
 
 def _convert_space_to_shape_index(space):
-    """Small helper function to map from `feature` to 0 and `sample` to 1 (for shape indexing).
+    """Map from `feature` to 0 and `sample` to 1 (for appropriate shape indexing).
+
+    Parameters
+    ----------
+    space : str, values=('feature', 'sample')
+        Feature or sample space.
+        
+    Returns
+    -------
+    return : int, values=(0, 1)
+        Index location of the desired space.
     """
     if space == 'feature':
         return 1
@@ -27,20 +33,20 @@ def _generate_square_blocks_matrix(n, m_blocks, r=1.0, step=0):
     n : int
         Dimensions of the output matrix (n, n).
     m_blocks : int
-        The number of square blocks in the correlation matrix. Does not have to be an even fit into `n`.
-    r : float, optional (default = 1.0)
+        The number of square blocks in the correlation matrix. Does not have to be an even fit into n.
+    r : float
         Correlation strength.
-    step : {0, 1}, internal (no need to set)
-        Indicates the level/depth of recursion for the routine to create a proper square blocks matrix. 
+    step : int, values=(0, 1)
+        Indicates the depth of recursion to create a proper square blocks matrix; internal use only.
     
     Note
     ----
-    Blocks contain half and half correlated (r) and anticorrelated (-r) features/samples.
+    Blocks contain half and half correlated (r) and anticorrelated (-r) features and samples.
 
     Returns
     -------
-    block_matrix : ndarray, shape (n, n)
-        The square blocks matrix.
+    block_matrix : numpy.ndarray, shape=(n, n)
+        Square blocks matrix.
     """
     assert r >= 0
     assert n >= m_blocks
@@ -73,16 +79,12 @@ def _generate_pairs(correlation_matrix):
 
     Parameters
     ----------
-    correlation_matrix: ndarray, shape (n_features. n_features)
+    correlation_matrix: numpy.ndarray, shape=(n_features, n_features) or (n_samples, n_samples)
         Correlation matrix with a square block structure.
 
-    Note
-    ----
-    If the correlation matrix passed contains sample based and not feature based correlations, n_features is n_samples respectively.
-    
     Returns
     -------
-    pairs : ndarray, shape (<= n_features, 2)
+    pairs : numpy.ndarray, shape=(<= n_features, 2)
         Shuffled indices of correlated features.
     """
     pairs = np.vstack(np.nonzero(np.tril(correlation_matrix, -1))).T
@@ -92,7 +94,7 @@ def _generate_pairs(correlation_matrix):
     
     assert len(indices) <= len(pairs)
     
-    pairs = pairs[indices] # NOTE Shuffling the order of the pairs.
+    pairs = pairs[indices]
     return pairs
 
     
@@ -101,20 +103,16 @@ def _generate_matrix_normal_sample(U, V):
 
     Parameters
     ----------
-    U : ndarray, shape (n_samples, n_samples)
+    U : numpy.ndarray, shape=(n_samples, n_samples)
         Covariance matrix among samples (rows).
-    V : ndarray, shape (n_features, n_features)
+    V : numpy.ndarray, shape=(n_features, n_features)
         Covariance matrix among features (columns).
         
     Returns
     -------
-    Y : ndarray, shape (n_samples, n_features)
+    Y : numpy.ndarray, shape=(n_samples, n_features)
         A sample from a matrix variate normal distribution.
-        
-    Note
-    ----
-    Could also use np.random.multivariate_normal(np.zeros(n), np.eye(n), m).T when drawing `X`, but no advantage and likely slower.
-    
+
     Source
     ------
     https://en.wikipedia.org/wiki/Matrix_normal_distribution#Drawing_values_from_the_distribution
@@ -137,17 +135,17 @@ def _generate_stds(n, model, std_value=1.5, normalize=False):
     ----------
     n : int
         Feature/sample dimensions of the matrix for which the standard deviations are computed.
-    model : {'random', 'constant'}
-        The type of model to generate standard deviations. Constant uses the `std_value`, whereas `random` samples from a uniform distribution between 0.1 and 2.
-    std_value : float, (default = 1.5)
-        If model == `constant`then this defines the standard deviation of all features/samples.
-    normalize : bool, (default = True)
+    model : str, values=('random', 'constant')
+        The type of model to generate standard deviations. Constant uses the std_value, whereas random samples from a uniform distribution between 0.1 and 2.
+    std_value : float
+        If model == 'constant' then this defines the standard deviation of all features/samples.
+    normalize : bool
         Whether to normalize the sum of standard deviations to one, so that the generation of the matrix variate normal sample is simpler.
 
     Returns
     -------
-    stds, scaling_factor : ndarray, float
-        A tuple of scaled standard deviations and the corresponding scaling factor.
+    stds, scaling_factor : numpy.ndarray, float
+        A tuple of scaled standard deviations and the corresponding scaling factor (if normalize == True).
     """
     if model == 'random':
         stds = np.random.uniform(0.1, 2.0, n) # 0.01, 20.0
@@ -159,20 +157,21 @@ def _generate_stds(n, model, std_value=1.5, normalize=False):
         return stds, scaling_factor
     else:
         return stds, None
+
     
 def _generate_directions(correlation_matrix, pairs):
     """Generate directions from a signed correlation matrix.
     
     Parameters
     ----------
-    correlation_matrix : ndarray, shape (n_samples, n_samples) or (n_features, n_features)
-        Signed correlation matrix from which the signs are extracted as direcitons.
-    pairs : ndarray, (dimensions = 1, e.g. like list)
+    correlation_matrix : numpy.ndarray, shape=(n_samples, n_samples) or (n_features, n_features)
+        Signed correlation matrix from which the signs are extracted as directions.
+    pairs : numpy.ndarray, len=n_pairs
         The pairs of interest for which the directions are to be extraced.
         
     Returns
     -------
-    directions : ndarray, (dimensions = 1, e.g. like list)
+    directions : numpy.ndarray, len=n_pairs
         The directions of the correlations based on the signs given by the correlation matrix for the pairs of interest.
     """
     directions = np.sign(correlation_matrix[pairs[:, 0], pairs[:, 1]])
@@ -184,14 +183,14 @@ def _generate_covariance(correlation_matrix, stds):
 
     Parameters
     ----------
-    correlation_matrix : ndarray, shape (n_samples, n_samples) or (n_features, n_features)
+    correlation_matrix : numpy.ndarray, shape=(n_samples, n_samples) or (n_features, n_features)
         Correlation matrix on which the covariance matrix is based.
-    stds : ndarray, (dimensions = 1, e.g. like list)
+    stds : numpy.ndarray, len=n_stds
         Standard deviations which are used in combination with the correlation amtrix to generate the covariance matrix.
         
     Returns
     -------
-    covariance_matrix : ndarray, shape (n_samples, n_samples) or (n_features, n_features)
+    covariance_matrix : numpy.ndarray, shape=(n_samples, n_samples) or (n_features, n_features)
     """
     covariance_matrix = np.outer(stds, stds) * correlation_matrix
     return covariance_matrix
@@ -206,23 +205,23 @@ class RedundantSignal(object):
         ----------
         shape : tuple of int
             Shape of the output signal matrix in the form of (n_samples, n_features).
-        model : {'random', 'constant'}
-            The redundancy model specifies if the standard deviations in feature and sample space are `random`, or a specific `constant`.
+        model : str, values=('random', 'constant')
+            The redundancy model specifies if the standard deviations in feature and sample space are random, or a specific constant.
         m_blocks : int
             Number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
         correlation_strength : float 
             The strength of correlations between features or samples. Stronger correlations are better for bias recovery.
-        std_value : float, optional unless model `constant`.
+        std_value : float, optional unless model == 'constant'.
             Value to use as a constant standard deviation for both sample and feature space.
-        normalize_stds : bool, optional (default = True)
+        normalize_stds : bool
             Whether to normalize the standard deviations to sum to one in feature and sample space, respetively. This makes the generation of the matrix-variate normal sample simpler.
         """
         self.shape = shape
         self.model = model
         self.m_blocks = m_blocks
-        self.normalize_stds = normalize_stds
         self.correlation_strength = correlation_strength
         self.std_value = std_value
+        self.normalize_stds = normalize_stds
         
         assert self.model in ['random', 'constant']
         
@@ -231,16 +230,16 @@ class RedundantSignal(object):
 
         Returns
         -------
-        signal : dict, {'X': ndarray, shape (n_sample, n_features),
+        signal : dict, {'X': numpy.ndarray, shape=(n_sample, n_features),
                         'features: { 'pairs': ndarray, shape (n_pairs, 2),
-                                     'correlation_matrix': ndarray, shape (n_features, n_features)
-                                     'stds': ndarray, (n_pairs,)
-                                     'directions': ndarray, (n_pairs,)
-                                     'covariance_matrix': ndarray, shape (n_features, n_features)
+                                     'correlation_matrix': numpy.ndarray, shape=(n_features, n_features)
+                                     'stds': numpy.ndarray, len=n_pairs
+                                     'directions': numpy.ndarray, len=n_pairs
+                                     'covariance_matrix': numpy.ndarray, shape=(n_features, n_features)
                                      'scaling_factor_stds': float
                         'samples': ...
                        }
-            Contains signal matrix `X` and the corresponding details for its creation.
+            Contains signal matrix X and the corresponding details for its creation.
         """
         signal = {}
         for space in ['feature', 'sample']:

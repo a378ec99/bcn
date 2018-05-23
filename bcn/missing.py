@@ -1,8 +1,4 @@
-"""Missing values generation.
-
-Notes
------
-Defines a class that can generate different types of issing values.
+"""Missing value matrix.
 """
 from __future__ import division, absolute_import
 
@@ -18,31 +14,27 @@ class Missing(object):
         ----------
         shape : tuple of int
             Shape of the output bias matrix in the form of (n_samples, n_features).
-        model : {'MAR', 'NMAR', 'SCAN', 'no-missing'}
-            Four missing values models are supported, `MAR` which is based on random missing values, `NMAR` which is based on non-random missing values, `SCAN` which is based on the signal-to-noise ratio of 1 output by the SCAN algorithm (all those values <1 are counted as missing due to noise being dominating), and `no-missing` which returns simply a zero matrix.
-        p_random : float, optional unless model `MAR`
+        model : str, values=('MAR', 'NMAR', 'no-missing')
+            Four missing values models are supported, MAR which is based on random missing values, NMAR which is based on non-random missing values, and no-missing which returns simply a zero matrix.
+        p_random : float, optional unless model == 'MAR'
             Probability that a value is missing.
-        p_censored : float, optional unless model `NMAR`
+        p_censored : float, optional unless model == 'NMAR'
             Probability that a row or column is censored (missing) completely.
-
-        Notes
-        -----
-        # NOTE The `SCAN` model is currently not yet implemented.
         """
         self.shape = tuple(shape)
         self.model = model
         self.p_random = p_random
         self.p_censored = p_censored 
 
-        assert self.model in ['MAR', 'NMAR', 'SCAN', 'no-missing']
+        assert self.model in ['MAR', 'NMAR', 'no-missing']
 
     def generate(self):
         """Generate missing values according to particular model.
 
         Returns
         -------
-        missing : dict, {'X': ndarray, shape (n_sample, n_features)}
-            Contains a missing values matrix `X` (missing values as np.nan and others as zeros).
+        missing : dict, {'X': numpy.ndarray, shape=(n_sample, n_features)}
+            Contains a missing values matrix X (missing values as numpy.nan and others as zeros).
         """
         if self.model == 'MAR':
             missing = np.zeros(self.shape)
@@ -67,8 +59,6 @@ class Missing(object):
                 len_ = np.random.randint(0, self.shape[0] - start_) // 2
                 censored[start_:start_ + len_, index] = np.nan
             missing = {'X': censored}
-        if self.model == 'SCAN':
-            raise NotImplementedError
         if self.model == 'no-missing':
             missing = {'X': np.zeros(self.shape)}
         return missing

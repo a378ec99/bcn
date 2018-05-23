@@ -1,8 +1,4 @@
-"""The Data class is defined here.
-
-Notes
------
-Defines a class that is used thoughout for storage, processing and visualization of all data.
+"""Dataset generation for simulation.
 """
 from __future__ import division, absolute_import
 
@@ -10,6 +6,7 @@ import abc
 from copy import deepcopy
 
 import numpy as np
+
 from scipy.stats import pearsonr
 
 from bcn.bias import BiasLowRank, BiasUnconstrained
@@ -26,12 +23,19 @@ def estimate_partial_signal_characterists(mixed, correlation_threshold, true_pai
         The bias corrupted low-rank matrix from which the bias is to be recovered.
     correlation_threshold : float
         The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
-    true_pairs : numpy.ndarray, elements=int, shape=(n, 2)
-        Sequence of true pairs given as tuples.
-    true_directions : numpy.ndarray, elements=int, len=n
-        Sequence of true directions, e.g. -1, +1.
-    true_stds : numpy.ndarray, elements=int, shape=(n, 2)
-        Sequence of true standard deviations of each pair.
+    true_pairs : dict, values=('space' : numpy.ndarray, elements=int, shape=(n, 2))
+        Sequence of true pairs given as tuples for both spaces in a dict.
+    true_directions : dict, values=('space' : numpy.ndarray, elements=int, len=n)
+        Sequence of true directions, e.g. -1, +1 for both spaces in a dict.
+    true_stds : dict, values=('space' : numpy.ndarray, elements=int, shape=(n, 2))
+        Sequence of true standard deviations of each pair for both spaces in a dict.
+    true_correlations : dict, values=('space' : numpy.ndarray, shape=(n_samples, n_samples) or shape=(n_features, n_features))
+        True correlation matrices for both spaces in a dict.
+
+    Returns
+    -------
+    estimates : dict
+        Dictionary of estimated signal characteristics.
     """
     estimates = {'feature': {'mixed': mixed.T, 'shape': mixed.T.shape}, 'sample': {'mixed': mixed, 'shape': mixed.shape}}
     
@@ -57,19 +61,19 @@ def estimate_partial_signal_characterists(mixed, correlation_threshold, true_pai
 
 
 def transpose_view(X, space):
-    """Small helper function to return transpose of in imput matrix if required.
+    """Transpose of input matrix if required.
 
     Parameters
     ----------
-    X: ndarray, shape (n_samples, n_features)
+    X : numpy.ndarray, shape=(n_samples, n_features)
         A matrix that may need to be transposed (view only).
-    space : {'sample', 'feature'}
+    space : str, values=('sample', 'feature')
         The space the matrix should be for (determines if transpossed or not).
 
     Returns
     -------
-    X_transpose : ndarray, shape (n_features, n_samples) or (n_samples, n_features)
-        The possibly transposed inpute matrix `X`.
+    X_transpose : numpy.ndarray, shape=(n_features, n_samples) or shape=(n_samples, n_features)
+        Possibly transposed inpute matrix X.
     """
     if space == 'feature':
         X_transpose = X.T
@@ -81,16 +85,16 @@ def transpose_view(X, space):
 
     
 def opposite(space):
-    """Convert to oppostie dimension.
+    """Convert to opposite dimension.
 
     Parameters
     ----------
-    space : str, {'feature', 'sample'}
+    space : str, values=('feature', 'sample')
         Dimension. 
 
     Returns
     -------
-    space : {'feature', 'sample'}
+    return : str, values=('feature', 'sample')
         Dimension.
     """
     if space == 'feature':
@@ -104,14 +108,14 @@ def estimate_pairs(correlations, threshold=0.8):
 
     Parameters
     ----------
-    correlations : ndarray, shape (n_samples, n_samples)
-        A correlation matrix. Can contain `nan` values.
+    correlations : numpy.ndarray, shape=(n_samples, n_samples)
+        A correlation matrix. Can contain numpy.nan values.
     threshold : float
         The threshold below which correlations are not considered as pairs.
 
     Returns
     -------
-    pairs : ndarray, shape (n <= n_samples, 2)
+    pairs : numpy.ndarray, shape=(<= n_samples, 2)
         A sequence of pairs which contain the indices of samples that are strongly correlated (as determined by the threshold).
     """
     correlations = np.nan_to_num(correlations)
@@ -129,12 +133,12 @@ def estimate_correlations(mixed):
 
     Parameters
     ----------
-    mixed : ndarray, shape (n_samples, n_features)
-        A matrix that requires bias removal. Can contain `nan` values.
+    mixed : numpy.ndarray, shape=(n_samples, n_features)
+        A matrix that requires bias removal. Can contain numpy.nan values.
 
     Returns
     -------
-    correlations : ndarray, shape (n_samples, n_samples)
+    correlations : numpy.ndarray, shape=(n_samples, n_samples)
     """
     correlations = np.zeros((mixed.shape[0], mixed.shape[0])) * np.nan
     for i, a in enumerate(mixed):
@@ -158,15 +162,15 @@ def estimate_directions(correlations, pairs):
 
     Parameters
     ----------
-    correlations : ndarray (n_samples, n_samples)
+    correlations : numpy.ndarray, shape=(n_samples, n_samples)
         A correlation matrix. Can contain nan values.
-    pairs : ndarray, shape (n < n_samples, 2)
+    pairs : numpy.ndarray, shape=(< n_samples, 2)
         A sequence of pairs which contain the indices of samples that are strongly correlated.
 
     Returns
     -------
-    directions : ndarray, shape (n < n_samples)
-        A sequence of -1/+1 which indicates the direction of the correlation (e.g. anti or normal).
+    directions : numpy.ndarray, shape=(< n_samples)
+        A sequence of -1 or +1 which indicates the direction of the correlation (e.g. anti or normal).
     """
     directions = np.sign(correlations[pairs[:, 0], pairs[:, 1]])
     return directions
@@ -177,14 +181,14 @@ def estimate_stds(mixed, pairs):
 
     Parameters
     ----------
-    mixed : ndarray, shape (n_samples, n_features)
-        A matrix that requires bias removal. Can contain `nan` values.
-    pairs : ndarray, shape (n < n_samples, 2)
+    mixed : numpy.ndarray, shape=(n_samples, n_features)
+        A matrix that requires bias removal. Can contain numpy.nan values.
+    pairs : numpy.ndarray, shape=(< n_samples, 2)
         A sequence of pairs which contain the indices of samples that are strongly correlated.
 
     Returns
     -------
-    stds : ndarray, shape (n < n_samples)
+    stds : numpy.ndarray, shape=(< n_samples)
         A sequence of estimated standard deviations.
     """
     stds = []
@@ -203,6 +207,21 @@ def estimate_stds(mixed, pairs):
 
 
 def random_permutation(shape):
+    """
+    Random permutation of a matrix in both feature and sample space.
+
+    Parameters
+    ----------
+    shape = tuple of int
+        Shape of the matrix to be permuted.
+
+    Returns
+    -------
+    d : dict, elements=dict
+        Mapping from old indices to new indices.
+    inverse : dict, elements=dict
+        Mapping from new indices to old indices.
+    """
     a = np.arange(shape[0], dtype=int)
     b = np.arange(shape[1], dtype=int)
     new_a = np.random.permutation(shape[0])
@@ -213,6 +232,23 @@ def random_permutation(shape):
 
     
 def shuffle_matrix(matrix, d_sample, d_feature=None):
+    """
+    Shuffle a matrix in feature and sample space.
+
+    Parameters
+    ----------
+    matrix : numpy.ndarray, shape=(n_samples, n_features) or shape=(n_features, n_samples)
+        Matrix to be shuffled.
+    d_sample : dict
+        How to shuffle.
+    d_feature : dict
+        How to shuffle.
+
+    Returns
+    -------
+    new_matrix : numpy.ndarray, shape=(n_samples, n_features) or shape=(n_features, n_samples)
+        Shuffled matrix.
+    """
     if d_feature is None:
         d_feature = d_sample
     x_indices = np.asarray([d_sample[i] for i in xrange(matrix.shape[0])])
@@ -223,6 +259,16 @@ def shuffle_matrix(matrix, d_sample, d_feature=None):
 
     
 def shuffle_pairs(pairs, d):
+    """
+    Shuffle pairs with a given mapping.
+
+    Parameters
+    ----------
+    pairs : numpy.ndarray, shape=(n ,2)
+        Old pairs.
+    d : dict
+        Mapping for the shuffle.
+    """
     new_pairs = np.zeros_like(pairs, dtype=int)
     for i in xrange(pairs.shape[0]):
         for j in xrange(pairs.shape[1]):
@@ -230,11 +276,12 @@ def shuffle_pairs(pairs, d):
     return new_pairs
 
 
-
-            
 class DataSubset(object):
 
     def __init__(self):
+        """
+        Container for simulated data.
+        """
         self.mixed =  None,
         self.large_scale_mixed = None
 
@@ -278,14 +325,9 @@ class Data(object):
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, seed=None):
-        """Abstract base class for the data containers.
+    def __init__(self):
+        """Abstract base class for the combined simulated data containers.
 
-        Parameters
-        ----------
-        seed : int, optional, default == None
-            The seed to initialize np.random.seed with.
-            
         Attributes
         ----------
         d : dict
@@ -295,23 +337,20 @@ class Data(object):
         noise_amplitude :
             Noise level of the bias.
         """
-        if seed is not None:
-            np.random.seed(seed)
-        self.seed = seed
         self.d = {'sample': DataSubset(), 'feature': DataSubset()}
         self.rank = None
         self.noise_amplitude = None
         
     @abc.abstractmethod
     def estimate(self):
-        """Estimate sucessively correlations, pairs, directions and strandard deviations from a `mixed` matrix.
+        """Estimate sucessively correlations, pairs, directions and strandard deviations from a mixed matrix.
         """
         pass
 
     
 class DataSimulated(Data):
 
-    def __init__(self, shape, rank, bias_model='gaussian', correlation_threshold=0.7, m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, feature_annotation=None, sample_annotation=None, feature_annotation_batch=None, sample_annotation_batch=None, seed=None, image_source='../../tests/trump.png'):
+    def __init__(self, shape, rank, bias_model='gaussian', correlation_threshold=0.7, m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, image_source='../../tests/trump.png'):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -320,45 +359,36 @@ class DataSimulated(Data):
             Shape of the mixed, signal, bias and missing matrix in the form of (n_samples, n_features).
         rank : int
             Rank of the low-rank decomposition.
+        bias_model : str
+            Bias model to be used.
         correlation_threshold : float
             The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
         m_blocks_size : int, default = 2
             Size of each block (e.g. number of pairs). Factor to determine the number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
         noise_amplitude : float, default = None
             Scale/amptitude of the bias (noise).
-        missing_type : {'MAR', 'NMAR', 'no-missing', 'SCAN'}
-            The type if missing values, from none to censored or SCAN based.
-        feature_annotation : list, optional
-            List of str that annotates the features in `mixed`.
-        sample_annotation : list, optional 
-            List of str that annotates the samples in `mixed`.
-        feature_annotation_batch : list, optional
-            List of str that annotates the features in `mixed` for the batch they are from, e.g. measurement technology/platform.
-        sample_annotation_batch : list, optional 
-            List of str that annotates the samples in `mixed` for the batch they are from, e.g. measurement technology/platform.
-        seed : int
-            Seed for the random number generator.
+        correlation_strength : float
+            Strength of all correlations in block matrix.
+        missing_type : {'MAR', 'NMAR', 'no-missing'}
+            The type if missing values, from none to censored.
+        missing_fraction : float
+            Percentage of missing values in missing matrix.
+        image_source : str
+            Path to the image used as bias.
         """
         super(DataSimulated, self).__init__(seed)
         self.shape = shape
         self.rank = rank
+        self.bias_model = bias_model
         self.correlation_threshold = correlation_threshold
         self.m_blocks_size = m_blocks_size
         self.noise_amplitude = noise_amplitude
         self.correlation_strength = correlation_strength
         self.missing_type = missing_type
-        self.feature_annotation = feature_annotation
-        self.sample_annotation = sample_annotation
-        self.feature_annotation_batch = feature_annotation_batch
-        self.sample_annotation_batch = sample_annotation_batch
         self.missing_fraction = missing_fraction
-        self.bias_model = bias_model
         self.image_source = image_source
 
         m_blocks = self.shape[0] // self.m_blocks_size # NOTE using the sample space to determine the m_blocks here.
-
-        #print 'm_blocks', m_blocks
-        #print 'shape', shape
 
         bias_unshuffled = BiasLowRank(self.shape, self.rank, bias_model=self.bias_model, noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate() # BiasUnconstrained(self.shape, bias_model='gaussian', noise_amplitude=1.0).generate()
         self.map_forward_bias, self.map_backward_bias = random_permutation(bias_unshuffled['X'].shape)
@@ -384,40 +414,8 @@ class DataSimulated(Data):
             self.d[space]['true_correlations'] = shuffle_matrix(signal_unshuffled[space]['correlation_matrix'], self.map_forward[space])
             self.d[space]['true_pairs_unshuffled'] = signal_unshuffled[space]['pairs']
             self.d[space]['true_pairs'] = shuffle_pairs(signal_unshuffled[space]['pairs'], self.map_backward[space])
-            self.d[space]['true_stds'] = signal_unshuffled[space]['stds'][signal_unshuffled[space]['pairs']] # WARNING Could be wrong!
-            self.d[space]['true_directions'] = signal_unshuffled[space]['directions'] # WARNING Could be wrong!
+            self.d[space]['true_stds'] = signal_unshuffled[space]['stds'][signal_unshuffled[space]['pairs']]
+            self.d[space]['true_directions'] = signal_unshuffled[space]['directions']
             self.d[space]['correlation_threshold'] = correlation_threshold
-            
-    def estimate(self, true_pairs=None, true_directions=None, true_stds=None, true_correlations=None):
-        """Estimate sucessively correlations, pairs, directions and strandard deviations from a `mixed` matrix.
-
-        Parameters
-        ----------
-        true_pairs : ndarray, int (n, 2)
-            Sequence of true pairs given as tuples.
-        true_directions : ndarray, int, n
-            Sequence of true directions, e.g. -1, +1.
-        true_stds : ndarray, int (n, 2)
-            Sequence of true standard deviations of each pair.
-        """
-        for space in ['feature', 'sample']:
-            assert self.d[space]['correlation_threshold'] is not None
-            assert self.d[space]['mixed'] is not None
-            if true_correlations is not None:
-                self.d[space]['estimated_correlations'] = true_correlations[space]
-            else:
-                self.d[space]['estimated_correlations'] = estimate_correlations(self.d[space]['mixed'])
-            if true_pairs is not None:
-                self.d[space]['estimated_pairs'] = true_pairs[space]
-            else:
-                self.d[space]['estimated_pairs'] = estimate_pairs(self.d[space]['estimated_correlations'], self.d[space]['correlation_threshold'])
-            if true_stds is not None:
-                self.d[space]['estimated_stds'] = true_stds[space]
-            else:
-                self.d[space]['estimated_stds'] = estimate_stds(self.d[space]['mixed'], self.d[space]['estimated_pairs'])
-            if true_directions is not None:
-                self.d[space]['estimated_directions'] = true_directions[space]
-            else:
-                self.d[space]['estimated_directions'] = estimate_directions(self.d[space]['estimated_correlations'], self.d[space]['estimated_pairs'])
 
 

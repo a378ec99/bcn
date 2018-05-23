@@ -1,8 +1,4 @@
-"""Local task-pull routine for bias recovery testing and profiling (one process only).
-
-Note
-----
-Profile with cProfile and store as .prof to be visualized with https://jiffyclub.github.io/snakeviz/.
+"""Local task-pull (single process).
 """
 from __future__ import division, absolute_import
 

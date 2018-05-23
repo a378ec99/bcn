@@ -1,8 +1,4 @@
-"""Bias generation.
-
-Notes
------
-Defines two classes that can generate different types of bias and a bias guess function.
+"""Bias matrix and initial guess function.
 """
 from __future__ import division, absolute_import
 
@@ -52,13 +48,13 @@ class BiasLowRank(object):
         rank : int
             Rank of the low-rank decomposition.
         bias_model : {'image', 'bicluster', 'gaussian'}
-            Three bias models are supported, `gaussian` which is based on a QR decomposition of a random Gaussian matrix, `image` which is based on a prespecified image that is then rank reduced, and `bicluster` which is based on `sklearn's` checkerboard function that is then rank reduced.
-        noise_amplitude : float, optional unless model `gaussian`
+            Three bias models are supported, 'gaussian' which is based on a QR decomposition of a random Gaussian matrix, 'image' which is based on a prespecified image that is then rank reduced, and 'bicluster' which is based on sklearn's checkerboard function that is then rank reduced.
+        noise_amplitude : float, optional unless model == 'gaussian'
             Sets the level of the bias.
-        n_clusters: tuple of int, optional unless model `bicluster`
-            Number of clusters for the model `bicluster` in the form of (n_sample_clusters, n_column_clusters).
-        image_source: str, optional unless model `image`
-            File location of the image to be used for the model `image`.
+        n_clusters: tuple of int, optional unless model == 'bicluster'
+            Number of clusters for the model bicluster in the form of (n_sample_clusters, n_column_clusters).
+        image_source: str, optional unless model == 'image'
+            File location of the image to be used for the model image.
         """
         self.shape = shape
         self.bias_model = bias_model
@@ -74,13 +70,13 @@ class BiasLowRank(object):
 
         Returns
         -------
-        bias : dict, {'X': ndarray, shape (n_sample, n_features), 'usvt': tuple of ndarray, (U, S, Vt), shape ((n_samples, rank), rank, (rank, n_samples))}
-            Contains low-rank bias matrix `X` and it's corresponding decomposition `usvt`.
+        bias : dict, values=('X': numpy.ndarray, shape=(n_sample, n_features),
+                             'usvt': tuple of numpy.ndarray, shape=(U, S, Vt), shape=((n_samples, rank), rank, (rank, n_samples)))
+            Contains low-rank bias matrix X and it's corresponding decomposition usvt.
         """
         if self.bias_model == 'gaussian':
             usvt = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank).rand()
-            # NOTE Eigenvalues are normalized so that the bias level is
-            # approximately consistent over differing rank matrices.
+            # NOTE Eigenvalues are normalized so that the bias level is approximately consistent over differing rank matrices.
             usvt = usvt[0], (usvt[1] / np.sum(np.absolute(usvt[1]))), usvt[2]
             usvt = usvt[0], usvt[1] * self.noise_amplitude, usvt[2]
             X = np.dot(np.dot(usvt[0], np.diag(usvt[1])), usvt[2])
@@ -119,10 +115,10 @@ class BiasUnconstrained(object):
         shape : tuple of int
             Shape of the output bias matrix in the form of (n_samples, n_features).
         bias_model : {'gaussian', 'uniform'}
-            Two bias models are supported, `gaussian` which is based on random sampling of a Gaussian matrix and `uniform` which is based on repetition of a prespecified fill value.
+            Two bias models are supported, 'gaussian' which is based on random sampling of a Gaussian matrix and 'uniform' which is based on repetition of a prespecified fill value.
         noise_amplitude : float, optional unless model `gaussian`
             Sets the level of the bias.
-        fill_value : float, optional unless model `uniform`
+        fill_value : float, optional unless model 'uniform'
             Sets the fill value for the uniform bias model.
         """
         self.shape = shape
@@ -138,7 +134,7 @@ class BiasUnconstrained(object):
         Returns
         -------
         bias : dict, {'X': ndarray, shape (n_sample, n_features)}
-            Contains low-rank bias matrix `X` and it's corresponding decomposition `usvt`.
+            Contains low-rank bias matrix 'X' and it's corresponding decomposition 'usvt'.
         """
         if self.bias_model == 'gaussian':
             X = Euclidean(self.shape[0], self.shape[1]).rand()

@@ -1,4 +1,4 @@
-"""Cost function for matrix recovery.
+"""Cost function.
 """
 from __future__ import division, absolute_import
 
@@ -16,7 +16,7 @@ class Cost(object):
             Linear operators stored as sparse matrices.
         y : list; elements=float, len=n_measuremnts
             Target vector.
-        sparsity : int, (1=entry sensing, 2=blind recovery, A.size=dense sensing)
+        sparsity : int, values=(1=entry sensing, 2=blind recovery, A.size=dense sensing)
             Level of sparsity of the linear operators.
         """
         self.sparsity = sparsity
