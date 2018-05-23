@@ -6,11 +6,12 @@ import sys
 import json
 import abc
 
-from bcn.examples import figures as parallel # NOTE If parallel needs to be changed, do it here too.
+# NOTE If parallel needs to be changed, do it here too.
+from bcn.examples import figures as parallel
 
-    
+
 if __name__ == '__main__':
-    
+
     class_ = sys.argv[1]
     kwargs = json.loads(sys.argv[2])
 
@@ -24,6 +25,3 @@ if __name__ == '__main__':
         taskpull.store(result)
 
     taskpull.postprocessing()
-
-    
-

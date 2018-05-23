@@ -37,25 +37,30 @@ def estimate_partial_signal_characterists(mixed, correlation_threshold, true_pai
     estimates : dict
         Dictionary of estimated signal characteristics.
     """
-    estimates = {'feature': {'mixed': mixed.T, 'shape': mixed.T.shape}, 'sample': {'mixed': mixed, 'shape': mixed.shape}}
-    
-    for space in ['feature', 'sample']: 
+    estimates = {'feature': {'mixed': mixed.T, 'shape': mixed.T.shape},
+                 'sample': {'mixed': mixed, 'shape': mixed.shape}}
+
+    for space in ['feature', 'sample']:
         if true_correlations is not None:
             estimates[space]['estimated_correlations'] = true_correlations[space]
         else:
-            estimates[space]['estimated_correlations'] = estimate_correlations(estimates[space]['mixed'])
+            estimates[space]['estimated_correlations'] = estimate_correlations(
+                estimates[space]['mixed'])
         if true_pairs is not None:
             estimates[space]['estimated_pairs'] = true_pairs[space]
         else:
-            estimates[space]['estimated_pairs'] = estimate_pairs(estimates[space]['estimated_correlations'], correlation_threshold)
+            estimates[space]['estimated_pairs'] = estimate_pairs(
+                estimates[space]['estimated_correlations'], correlation_threshold)
         if true_stds is not None:
             estimates[space]['estimated_stds'] = true_stds[space]
         else:
-            estimates[space]['estimated_stds'] = estimate_stds(estimates[space]['mixed'], estimates[space]['estimated_pairs'])
+            estimates[space]['estimated_stds'] = estimate_stds(
+                estimates[space]['mixed'], estimates[space]['estimated_pairs'])
         if true_directions is not None:
             estimates[space]['estimated_directions'] = true_directions[space]
         else:
-            estimates[space]['estimated_directions'] = estimate_directions(estimates[space]['estimated_correlations'], estimates[space]['estimated_pairs'])
+            estimates[space]['estimated_directions'] = estimate_directions(
+                estimates[space]['estimated_correlations'], estimates[space]['estimated_pairs'])
 
     return estimates
 
@@ -80,10 +85,10 @@ def transpose_view(X, space):
 
     if space == 'sample':
         X_transpose = X
-        
+
     return X_transpose
 
-    
+
 def opposite(space):
     """Convert to opposite dimension.
 
@@ -101,8 +106,8 @@ def opposite(space):
         return 'sample'
     if space == 'sample':
         return 'feature'
-        
-    
+
+
 def estimate_pairs(correlations, threshold=0.8):
     """Estimate pairs from a correlation matrix.
 
@@ -127,7 +132,7 @@ def estimate_pairs(correlations, threshold=0.8):
     pairs = pairs[indices]
     return pairs
 
-    
+
 def estimate_correlations(mixed):
     """Estimate correlations from a `mixed` matrix.
 
@@ -175,7 +180,7 @@ def estimate_directions(correlations, pairs):
     directions = np.sign(correlations[pairs[:, 0], pairs[:, 1]])
     return directions
 
-    
+
 def estimate_stds(mixed, pairs):
     """Estimate standard deviations from a mixed` matrix for specific pairs.
 
@@ -195,7 +200,8 @@ def estimate_stds(mixed, pairs):
     for pair in pairs:
         bool_indices_a = np.isfinite(mixed[pair[0]])
         std_a = np.std(mixed[pair[0]][bool_indices_a])
-        if np.sum(bool_indices_a) < 3: # NOTE No need to check because there would be no pair if there were not 3 overlapping finite values for the pair (see estimate correlations).
+        # NOTE No need to check because there would be no pair if there were not 3 overlapping finite values for the pair (see estimate correlations).
+        if np.sum(bool_indices_a) < 3:
             std_a = np.nan
         bool_indices_b = np.isfinite(mixed[pair[1]])
         std_b = np.std(mixed[pair[1]][bool_indices_b])
@@ -230,7 +236,7 @@ def random_permutation(shape):
     inverse = {'feature': dict(zip(new_b, b)), 'sample': dict(zip(new_a, a))}
     return d, inverse
 
-    
+
 def shuffle_matrix(matrix, d_sample, d_feature=None):
     """
     Shuffle a matrix in feature and sample space.
@@ -257,7 +263,7 @@ def shuffle_matrix(matrix, d_sample, d_feature=None):
     new_matrix = new_matrix[:, y_indices]
     return new_matrix
 
-    
+
 def shuffle_pairs(pairs, d):
     """
     Shuffle pairs with a given mapping.
@@ -282,7 +288,7 @@ class DataSubset(object):
         """
         Container for simulated data.
         """
-        self.mixed =  None,
+        self.mixed = None,
         self.large_scale_mixed = None
 
         self.subset_indices = None
@@ -310,15 +316,15 @@ class DataSubset(object):
 
         self.correlation_threshold = None
         self.subset_factor = None
-    
+
     def __setitem__(self, key, item):
         self.__dict__[key] = item
 
     def __getitem__(self, key):
         return self.__dict__[key]
 
-    def __repr__(self):    
-        return repr(self.__dict__) 
+    def __repr__(self):
+        return repr(self.__dict__)
 
 
 class Data(object):
@@ -340,14 +346,14 @@ class Data(object):
         self.d = {'sample': DataSubset(), 'feature': DataSubset()}
         self.rank = None
         self.noise_amplitude = None
-        
+
     @abc.abstractmethod
     def estimate(self):
         """Estimate sucessively correlations, pairs, directions and strandard deviations from a mixed matrix.
         """
         pass
 
-    
+
 class DataSimulated(Data):
 
     def __init__(self, shape, rank, bias_model='gaussian', correlation_threshold=0.7, m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, image_source='../../tests/trump.png'):
@@ -388,34 +394,45 @@ class DataSimulated(Data):
         self.missing_fraction = missing_fraction
         self.image_source = image_source
 
-        m_blocks = self.shape[0] // self.m_blocks_size # NOTE using the sample space to determine the m_blocks here.
+        # NOTE using the sample space to determine the m_blocks here.
+        m_blocks = self.shape[0] // self.m_blocks_size
 
-        bias_unshuffled = BiasLowRank(self.shape, self.rank, bias_model=self.bias_model, noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate() # BiasUnconstrained(self.shape, bias_model='gaussian', noise_amplitude=1.0).generate()
-        self.map_forward_bias, self.map_backward_bias = random_permutation(bias_unshuffled['X'].shape)
-        bias = shuffle_matrix(bias_unshuffled['X'], self.map_forward_bias['sample'], self.map_forward_bias['feature'])
-        
-        missing = Missing(self.shape, self.missing_type, p_random=self.missing_fraction).generate()['X']
+        # BiasUnconstrained(self.shape, bias_model='gaussian', noise_amplitude=1.0).generate()
+        bias_unshuffled = BiasLowRank(self.shape, self.rank, bias_model=self.bias_model,
+                                      noise_amplitude=self.noise_amplitude, image_source=self.image_source).generate()
+        self.map_forward_bias, self.map_backward_bias = random_permutation(
+            bias_unshuffled['X'].shape)
+        bias = shuffle_matrix(
+            bias_unshuffled['X'], self.map_forward_bias['sample'], self.map_forward_bias['feature'])
 
-        signal_unshuffled = RedundantSignal(self.shape, 'random', m_blocks, self.correlation_strength).generate()
-        self.map_forward, self.map_backward = random_permutation(signal_unshuffled['X'].shape)
-        signal = shuffle_matrix(signal_unshuffled['X'], self.map_forward['sample'], self.map_forward['feature'])
-        
+        missing = Missing(self.shape, self.missing_type,
+                          p_random=self.missing_fraction).generate()['X']
+
+        signal_unshuffled = RedundantSignal(
+            self.shape, 'random', m_blocks, self.correlation_strength).generate()
+        self.map_forward, self.map_backward = random_permutation(
+            signal_unshuffled['X'].shape)
+        signal = shuffle_matrix(
+            signal_unshuffled['X'], self.map_forward['sample'], self.map_forward['feature'])
+
         mixed = signal + bias + missing
-        
+
         for space in ['sample', 'feature']:
             self.d[space]['mixed'] = transpose_view(mixed, space)
             self.d[space]['shape'] = self.d[space]['mixed'].shape
-            self.d[space]['signal_unshuffled'] = transpose_view(signal_unshuffled['X'], space)
+            self.d[space]['signal_unshuffled'] = transpose_view(
+                signal_unshuffled['X'], space)
             self.d[space]['signal'] = transpose_view(signal, space)
             self.d[space]['true_missing'] = transpose_view(missing, space)
-            self.d[space]['true_bias_unshuffled'] = transpose_view(bias_unshuffled['X'], space)
+            self.d[space]['true_bias_unshuffled'] = transpose_view(
+                bias_unshuffled['X'], space)
             self.d[space]['true_bias'] = transpose_view(bias, space)
             self.d[space]['true_correlations_unshuffled'] = signal_unshuffled[space]['correlation_matrix']
-            self.d[space]['true_correlations'] = shuffle_matrix(signal_unshuffled[space]['correlation_matrix'], self.map_forward[space])
+            self.d[space]['true_correlations'] = shuffle_matrix(
+                signal_unshuffled[space]['correlation_matrix'], self.map_forward[space])
             self.d[space]['true_pairs_unshuffled'] = signal_unshuffled[space]['pairs']
-            self.d[space]['true_pairs'] = shuffle_pairs(signal_unshuffled[space]['pairs'], self.map_backward[space])
+            self.d[space]['true_pairs'] = shuffle_pairs(
+                signal_unshuffled[space]['pairs'], self.map_backward[space])
             self.d[space]['true_stds'] = signal_unshuffled[space]['stds'][signal_unshuffled[space]['pairs']]
             self.d[space]['true_directions'] = signal_unshuffled[space]['directions']
             self.d[space]['correlation_threshold'] = correlation_threshold
-
-

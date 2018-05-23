@@ -75,7 +75,8 @@ class BiasLowRank(object):
             Contains low-rank bias matrix X and it's corresponding decomposition usvt.
         """
         if self.bias_model == 'gaussian':
-            usvt = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank).rand()
+            usvt = FixedRankEmbedded(
+                self.shape[0], self.shape[1], self.rank).rand()
             # NOTE Eigenvalues are normalized so that the bias level is approximately consistent over differing rank matrices.
             usvt = usvt[0], (usvt[1] / np.sum(np.absolute(usvt[1]))), usvt[2]
             usvt = usvt[0], usvt[1] * self.noise_amplitude, usvt[2]

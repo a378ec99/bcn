@@ -29,7 +29,7 @@ def sample_n_choose_k(n_samples, n_features, k, n):
     -------
     samples : list, len=n
         Sequence of samples drawn from n choose k.
-        
+
     Source
     ------
     https://stats.stackexchange.com/questions/315087/how-can-one-generate-a-sequence-of-unique-k-sparse-matrices-without-rejection-sa
@@ -44,7 +44,7 @@ def sample_n_choose_k(n_samples, n_features, k, n):
             samples.append(i)
     return samples
 
-    
+
 def integer_to_matrix(i, k, n_samples, n_features):
     """
     Use the combinatorial number system to map from an integer i to a corresponding k-sparse matrix.
@@ -59,22 +59,23 @@ def integer_to_matrix(i, k, n_samples, n_features):
         First dimension of the sparse matrix.
     n_features : int
         Second dimension of the sparse matrix.
-        
+
     Returns
     -------
     matrix : numpy.ndarray, shape=(n_samples, n_features)
         Randomly sampled sparse matrix.
-    
+
     Source
     ------
     https://en.wikipedia.org/wiki/Combinatorial_number_system#Finding_the_k-combination_for_a_given_number
     """
     flat_matrix = np.zeros(n_samples * n_features, dtype=int)
-    for h in range(k, 0, -1): # h means how many entries still to set to 1
+    for h in range(k, 0, -1):  # h means how many entries still to set to 1
         j = h - 1
         found = False
         while not found:
-            testvalue = comb(j, h, exact=True) # Its first value is 0 == ((h-1) choose h)
+            # Its first value is 0 == ((h-1) choose h)
+            testvalue = comb(j, h, exact=True)
             if testvalue == i:
                 found = True
                 flat_matrix[j] = 1
@@ -89,7 +90,7 @@ def integer_to_matrix(i, k, n_samples, n_features):
     matrix = flat_matrix.reshape((n_samples, n_features))
     return matrix
 
-        
+
 def possible_measurements(shape, missing_fraction, m_blocks_size=None):
     '''
     Computes the range of the possible number of measurements for a matrix.
@@ -102,12 +103,12 @@ def possible_measurements(shape, missing_fraction, m_blocks_size=None):
         Fraction of missing values in mixed matrix to be used for recovery.
     m_blocks_size : int
         Specific block size.
-    
+
     Returns
     -------
     d : dict
         Number of measurements possible in the worst case, best case and current case.
-    
+
     Note
     ----
     Possible measurements are defined by the block structure of the correlation matrix. Worst case block structure (m_bocks = dimension/2) and best case block structure (m_blocks = 2).
@@ -118,21 +119,23 @@ def possible_measurements(shape, missing_fraction, m_blocks_size=None):
     a, b = shape
 
     n_best = int(((a / 2) * b) + ((b / 2) * a))
-    n_best  = int(n_best - (missing_fraction * n_best))
-    
+    n_best = int(n_best - (missing_fraction * n_best))
+
     a_pairs = (a / 2)**2 - (a / 2)
     b_pairs = (b / 2)**2 - (b / 2)
     n_worst = int((a_pairs * b) + (b_pairs * a))
     n_worst = int(n_worst - (missing_fraction * n_worst))
 
-    d = {'m_blocks=({}, {}) (best case)'.format(shape[0] // 2, shape[1] // 2): n_worst, 'm_blocks=({}, {}) (worst case)'.format(2, 2): n_best}
+    d = {'m_blocks=({}, {}) (best case)'.format(
+        shape[0] // 2, shape[1] // 2): n_worst, 'm_blocks=({}, {}) (worst case)'.format(2, 2): n_best}
 
     if m_blocks_size:
         # TODO Implement.
-        d['m_blocks=({}, {}) (actual case)'.format(shape[0] // m_blocks_size, shape[1] // m_blocks_size)] = 'TODO'
+        d['m_blocks=({}, {}) (actual case)'.format(
+            shape[0] // m_blocks_size, shape[1] // m_blocks_size)] = 'TODO'
     return d
 
-    
+
 def _print_size(name, X):
     """Print the memory footprint in MB of a particular data matrix.
 
@@ -144,7 +147,8 @@ def _print_size(name, X):
         Input data matrix.
     """
     if issparse(X):
-        print '{}: {} MB'.format(name, (X.data.nbytes + X.row.nbytes + X.col.nbytes) * 1.0e-6)
+        print '{}: {} MB'.format(
+            name, (X.data.nbytes + X.row.nbytes + X.col.nbytes) * 1.0e-6)
     else:
         print '{}: {} MB'.format(name, X.nbytes * 1.0e-6)
 
@@ -160,26 +164,28 @@ def pop_pairs_with_indices_randomly(n_pairs, n, max_pops):
         Number of entries for a particular pair.
     max_pops : int
         Number of maximal calls to this generator. Need to make sure that not trying to pop more unique indices then possible.
-        
+
     Yields
     ------
     pair_index, sample_index : (int, int)
         Index for a particular pair and a particular entry for that pair.
     """
     assert max_pops <= n * n_pairs
-    
+
     random_indices = np.arange(n * n_pairs, dtype=int)
     np.random.shuffle(random_indices)
-    
-    pair_indices = np.repeat(np.arange(n_pairs, dtype=int), n) # sample until randomly choosen all samples from it.
-    sample_indices = np.tile(np.arange(n, dtype=int), n_pairs) # sample until empty.
+
+    # sample until randomly choosen all samples from it.
+    pair_indices = np.repeat(np.arange(n_pairs, dtype=int), n)
+    # sample until empty.
+    sample_indices = np.tile(np.arange(n, dtype=int), n_pairs)
 
     for i in random_indices:
         pair_index = pair_indices[i]
         sample_index = sample_indices[i]
         yield pair_index, sample_index
 
-    
+
 def choose_random_matrix_elements(shape, n, duplicates=False):
     """Choose n random matrix element indices for a matrix with a given shape.
 
@@ -191,7 +197,7 @@ def choose_random_matrix_elements(shape, n, duplicates=False):
         Number of element indices to choose (max. determined by shape)
     duplicates : bool
         Allow duplicate elements or not. If duplicates, or sparsity is != 1, then elements can be chosen more than once.
-    
+
     Returns
     -------
     element_indices : numpy.ndarray, shape=(n, 2)
@@ -206,7 +212,7 @@ def choose_random_matrix_elements(shape, n, duplicates=False):
     if duplicates == False:
 
         assert n <= size
-        
+
         if n == size:
             element_indices = np.nonzero(np.ones(shape))
             element_indices = np.vstack(element_indices).T
@@ -221,26 +227,26 @@ def choose_random_matrix_elements(shape, n, duplicates=False):
             element_indices = np.vstack(element_indices).T
             np.random.shuffle(element_indices)
 
-    else: 
+    else:
         element_indices = []
         for i in xrange(n):
             x = np.random.randint(0, shape[0])
             y = np.random.randint(0, shape[1])
             element_indices.append([x, y])
         element_indices = np.asarray(element_indices)
-        
+
     return element_indices
 
-    
+
 class LinearOperator(object):
 
     __metaclass__ = abc.ABCMeta
-        
+
     def __init__(self):
         """Abstract base class for the generation of linear operators and corresponding targets.
         """
         pass
-    
+
     @abc.abstractmethod
     def generate(self):
         """Generates linear operators and corresponding targets.
@@ -254,7 +260,7 @@ class LinearOperator(object):
         """
         pass
 
-    
+
 class LinearOperatorEntry(LinearOperator):
 
     def __init__(self, n):
@@ -265,7 +271,7 @@ class LinearOperatorEntry(LinearOperator):
             Number of linear operators / targets to be generated, e.g. measurements.
         """
         self.n = n
-        
+
     def generate(self, signal):
         """Generate linear operators A and targets y from entry sampling of a clean signal matrix.
 
@@ -273,7 +279,7 @@ class LinearOperatorEntry(LinearOperator):
         ----------
         signal : numpy.ndarray, shape=(n_samples, n_features)
             Clean signal matrix to sample the known entries from.
-            
+
         Returns
         -------
         measurements : dict, elements={'A' : dict, elements=list, len=n
@@ -286,11 +292,14 @@ class LinearOperatorEntry(LinearOperator):
         Allows for nan values in signal matrix.
         """
         A, y = [], []
-        indices = choose_random_matrix_elements(signal.shape, self.n, duplicates=False) # NOTE Also here same element can be sampled multiple times if duplicatese is True.
+        # NOTE Also here same element can be sampled multiple times if duplicatese is True.
+        indices = choose_random_matrix_elements(
+            signal.shape, self.n, duplicates=False)
         for index in indices:
             entry = signal[index[0], index[1]]
             if np.isfinite(entry):
-                A.append({'row':[index[0]], 'col': [index[1]], 'value': [1.0]})
+                A.append({'row': [index[0]], 'col': [
+                         index[1]], 'value': [1.0]})
                 y.append(entry)
         assert len(y) > 0
         measurements = {'A': A, 'y': y}
@@ -305,7 +314,7 @@ class LinearOperatorDense(LinearOperator):
         ----------
         n : int
             Number of linear operators / targets to be generated, e.g. measurements.
-        """   
+        """
         self.n = n
 
     def generate(self, signal):
@@ -331,7 +340,8 @@ class LinearOperatorDense(LinearOperator):
         for n in xrange(self.n):
             A_i_original = np.random.standard_normal(signal.shape)
             A_i = coo_matrix(A_i_original, copy=True)
-            A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
+            A.append({'row': list(A_i.row), 'col': list(
+                A_i.col), 'value': list(A_i.data)})
             y_i = np.nansum(A_i_original * signal)
             y.append(y_i)
         assert len(y) > 0
@@ -352,7 +362,7 @@ class LinearOperatorKsparse(LinearOperator):
         """
         self.n = n
         self.sparsity = sparsity
-        
+
     def generate(self, signal):
         """Generate linear operators A and targets y from dense sampling of a clean signal matrix.
 
@@ -360,7 +370,7 @@ class LinearOperatorKsparse(LinearOperator):
         ----------
         signal : numpy.ndarray, shape=(n_samples, n_features)
             Clean signal matrix to sample the known entries from.
-            
+
         Returns
         -------
         measurements : dict, elements={'A' : dict, elements=list, len=n
@@ -374,11 +384,13 @@ class LinearOperatorKsparse(LinearOperator):
         """
         A, y = [], []
         for i in sample_n_choose_k(signal.shape[0], signal.shape[1], self.sparsity, self.n):
-            A_i = integer_to_matrix(i, self.sparsity, signal.shape[0], signal.shape[1])
+            A_i = integer_to_matrix(
+                i, self.sparsity, signal.shape[0], signal.shape[1])
             A_i = coo_matrix(A_i)
             if np.isfinite(signal[A_i.row, A_i.col]).any():
                 value = np.random.standard_normal(self.sparsity)
-                A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': value})
+                A.append({'row': list(A_i.row), 'col': list(
+                    A_i.col), 'value': value})
                 y_i = np.nansum(value * signal[A_i.row, A_i.col])
                 y.append(y_i)
             else:
@@ -387,7 +399,7 @@ class LinearOperatorKsparse(LinearOperator):
         measurements = {'A': A, 'y': y}
         return measurements
 
-        
+
 class LinearOperatorCustom(LinearOperator):
 
     def __init__(self, n):
@@ -398,7 +410,7 @@ class LinearOperatorCustom(LinearOperator):
             Number of linear operators / targets to be generated, e.g. measurements.
         """
         self.n = n
-        
+
     def _solve(self, a, b, d):
         """Solve a linear equation ay + bx + c for c.
 
@@ -437,7 +449,7 @@ class LinearOperatorCustom(LinearOperator):
         -------
         d : float
             Distance from point (x0, y0) to line y = mx + 0.0.
-            
+
         Source
         ------
         https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
@@ -465,7 +477,7 @@ class LinearOperatorCustom(LinearOperator):
             The space of the array to be used.
         estimated : dict
             Contains the mixed signal and its shape characteristics among others details.
-        
+
         Returns
         -------
         A, y : 2d-array, 1d-array
@@ -483,7 +495,7 @@ class LinearOperatorCustom(LinearOperator):
         if space == 'feature':
             A = A.T
         return A, y
-        
+
     def generate(self, estimated):
         """Generate linear operators A and targets y from a corrupted signal matrix.
 
@@ -493,7 +505,7 @@ class LinearOperatorCustom(LinearOperator):
                                         Estimated pairs, directions, standard deviations, mixed and shape of the feature space.
                                     sample : dict, elements=dict
                                         Estimated pairs, directions, standard deviations, mixed and shape of the sample space.}
-        
+
         Returns
         -------
         measurements : dict, elements={A : dict, elements=list, len=n
@@ -506,8 +518,9 @@ class LinearOperatorCustom(LinearOperator):
         Allows for nan values in signal matrix.
         """
         A, y = [], []
-        indices = {'sample': pop_pairs_with_indices_randomly(len(estimated['sample']['estimated_pairs']), estimated['sample']['shape'][1], self.n // 2), 'feature': pop_pairs_with_indices_randomly(len(estimated['feature']['estimated_pairs']), estimated['feature']['shape'][1], self.n // 2)}
-        
+        indices = {'sample': pop_pairs_with_indices_randomly(len(estimated['sample']['estimated_pairs']), estimated['sample']['shape'][1], self.n // 2),
+                   'feature': pop_pairs_with_indices_randomly(len(estimated['feature']['estimated_pairs']), estimated['feature']['shape'][1], self.n // 2)}
+
         for n in xrange(self.n):
             space = np.random.choice(['feature', 'sample'])
             index, j = indices[space].next()
@@ -523,12 +536,13 @@ class LinearOperatorCustom(LinearOperator):
             # NOTE Checking for nan and inf values in corrupted signal matrix (if one then can't use pair).
             if ~np.isfinite(estimated[space]['mixed'][pair, [j, j]]).all():
                 continue
-            
-            A_i, y_i = self._construct_measurement(pair, j, stds, direction, space, estimated)
+
+            A_i, y_i = self._construct_measurement(
+                pair, j, stds, direction, space, estimated)
             A_i = coo_matrix(A_i)
-            A.append({'row': list(A_i.row), 'col': list(A_i.col), 'value': list(A_i.data)})
+            A.append({'row': list(A_i.row), 'col': list(
+                A_i.col), 'value': list(A_i.data)})
             y.append(y_i)
         assert len(y) > 0
         measurements = {'A': A, 'y': y}
         return measurements
-

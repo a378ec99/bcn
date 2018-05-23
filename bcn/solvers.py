@@ -52,23 +52,26 @@ class ConjugateGradientSolver(object):
         self.rank = rank
         self.n_restarts = n_restarts
         self.guess_noise_amplitude = guess_noise_amplitude
-        self.manifold = FixedRankEmbedded(self.shape[0], self.shape[1], self.rank)
-        self.problem = Problem(manifold=self.manifold, cost=self.cost_func, verbosity=verbosity)
+        self.manifold = FixedRankEmbedded(
+            self.shape[0], self.shape[1], self.rank)
+        self.problem = Problem(manifold=self.manifold,
+                               cost=self.cost_func, verbosity=verbosity)
         self.maxiter = maxiter
         self.maxtime = maxtime
         self.mingradnorm = mingradnorm
         self.minstepsize = minstepsize
-        self.solver = ConjugateGradient(logverbosity=2, maxiter=self.maxiter, maxtime=self.maxtime, mingradnorm=self.mingradnorm, minstepsize=self.minstepsize)
+        self.solver = ConjugateGradient(logverbosity=2, maxiter=self.maxiter, maxtime=self.maxtime,
+                                        mingradnorm=self.mingradnorm, minstepsize=self.minstepsize)
         self.n_retries_svd = n_retries_svd
-        
+
     def solve(self, guess):
         """ Solve a matrix recovery problem based on the given constraints and an initial guess.
-        
+
         Parameters
         ----------
         guess : tuple, values=(u, s, vt)
             Descomposed random low-rank matrix.
-            
+
         Returns
         -------
         X : numpy.ndarray, shape=(n_samples, n_features)
@@ -96,7 +99,7 @@ class ConjugateGradientSolver(object):
     def recover(self):
         """
         Runs the solver n_restarts times and picks the best run.
-        
+
         Returns
         -------
         results : dict
@@ -104,7 +107,8 @@ class ConjugateGradientSolver(object):
         """
         estimates, errors, guesses_X, guesses_usvt = [], [], [], []
         for k in xrange(self.n_restarts):
-            guess = self.guess_func(self.shape, self.rank, noise_amplitude=self.guess_noise_amplitude)
+            guess = self.guess_func(
+                self.shape, self.rank, noise_amplitude=self.guess_noise_amplitude)
             X, stopping_reason, final_cost = self.solve(guess['usvt'])
             estimates.append(X)
             guesses_X.append(guess['X'])
@@ -112,7 +116,7 @@ class ConjugateGradientSolver(object):
             errors.append(final_cost)
         index = np.argmin(errors)
         error = errors[index]
-        estimated_bias = estimates[index] 
+        estimated_bias = estimates[index]
         guess_X = guesses_X[index]
         guess_usvt = guesses_usvt[index]
         results = {'guess_X': guess_X,
@@ -121,4 +125,3 @@ class ConjugateGradientSolver(object):
                    'estimated_signal': self.mixed - estimated_bias,
                    'final_cost': error}
         return results
-        

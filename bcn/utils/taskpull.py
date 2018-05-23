@@ -12,31 +12,33 @@ import abc
 
 from mpi4py import MPI
 
-from bcn.examples import figures as parallel # NOTE If parallel needs to be changed, do it here too.
+# NOTE If parallel needs to be changed, do it here too.
+from bcn.examples import figures as parallel
 
 
 if __name__ == '__main__':
-    
+
     class_ = sys.argv[1]
     kwargs = json.loads(sys.argv[2])
     READY, DONE, EXIT, START = range(4)
-    
+
     comm = MPI.COMM_WORLD
     size = comm.size
     rank = comm.rank
     status = MPI.Status()
     node = MPI.Get_processor_name()
-    
+
     try:
-        master = comm.allgather(node).index('node01') #NOTE Hardcoded: This tries that post-processing and storage happens on the high-memory node (512GB).
+        # NOTE Hardcoded: This tries that post-processing and storage happens on the high-memory node (512GB).
+        master = comm.allgather(node).index('node01')
         print master
     except ValueError:
         print 'Could not use node01 as master.'
         master = 0
 
     taskpull = getattr(parallel, class_)(**kwargs)
-    
-    if rank == master: #NOTE Master process executes code below.
+
+    if rank == master:  # NOTE Master process executes code below.
 
         tasks = taskpull.create_tasks()
         taskpull.allocate()
@@ -44,7 +46,8 @@ if __name__ == '__main__':
         closed_workers = 0
 
         while closed_workers < total_workers:
-            result = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+            result = comm.recv(source=MPI.ANY_SOURCE,
+                               tag=MPI.ANY_TAG, status=status)
             source = status.Get_source()
             tag = status.Get_tag()
 
@@ -64,8 +67,8 @@ if __name__ == '__main__':
                 closed_workers += 1
 
         taskpull.postprocessing()
-    
-    else: #NOTE Worker processes execute code below.
+
+    else:  # NOTE Worker processes execute code below.
 
         while True:
             comm.send(None, dest=master, tag=READY)

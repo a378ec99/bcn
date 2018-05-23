@@ -9,7 +9,7 @@ class Cost(object):
 
     def __init__(self, A, y, sparsity=1):
         """Creates a cost function with autograd based on linear operators A and targets y.
-        
+
         Parameters
         ----------
         A : list; elements=dict, len=n_measurements
@@ -24,7 +24,7 @@ class Cost(object):
         self.A_cols = ag.array([a['col'] for a in A])
         self.A_values = ag.array([a['value'] for a in A])
         self.y = ag.array(y)
-        
+
     def cost_func(self, X):
         """Cost function for evaluation at X.
 
@@ -42,12 +42,12 @@ class Cost(object):
         ----        
         Size scaling with ag.mean is not nessesary for convergence but useful for comparison of error magnitude.
         """
-        if len(X) == 3: # WARNING type changes from list to autograd.builtins.SequenceBox after first run.
+        if len(X) == 3:  # WARNING type changes from list to autograd.builtins.SequenceBox after first run.
             usvt = X
             X = ag.dot(usvt[0], ag.dot(ag.diag(usvt[1]), usvt[2]))
         else:
             assert ag.isfinite(X).all()
-        y_est = ag.sum(self.A_values * X[self.A_rows, self.A_cols].reshape(-1, self.sparsity), axis=1)
+        y_est = ag.sum(
+            self.A_values * X[self.A_rows, self.A_cols].reshape(-1, self.sparsity), axis=1)
         error = ag.mean((y_est - self.y)**2)
         return error
-

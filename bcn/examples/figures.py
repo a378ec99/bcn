@@ -115,8 +115,10 @@ class Figure1(TaskPull):
         self.sparsities = sparsities
 
     def allocate(self):
-        self.true_errors = np.ones((len(self.measurements), len(self.sparsities))) * np.nan
-        self.solver_errors = np.ones((len(self.measurements), len(self.sparsities))) * np.nan
+        self.true_errors = np.ones(
+            (len(self.measurements), len(self.sparsities))) * np.nan
+        self.solver_errors = np.ones(
+            (len(self.measurements), len(self.sparsities))) * np.nan
 
     def create_tasks(self):
         if self.seed is not None:
@@ -132,18 +134,23 @@ class Figure1(TaskPull):
         i, j, m, sparsity, secondary_seed = task
         np.random.seed(secondary_seed)
 
-        data = DataSimulated(self.shape, self.rank, noise_amplitude=self.noise_amplitude)
-        data.estimate(true_stds={'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']}, true_pairs={'sample': data.d['sample']['true_pairs'], 'feature': data.d['feature']['true_pairs']}, true_directions={'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']})
+        data = DataSimulated(self.shape, self.rank,
+                             noise_amplitude=self.noise_amplitude)
+        data.estimate(true_stds={'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']}, true_pairs={'sample': data.d['sample']['true_pairs'],
+                                                                                                                                  'feature': data.d['feature']['true_pairs']}, true_directions={'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']})
         operator = LinearOperatorKsparse(data, m, sparsity).generate()
         A, y = operator['A'], operator['y']
         cost = Cost(A, y)
-        solver = ConjugateGradientSolver(cost.cost_func, guess_func, data, self.rank, self.n_restarts, noise_amplitude=self.noise_amplitude, verbosity=self.verbosity)
+        solver = ConjugateGradientSolver(cost.cost_func, guess_func, data, self.rank,
+                                         self.n_restarts, noise_amplitude=self.noise_amplitude, verbosity=self.verbosity)
         data = solver.recover()
 
         error_solver = cost.cost_func(data.d['sample']['estimated_bias'])
         divisor = np.sum(~np.isnan(data.d['sample']['mixed']))
-        error = np.nansum(np.absolute(data.d['sample']['signal'] - (data.d['sample']['mixed'] - data.d['sample']['estimated_bias']))) / divisor
-        zero_error = np.nansum(np.absolute(data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
+        error = np.nansum(np.absolute(data.d['sample']['signal'] - (
+            data.d['sample']['mixed'] - data.d['sample']['estimated_bias']))) / divisor
+        zero_error = np.nansum(np.absolute(
+            data.d['sample']['signal'] - data.d['sample']['mixed'])) / divisor
         error_true = error / zero_error
 
         return error_true, error_solver, i, j
@@ -154,8 +161,10 @@ class Figure1(TaskPull):
         self.solver_errors[i, j] = error_solver
 
     def postprocessing(self):
-        visualize_performance(self.true_errors, self.sparsities, self.measurements, 'sparsities', 'measurements', file_name=self.file_name + '_error_true')
-        visualize_performance(self.solver_errors, self.sparsities, self.measurements, 'sparsities', 'measurements', file_name=self.file_name + '_error_solver')
+        visualize_performance(self.true_errors, self.sparsities, self.measurements,
+                              'sparsities', 'measurements', file_name=self.file_name + '_error_true')
+        visualize_performance(self.solver_errors, self.sparsities, self.measurements,
+                              'sparsities', 'measurements', file_name=self.file_name + '_error_solver')
 
 
 def submit(kwargs, run_class, mode='local', ppn=1, hours=10000, nodes=1, path='/home/sohse/projects/bcn'):
@@ -178,7 +187,8 @@ def submit(kwargs, run_class, mode='local', ppn=1, hours=10000, nodes=1, path='/
         Path to work in (e.g. store logs, output and use bcn.py from).
     """
     if mode == 'local':
-        subprocess.call(['python', path + '/bcn/utils/taskpull_local.py', run_class, json.dumps(kwargs)])
+        subprocess.call(
+            ['python', path + '/bcn/utils/taskpull_local.py', run_class, json.dumps(kwargs)])
 
     if mode == 'parallel':
         output, input_ = popen2('qsub')
@@ -208,11 +218,10 @@ def submit(kwargs, run_class, mode='local', ppn=1, hours=10000, nodes=1, path='/
         print 'Submitted {output}'.format(output=output.read())
 
 
-
-
 if __name__ == '__main__':
     run_class = 'Figure1'
     file_name = '../out/' + run_class
-    kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e3), 8), dtype=int)), 'ranks': list(np.asarray(np.linspace(1, 8, 8), dtype=int)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
+    kwargs = {'measurements': list(np.asarray(np.logspace(np.log10(1e2), np.log10(1e3), 8), dtype=int)), 'ranks': list(
+        np.asarray(np.linspace(1, 8, 8), dtype=int)), 'seed': 42, 'noise_amplitude': 5.0, 'file_name': file_name}
     submit(kwargs, mode='parallel', run_class=run_class)
     print run_class, kwargs

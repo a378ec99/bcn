@@ -12,7 +12,7 @@ def _convert_space_to_shape_index(space):
     ----------
     space : str, values=('feature', 'sample')
         Feature or sample space.
-        
+
     Returns
     -------
     return : int, values=(0, 1)
@@ -20,10 +20,10 @@ def _convert_space_to_shape_index(space):
     """
     if space == 'feature':
         return 1
-        
+
     if space == 'sample':
         return 0
-        
+
 
 def _generate_square_blocks_matrix(n, m_blocks, r=1.0, step=0):
     """Generates a square block type correlation matrix.
@@ -38,7 +38,7 @@ def _generate_square_blocks_matrix(n, m_blocks, r=1.0, step=0):
         Correlation strength.
     step : int, values=(0, 1)
         Indicates the depth of recursion to create a proper square blocks matrix; internal use only.
-    
+
     Note
     ----
     Blocks contain half and half correlated (r) and anticorrelated (-r) features and samples.
@@ -51,7 +51,8 @@ def _generate_square_blocks_matrix(n, m_blocks, r=1.0, step=0):
     assert r >= 0
     assert n >= m_blocks
 
-    blocksizes = np.repeat(n // m_blocks, m_blocks) # WARNING some problem if block size == n
+    # WARNING some problem if block size == n
+    blocksizes = np.repeat(n // m_blocks, m_blocks)
     blocksizes[-1] = blocksizes[-1] + (n % m_blocks)
 
     if step == 0:
@@ -69,11 +70,12 @@ def _generate_square_blocks_matrix(n, m_blocks, r=1.0, step=0):
         indices = np.indices(square.shape)
         indices = np.vstack([indices[0].ravel(), indices[1].ravel()]).T
         for index in indices:
-            block_matrix[index[0] + (i * blocksizes[0]), index[1] + (i * blocksizes[0])] = square[index[0], index[1]]
+            block_matrix[index[0] + (i * blocksizes[0]), index[1] +
+                         (i * blocksizes[0])] = square[index[0], index[1]]
 
     return block_matrix
 
-    
+
 def _generate_pairs(correlation_matrix):
     """Generate index pairs for correlated features.
 
@@ -91,13 +93,13 @@ def _generate_pairs(correlation_matrix):
     indices = np.arange(len(pairs))
     np.random.shuffle(indices)
     pairs = np.asarray(pairs)
-    
+
     assert len(indices) <= len(pairs)
-    
+
     pairs = pairs[indices]
     return pairs
 
-    
+
 def _generate_matrix_normal_sample(U, V):
     """Generate a sample from a matrix variate normal distribution.
 
@@ -107,7 +109,7 @@ def _generate_matrix_normal_sample(U, V):
         Covariance matrix among samples (rows).
     V : numpy.ndarray, shape=(n_features, n_features)
         Covariance matrix among features (columns).
-        
+
     Returns
     -------
     Y : numpy.ndarray, shape=(n_samples, n_features)
@@ -148,7 +150,7 @@ def _generate_stds(n, model, std_value=1.5, normalize=False):
         A tuple of scaled standard deviations and the corresponding scaling factor (if normalize == True).
     """
     if model == 'random':
-        stds = np.random.uniform(0.1, 2.0, n) # 0.01, 20.0
+        stds = np.random.uniform(0.1, 2.0, n)  # 0.01, 20.0
     if model == 'constant':
         stds = np.repeat(std_value, n)
     if normalize:
@@ -158,17 +160,17 @@ def _generate_stds(n, model, std_value=1.5, normalize=False):
     else:
         return stds, None
 
-    
+
 def _generate_directions(correlation_matrix, pairs):
     """Generate directions from a signed correlation matrix.
-    
+
     Parameters
     ----------
     correlation_matrix : numpy.ndarray, shape=(n_samples, n_samples) or (n_features, n_features)
         Signed correlation matrix from which the signs are extracted as directions.
     pairs : numpy.ndarray, len=n_pairs
         The pairs of interest for which the directions are to be extraced.
-        
+
     Returns
     -------
     directions : numpy.ndarray, len=n_pairs
@@ -177,7 +179,7 @@ def _generate_directions(correlation_matrix, pairs):
     directions = np.sign(correlation_matrix[pairs[:, 0], pairs[:, 1]])
     return directions
 
-    
+
 def _generate_covariance(correlation_matrix, stds):
     """Generate a covariance matrix based on a given correlation matrix and the corresponing feature/sample standard deviations.
 
@@ -187,7 +189,7 @@ def _generate_covariance(correlation_matrix, stds):
         Correlation matrix on which the covariance matrix is based.
     stds : numpy.ndarray, len=n_stds
         Standard deviations which are used in combination with the correlation amtrix to generate the covariance matrix.
-        
+
     Returns
     -------
     covariance_matrix : numpy.ndarray, shape=(n_samples, n_samples) or (n_features, n_features)
@@ -195,7 +197,7 @@ def _generate_covariance(correlation_matrix, stds):
     covariance_matrix = np.outer(stds, stds) * correlation_matrix
     return covariance_matrix
 
-    
+
 class RedundantSignal(object):
 
     def __init__(self, shape, model, m_blocks, correlation_strength, std_value=None, normalize_stds=False):
@@ -222,9 +224,9 @@ class RedundantSignal(object):
         self.correlation_strength = correlation_strength
         self.std_value = std_value
         self.normalize_stds = normalize_stds
-        
+
         assert self.model in ['random', 'constant']
-        
+
     def generate(self):
         """Generate a high-dimensional signal with a particular redundancy.
 
@@ -243,10 +245,12 @@ class RedundantSignal(object):
         """
         signal = {}
         for space in ['feature', 'sample']:
-            correlation_matrix = _generate_square_blocks_matrix(self.shape[_convert_space_to_shape_index(space)], self.m_blocks, r=self.correlation_strength)
+            correlation_matrix = _generate_square_blocks_matrix(
+                self.shape[_convert_space_to_shape_index(space)], self.m_blocks, r=self.correlation_strength)
             pairs = _generate_pairs(correlation_matrix)
             directions = _generate_directions(correlation_matrix, pairs)
-            stds, scaling_factor = _generate_stds(self.shape[_convert_space_to_shape_index(space)], self.model, std_value=self.std_value, normalize=self.normalize_stds)
+            stds, scaling_factor = _generate_stds(self.shape[_convert_space_to_shape_index(
+                space)], self.model, std_value=self.std_value, normalize=self.normalize_stds)
             covariance_matrix = _generate_covariance(correlation_matrix, stds)
             signal[space] = {'pairs': pairs,
                              'correlation_matrix': correlation_matrix,

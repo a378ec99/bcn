@@ -24,7 +24,7 @@ class Missing(object):
         self.shape = tuple(shape)
         self.model = model
         self.p_random = p_random
-        self.p_censored = p_censored 
+        self.p_censored = p_censored
 
         assert self.model in ['MAR', 'NMAR', 'no-missing']
 
@@ -62,6 +62,3 @@ class Missing(object):
         if self.model == 'no-missing':
             missing = {'X': np.zeros(self.shape)}
         return missing
-
-        
-    
