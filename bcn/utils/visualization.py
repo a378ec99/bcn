@@ -16,18 +16,18 @@ def recovery_performance(mixed, cost_func, true_bias, estimated_signal, true_sig
 
     Parameters
     ----------
-    mixed :
-
-    cost_func :
-
-    true_bias :
-
-    estimated_signal :
-
-    true_signal :
-
-    estimated_bias:
-
+    mixed : numpy.ndarray, shape=(n_samples, n_features)
+        Corrupted signal to be cleaned.
+    cost_func : func
+        Objective function for evaluation of current bias matrix estimate.
+    true_bias : numpy.ndarray, shape=(n_samples, n_features)
+        True bias matrix.
+    estimated_signal : numpy.ndarray, shape=(n_samples, n_features)
+        Estimated signal matrix.
+    true_signal : numpy.ndarray, shape=(n_samples, n_features)
+        True signal matrix.
+    estimated_bias: numpy.ndarray, shape=(n_samples, n_features)
+        Estimated bias matrix.
     """
     error_cost_func_true_bias = cost_func(true_bias)
     error_cost_func_estimated_bias = cost_func(estimated_bias)
@@ -55,20 +55,20 @@ def show_absolute(signal, kind, unshuffled=False, unshuffle=False, map_backward=
 
     Parameters
     ----------
-    signal :
-
-    kind :
-
-    unshuffled : 
-
-    unshuffle :
-
-    map_backward :
-
+    signal : numpy.ndarray, shape=(n_samples, n_features)
+        True signal matrix.
+    kind : str, values=('Bias', 'Signal')
+        Type of absolute value matrix to be shown (used as annotation on plot).
+    unshuffled : bool
+        If the input data is unshuffled.
+    unshuffle : bool
+        If to unshuffle the input data.
+    map_backward : dict, value=('feature', 'sample'), values=dict
+        Map from new annotation to old annotion.
     vmin : int
-
+        Minimum absolute value on color scale.
     vmax : int
-
+        Maximum absolute value on color scale.
     """
     cmap = sb.diverging_palette(
         250, 15, s=75, l=40, as_cmap=True, center="dark")
@@ -101,16 +101,16 @@ def show_dependences(signal, pairs, space, n_pairs=5, n_points=50):
 
     Parameters
     ----------
-    signal :
-
-    pairs :
-
-    space :
-
+    signal : numpy.ndarray, shape=(n_samples, n_features)
+        True signal matrix.
+    pairs : dict, keys=('feature', 'sample'), values=numpy.ndarray, shape=(n, 2)
+        Correlated pair indices.
+    space : str, values=('feature', 'sample')
+        Feature or sample space.
     n_pairs : int
-
+        Number of correlated pairs to show.
     n_points : int
-
+        Number of data point to show.
     """
     cmap = sb.diverging_palette(250, 15, s=75, l=40, n=10, center="dark")
     if space == 'feature':
@@ -141,30 +141,30 @@ def show_recovery(mixed, guess_X, true_signal, estimated_signal, true_pairs, est
 
     Parameters
     ----------
-    mixed :
-
-    guess_X :
-
-    true_signal :
-
-    estimated_signal :
-
-    true_pairs :
-
-    estimated_pairs :
-
-    true_stds :
-
-    estimated_stds :
-
-    true_directions :
-
-    estimated_directions :
-
-    n_pairs :
-
-    n_points :
-
+    mixed : numpy.ndarray, shape=(n_samples, n_features)
+        Corrupted signal to be cleaned.
+    guess_X : numpy.ndarray, shape=(n_samples, n_features)
+        Initial guess used for the final solution.
+    true_signal : numpy.ndarray, shape=(n_samples, n_features)
+        True signal matrix.
+    estimated_signal : numpy.ndarray, shape=(n_samples, n_features)
+        Estimated signal matrix.
+    true_pairs : numpy.ndarray, shape=(n, 2)
+        True correlated pairs.
+    estimated_pairs : numpy.ndarray, shape=(n, 2)
+        Estimated correlated pairs.
+    true_stds : numpy.ndarray, len=n
+        True standard deviations.
+    estimated_stds : numpy.ndarray, len=n
+        Estimated standard deviations.
+    true_directions : numpy.ndarray, len=n
+        True directions.
+    estimated_directions : numpy.ndarray, len=n
+        Estimated directions.
+    n_pairs : int
+        Number of correlated pairs to show.
+    n_points : int
+        Number of data point to show.
     """
     def pair_index(pairs, pair):
         index = np.where(np.all(pairs == pair, axis=1))
@@ -222,16 +222,16 @@ def show_independences(signal, pairs, space, n_pairs=5, n_points=50):
 
     Parameters
     ----------
-    signal :
-
-    pairs :
-
-    space : str
-
+    signal : numpy.ndarray, shape=(n_samples, n_features)
+        True signal matrix.
+    pairs : dict, keys=('feature', 'sample'), values=numpy.ndarray, shape=(n, 2)
+        Correlated pair indices.
+    space : str, values=('feature', 'sample')
+        Feature or sample space.
     n_pairs : int
-
+        Number of correlated pairs to show.
     n_points : int
-
+        Number of data point to show.
     """
     if space == 'feature':
         shape = signal.T.shape
@@ -258,14 +258,14 @@ def show_dependence_structure(correlations, space, unshuffled=False, map_backwar
 
     Parameters
     ----------
-    correlations :
-
-    space :
-
+    correlations : dict, keys=('feature', 'sample'), values=numpy.ndarray, shape=(n_samples, n_samples) or (n_features, n_features)
+        Correlation matrix.
+    space : str, values=('feature', 'sample')
+        Feature or sample space.
     unshuffled : bool
-
-    map_backward : bool
-
+        If the input data is unshuffled.
+    map_backward : dict, value=('feature', 'sample'), values=dict
+        Map from new annotation to old annotion.
     """
     cmap = sb.diverging_palette(
         250, 15, s=75, l=40, as_cmap=True, center="dark")
@@ -298,12 +298,12 @@ def show_threshold(correlations, threshold, space):
 
     Parameters
     ----------
-    correlations :
-
-    threshold :
-
-    space : str
-
+    correlations : dict, keys=('feature', 'sample'), values=numpy.ndarray, shape=(n_samples, n_samples) or (n_features, n_features)
+        Correlation matrix.
+    threshold : float
+        Correlation threshold at which to cut-off (used to draw vertical line)
+    space : str, values=('feature', 'sample')
+        Feature or sample space.
     """
     cmap = sb.diverging_palette(250, 15, s=75, l=40, n=10, center="dark")
     fig = pl.figure(figsize=(5, 5))

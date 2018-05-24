@@ -280,81 +280,9 @@ def shuffle_pairs(pairs, d):
         for j in xrange(pairs.shape[1]):
             new_pairs[i, j] = d[pairs[i, j]]
     return new_pairs
+    
 
-
-class DataSubset(object):
-
-    def __init__(self):
-        """
-        Container for simulated data.
-        """
-        self.mixed = None,
-        self.large_scale_mixed = None
-
-        self.subset_indices = None
-        self.subset_shape = None
-        self.shape = None
-        self.annotation = None
-        self.annotation_batch = None
-
-        self.guess_X = None
-        self.guess_usvt = None
-        self.estimated_bias = None
-        self.estimated_signal = None
-        self.estimated_pairs = None
-        self.estimated_stds = None
-        self.estimated_directions = None
-        self.estimated_correlations = None
-
-        self.signal = None
-        self.true_missing = None
-        self.true_bias = None
-        self.true_pairs = None
-        self.true_stds = None
-        self.true_directions = None
-        self.true_correlations = None
-
-        self.correlation_threshold = None
-        self.subset_factor = None
-
-    def __setitem__(self, key, item):
-        self.__dict__[key] = item
-
-    def __getitem__(self, key):
-        return self.__dict__[key]
-
-    def __repr__(self):
-        return repr(self.__dict__)
-
-
-class Data(object):
-
-    __metaclass__ = abc.ABCMeta
-
-    def __init__(self):
-        """Abstract base class for the combined simulated data containers.
-
-        Attributes
-        ----------
-        d : dict
-            Dictionary containing all the intial data of a bias recovery run (including randomly created signal, bias, missing matrices).
-        rank : int
-            Rank of the matrix to be recovered.
-        noise_amplitude :
-            Noise level of the bias.
-        """
-        self.d = {'sample': DataSubset(), 'feature': DataSubset()}
-        self.rank = None
-        self.noise_amplitude = None
-
-    @abc.abstractmethod
-    def estimate(self):
-        """Estimate sucessively correlations, pairs, directions and strandard deviations from a mixed matrix.
-        """
-        pass
-
-
-class DataSimulated(Data):
+class DataSimulated(object):
 
     def __init__(self, shape, rank, bias_model='gaussian', correlation_threshold=0.7, m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, image_source='../../tests/trump.png'):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
@@ -393,6 +321,7 @@ class DataSimulated(Data):
         self.missing_type = missing_type
         self.missing_fraction = missing_fraction
         self.image_source = image_source
+        self.d = {'sample': {}, 'feature': {}}
 
         # NOTE using the sample space to determine the m_blocks here.
         m_blocks = self.shape[0] // self.m_blocks_size
