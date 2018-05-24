@@ -1,8 +1,4 @@
-"""Signal testing.
-
-Notes
------
-Defines a test class that asserts the functioning of the `signal` module and its related functions.
+"""Redundant signal matrix tests.
 """
 from __future__ import division, absolute_import
 
@@ -11,7 +7,6 @@ import unittest
 import numpy as np
 
 from bcn.redundant_signal import RedundantSignal, _generate_square_blocks_matrix, _generate_pairs, _generate_stds, _generate_directions, _generate_covariance, _generate_matrix_normal_sample
-from bcn.utils.testing import assert_consistency
 
 
 class Test_std_consistency(unittest.TestCase):
@@ -100,7 +95,6 @@ class Test_generate_covariance(unittest.TestCase):
         self._assert_finite(covariance_matrix)
         self._assert_shape(covariance_matrix)
         self._assert_ndarray(covariance_matrix)
-        assert_consistency(covariance_matrix, 'a561ebfe676a540e3ae340754fd3cd56')
 
         
 class Test_generate_directions(unittest.TestCase):
@@ -140,7 +134,6 @@ class Test_generate_directions(unittest.TestCase):
         self._assert_finite(directions)
         self._assert_shape(directions, self.pairs)
         self._assert_ndarray(directions)
-        assert_consistency(directions, '69cc701d865281f105e62450ec0a8a6d')
 
         
 class Test_generate_stds(unittest.TestCase):
@@ -177,7 +170,6 @@ class Test_generate_stds(unittest.TestCase):
         self._assert_float(scaling_factor)
         self._assert_shape(stds, self.n)
         self._assert_ndarray(stds)
-        assert_consistency(stds, '5317374387626efec58ceac7b22db73e')
         
     def test_constant(self):
         stds, scaling_factor = _generate_stds(self.n, 'constant', normalize=True)
@@ -185,7 +177,6 @@ class Test_generate_stds(unittest.TestCase):
         self._assert_float(scaling_factor)
         self._assert_shape(stds, self.n)
         self._assert_ndarray(stds)
-        assert_consistency(stds, 'aa6d1818a58d8187d49745d5047b1557')
 
     
 class Test_generate_square_blocks_matrix(unittest.TestCase):
@@ -222,7 +213,6 @@ class Test_generate_square_blocks_matrix(unittest.TestCase):
         self._assert_finite(square_blocks_matrix)
         self._assert_shape(square_blocks_matrix)
         self._assert_ndarray(square_blocks_matrix)
-        assert_consistency(square_blocks_matrix, '089d86cc68efaf7c94ddd1861ebb589e')
 
 
 class Test_generate_pairs(unittest.TestCase):
@@ -263,7 +253,6 @@ class Test_generate_pairs(unittest.TestCase):
         self._assert_shape(pairs)
         self._assert_ndarray(pairs)
         self._assert_int(pairs)
-        assert_consistency(pairs, '63053317a4fb2b8e49e8cabd3b422ca4')
 
 
 class Test_generate_matrix_normal_sample(unittest.TestCase):
@@ -307,7 +296,6 @@ class Test_generate_matrix_normal_sample(unittest.TestCase):
         self._assert_finite(self.sample)
         self._assert_shape(self.sample)
         self._assert_ndarray(self.sample)
-        assert_consistency(self.sample, 'c5a947371bfd2a1bd819c4e17500bc8b')
 
     
 class TestRedundantSignal(unittest.TestCase):
@@ -348,7 +336,6 @@ class TestRedundantSignal(unittest.TestCase):
         self._assert_finite(signal)
         self._assert_ndarray(signal)
         self._assert_shape(signal)
-        assert_consistency(signal['X'], '2532e89f9137ce60034b3defc9570754')
       
     def test_random(self):
         signal = RedundantSignal(self.shape, 'random', self.m_blocks, self.correlation_strength).generate()
@@ -356,7 +343,6 @@ class TestRedundantSignal(unittest.TestCase):
         self._assert_finite(signal)
         self._assert_ndarray(signal)
         self._assert_shape(signal)
-        assert_consistency(signal['X'], 'c1cf0a4ecfbd9d07ff62b3ccbbe3a4d8')
 
         
 if __name__ == '__main__':

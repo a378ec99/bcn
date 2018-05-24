@@ -1,8 +1,4 @@
-"""Missing values testing.
-
-Notes
------
-Defines a test class that assert the functioning of the `missing` module.
+"""Missing values tests.
 """
 from __future__ import division, absolute_import
 
@@ -11,21 +7,12 @@ import unittest
 import numpy as np
 
 from bcn.missing import Missing
-from bcn.utils.testing import assert_consistency
 
     
 class TestMissing(unittest.TestCase):
     """Test to verify that all three models produce non-finite/finite ndarrays that are consistent.
-
-    Attributes
-    ----------
-    seed : int, default = 42
-        Random seed of the whole test.
-    shape : tuple of int, default = (50, 60)
-        Shape of the output missing values matrix in the form of (n_samples, n_features).
     """
-    def setUp(self, seed=42):
-        np.random.seed(seed)
+    def setUp(self):
         self.shape = (50, 60)
         
     def _assert_shape(self, missing):
@@ -49,7 +36,6 @@ class TestMissing(unittest.TestCase):
         self._assert_not_finite(missing)
         self._assert_ndarray(missing)
         self._assert_shape(missing)
-        assert_consistency(missing['X'], '887918fd77dbe00d302b1105da156eb5')
 
     def test_NMAR(self):
         missing = Missing(self.shape, 'NMAR', p_censored=0.2).generate()
@@ -57,7 +43,6 @@ class TestMissing(unittest.TestCase):
         self._assert_not_finite(missing)
         self._assert_ndarray(missing)
         self._assert_shape(missing)
-        assert_consistency(missing['X'], '5a506bce5f99444f6ee3bed2e7e2b6cc')
 
     def test_NoMissing(self):
         missing = Missing(self.shape, 'no-missing').generate()
@@ -65,10 +50,6 @@ class TestMissing(unittest.TestCase):
         self._assert_finite(missing)
         self._assert_ndarray(missing)
         self._assert_shape(missing)
-        assert_consistency(missing['X'], 'c30c3f99eebe77a50cbd1ef6ef15a34b')
-
-    def test_SCAN(self):
-        pass
 
     
 if __name__ == '__main__':

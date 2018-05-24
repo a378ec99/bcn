@@ -1,8 +1,4 @@
-"""Bias testing.
-
-Notes
------
-Defines two test classes that assert the functioning of the `bias` module.
+"""Bias matrix tests.
 """
 from __future__ import division, absolute_import
 
@@ -11,23 +7,12 @@ import unittest
 import numpy as np
 
 from bcn.bias import BiasLowRank, BiasUnconstrained
-from bcn.utils.testing import assert_consistency
 
 
 class TestBiasLowRank(unittest.TestCase):
-    """Test to verify that all three models produce finite ndarrays that are consistent.
-
-    Attributes
-    ----------
-    seed : int, default = 42
-        Random seed of the whole test.
-    shape : tuple of int, default = (50, 60)
-        Shape of the output bias matrix in the form of (n_samples, n_features).
-    rank : int, default = 6
-        Rank of the low-rank decomposition.
+    """Test to verify that all three models produce finite ndarrays.
     """
-    def setUp(self, seed=42):
-        np.random.seed(seed)
+    def setUp(self):
         self.shape = (50, 60)
         self.rank = 6
 
@@ -58,7 +43,6 @@ class TestBiasLowRank(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        assert_consistency(bias['X'], 'c393adcf9d466c25a2997ed619fc03a0')
         
     def test_gaussian(self):
         bias = BiasLowRank(self.shape, self.rank, model='gaussian', noise_amplitude=1.0).generate()
@@ -66,7 +50,6 @@ class TestBiasLowRank(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        assert_consistency(bias['X'], '64fd423a0625ae269d1b9e07f57eb31c')
         
     def test_bicluster(self):
         bias = BiasLowRank(self.shape, self.rank, model='bicluster', n_clusters=(3,4)).generate()
@@ -74,21 +57,12 @@ class TestBiasLowRank(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        assert_consistency(bias['X'], '3cc3ffcca30bda21e83043d0be8e03b9')
 
 
 class TestBiasUnconstrained(unittest.TestCase):
     """Test to verify that both models produce finite ndarrays.
-
-    Attributes
-    ----------
-    seed : int, optional (default = 42)
-        Random seed of the whole test.
-    shape : tuple of int, default = (50, 60)
-        Shape of the output bias matrix in the form of (n_samples, n_features).
     """
-    def setUp(self, seed=42):
-        np.random.seed(seed)
+    def setUp(self):
         self.shape = (50, 60)
 
     def _assert_shape(self, bias):
@@ -102,12 +76,6 @@ class TestBiasUnconstrained(unittest.TestCase):
 
     def _assert_dict(self, bias):
         assert type(bias) == dict
-
-    def assert_consistency(self, bias, true_md5):
-        m = hashlib.md5()
-        m.update(bias['X'])
-        current_md5 = m.hexdigest()
-        assert current_md5 == true_md5
         
     def test_gaussian_finite(self):
         bias = BiasUnconstrained(self.shape, 'gaussian', noise_amplitude=1.0).generate()
@@ -115,7 +83,6 @@ class TestBiasUnconstrained(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        assert_consistency(bias['X'], '274886b402bf99b7eef93466eb580f55')
         
     def test_uniform_finite(self):
         bias = BiasUnconstrained(self.shape, 'uniform', fill_value=-1.5).generate()
@@ -123,7 +90,6 @@ class TestBiasUnconstrained(unittest.TestCase):
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
-        assert_consistency(bias['X'], 'c550d003aa3c3eaedf8b0c8f6ffc6911')
 
     
 if __name__ == '__main__':
