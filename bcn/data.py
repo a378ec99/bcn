@@ -310,7 +310,6 @@ class DataSimulated(object):
         image_source : str
             Path to the image used as bias.
         """
-        super(DataSimulated, self).__init__(seed)
         self.shape = shape
         self.rank = rank
         self.bias_model = bias_model
