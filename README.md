@@ -3,7 +3,11 @@
 
 The algorithm recovers bias from a high-throughput database without the use of prior information. Instead, detectable redundancies in the form of dependencies between samples and features are leveraged.
 
-**Dependencies**
+***Example***
+
+See https://github.com/a378ec99/bcn/blob/master/bcn/examples/Example.ipynb.
+
+***Dependencies***
 
 - scipy >= 0.19.0
 - numpy >= 1.11.3
