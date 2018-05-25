@@ -38,21 +38,21 @@ class TestBiasLowRank(unittest.TestCase):
         assert type(bias) == dict
 
     def test_image(self):
-        bias = BiasLowRank(self.shape,  self.rank, model='image', image_source='trump.png').generate()
+        bias = BiasLowRank(self.shape,  self.rank, bias_model='image', image_source='trump.png').generate()
         self._assert_dict(bias)
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
         
     def test_gaussian(self):
-        bias = BiasLowRank(self.shape, self.rank, model='gaussian', noise_amplitude=1.0).generate()
+        bias = BiasLowRank(self.shape, self.rank, bias_model='gaussian', noise_amplitude=1.0).generate()
         self._assert_dict(bias)
         self._assert_finite(bias)
         self._assert_ndarray(bias)
         self._assert_shape(bias)
         
     def test_bicluster(self):
-        bias = BiasLowRank(self.shape, self.rank, model='bicluster', n_clusters=(3,4)).generate()
+        bias = BiasLowRank(self.shape, self.rank, bias_model='bicluster', n_clusters=(3,4)).generate()
         self._assert_dict(bias)
         self._assert_finite(bias)
         self._assert_ndarray(bias)

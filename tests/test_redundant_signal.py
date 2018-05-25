@@ -10,7 +10,8 @@ from bcn.redundant_signal import RedundantSignal, _generate_square_blocks_matrix
 
 
 class Test_std_consistency(unittest.TestCase):
-
+    """ Test the consistency of standard deviations.
+    """
     def setUp(self, seed=42):
         np.random.seed(seed)
         self.m_blocks = 10

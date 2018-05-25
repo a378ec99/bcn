@@ -7,7 +7,7 @@ import unittest
 import numpy as np
 
 from bcn.linear_operators import LinearOperatorEntry, LinearOperatorDense, LinearOperatorKsparse, LinearOperatorCustom, integer_to_matrix, sample_n_choose_k, choose_random_matrix_elements
-from bcn.data import DataSimulated
+from bcn.data import DataSimulated, estimate_partial_signal_characterists
 
 
 class TestSimple(unittest.TestCase):
@@ -34,27 +34,23 @@ class TestSimple(unittest.TestCase):
     def test_custom(self):
         np.random.seed(42)
         rank = 2
-        data = DataSimulated((self.n_samples, self.n_features), rank, missing_type='no-missing', m_blocks_factor=5)
-        data.estimate()
-        estimated = {'sample': {'estimated_stds': data.d['sample']['estimated_stds'],
-                                'estimated_directions': data.d['sample']['estimated_directions'],
-                                'estimated_pairs': data.d['sample']['estimated_pairs'],
-                                'shape': data.d['sample']['shape']},      
-                     'feature': {'estimated_stds': data.d['feature']['estimated_stds'],
-                                 'estimated_directions': data.d['feature']['estimated_directions'],
-                                 'estimated_pairs': data.d['feature']['estimated_pairs'],
-                                 'shape': data.d['feature']['shape']}
-                    }
+        correlation_threshold = 0.8
+        data = DataSimulated((self.n_samples, self.n_features), rank, missing_type='no-missing', m_blocks_size=5)
+        true_correlations = {'sample': data.d['sample']['true_correlations'], 'feature': data.d['feature']['true_correlations']}
+        true_pairs = {'sample': data.d['sample']['true_pairs'], 'feature': data.d['feature']['true_pairs']}
+        true_directions = {'sample': data.d['sample']['true_directions'], 'feature': data.d['feature']['true_directions']}
+        true_stds = {'sample': data.d['sample']['true_stds'], 'feature': data.d['feature']['true_stds']}
         mixed = data.d['sample']['mixed']
+        estimated = estimate_partial_signal_characterists(mixed, correlation_threshold,  true_pairs=true_pairs, true_directions=true_directions, true_stds=true_stds, true_correlations=true_correlations)
         operator = LinearOperatorCustom(self.n)
-        out = operator.generate(mixed, estimated)
+        out = operator.generate(estimated)
         assert len(out['A'][0]['value']) == 2
         assert len(out['y']) == self.n
         mixed[0, 0] = np.nan
         operator = LinearOperatorCustom(self.n)
-        out = operator.generate(mixed, estimated)
+        out = operator.generate(estimated)
         assert len(out['A'][0]['value']) == 2
-        assert len(out['y']) == self.n - 4      
+        assert len(out['y']) == self.n - 3     
         
     def test_dense(self):
         operator = LinearOperatorDense(self.n)
@@ -99,7 +95,8 @@ class TestSimple(unittest.TestCase):
         assert type(element_indices) == np.ndarray
             
 
-
+if __name__ == '__main__':
+    unittest.main()
 
 
 
