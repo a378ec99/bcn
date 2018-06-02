@@ -14,6 +14,6 @@ setup(
       install_requires=['scipy >= 0.19.0', 'numpy >= 1.11.3', 'scikit-learn >= 0.18.1', 'pymanopt >= 0.2.3', 'autograd >= 1.1.6', 'scikit-image >= 0.13.1'],
       extras_require={
                       'visualization': ['seaborn >= 0.7.1', 'matplotlib >= 1.5.3'],
-                      'parallel': ['mpi4py >= 3.0.0']
+                      'parallel': ['joblib >= 0.11']
                       }
 )
