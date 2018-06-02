@@ -14,7 +14,7 @@ from bcn.utils.visualization import recovery_performance
 from joblib import Parallel, delayed
 
 
-def recovery(correlation_strength):
+def test(correlation_strength, solver=None):
 
     # Setup of general parameters for the recovery experiment.
     n_restarts = 10
@@ -46,21 +46,31 @@ def recovery(correlation_strength):
     measurements = operator.generate(signal_characterists)
 
     # Construct cost function.
-    cost = Cost(measurements['A'], measurements['y'], sparsity=2)
+
+    if solver == 'minibatch':
+        cost = CostMiniBatch(measurements['A'], measurements['y'], sparsity=2, batch_size=10)
+    else:
+        cost = Cost(measurements['A'], measurements['y'], sparsity=2)
 
     # Recover the bias.
     solver = ConjugateGradientSolver(mixed, cost.cost_func, guess_func, rank, guess_noise_amplitude=noise_amplitude, verbosity=0)
     results = solver.recover()
-
+    
     d = recovery_performance(mixed, cost.cost_func, truth.d['sample']['true_bias'], results['estimated_signal'], truth.d['sample']['signal'], results['estimated_bias'])
     error = d['Mean absolute error (estimated_signal)']
     
     return error
 
-    
-r = Parallel(n_jobs=2)(delayed(recovery)(correlation_strength) for correlation_strength in np.linspace(0.5, 1.0, 5))
 
+print 'minibatch'
+r = Parallel(n_jobs=2)(delayed(lambda x: test(x, 'minibatch'))(correlation_strength) for correlation_strength in np.linspace(0.9, 1.0, 10))
 print r
+
+print 'normal'
+r = Parallel(n_jobs=2)(delayed(lambda x: test(x))(correlation_strength) for correlation_strength in np.linspace(0.9, 1.0, 10))
+print r
+
+
 
 #if __name__ == '__main__':
 #    pass
