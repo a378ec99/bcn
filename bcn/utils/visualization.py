@@ -28,27 +28,33 @@ def recovery_performance(mixed, cost_func, true_bias, estimated_signal, true_sig
         True signal matrix.
     estimated_bias: numpy.ndarray, shape=(n_samples, n_features)
         Estimated bias matrix.
+
+    Returns
+    -------
+    d : dict
+        Performance metrics.
     """
     error_cost_func_true_bias = cost_func(true_bias)
     error_cost_func_estimated_bias = cost_func(estimated_bias)
-    print 'Error cost function (true bias):', error_cost_func_true_bias
-    print 'Error cost function (estimated bias):', error_cost_func_estimated_bias
+    d['Error cost function (true bias)'] = error_cost_func_true_bias
+    d['Error cost function (estimated bias)'] = error_cost_func_estimated_bias
     divisor = np.sum(~np.isnan(mixed))
-    print 'Number of valid values in corrupted signal:', divisor
+    d['Number of valid values in corrupted signal'] = divisor
     mean_absolute_error_true_signal = np.nansum(
         np.absolute(true_signal - (mixed - true_bias))) / divisor
     mean_absolute_error_estimated_signal = np.nansum(
         np.absolute(true_signal - estimated_signal)) / divisor
-    print 'Mean absolute error (true_signal):', mean_absolute_error_true_signal
-    print 'Mean absolute error (estimated_signal):', mean_absolute_error_estimated_signal
+    d['Mean absolute error (true_signal)'] = mean_absolute_error_true_signal
+    d['Mean absolute error (estimated_signal)'] = mean_absolute_error_estimated_signal
     mean_absolute_error_zeros = np.nansum(
         np.absolute(true_signal - mixed)) / divisor
-    print 'Mean absolute error (zeros):', mean_absolute_error_zeros
+    d['Mean absolute error (zeros)'] = mean_absolute_error_zeros
     ratio_estimated_signal_to_zeros = mean_absolute_error_estimated_signal / \
         mean_absolute_error_zeros
-    print 'Ratio mean absolute error (estimated signal / zeros):', ratio_estimated_signal_to_zeros
+    d['Ratio mean absolute error (estimated signal / zeros)'] = ratio_estimated_signal_to_zeros
+    return d
 
-
+    
 def show_absolute(signal, kind, unshuffled=False, unshuffle=False, map_backward=None, vmin=-4, vmax=4):
     """
     Plot the absolute values of the given signal matrix.

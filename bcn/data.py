@@ -284,7 +284,7 @@ def shuffle_pairs(pairs, d):
 
 class DataSimulated(object):
 
-    def __init__(self, shape, rank, bias_model='gaussian', correlation_threshold=0.7, m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, image_source='../../tests/trump.png'):
+    def __init__(self, shape, rank, bias_model='gaussian', m_blocks_size=2, noise_amplitude=1.0, correlation_strength=1.0, missing_type='MAR', missing_fraction=0.1, image_source='../../tests/trump.png'):
         """Creates (simulates) and stores all the data of a bias recovery experiment.
 
         Parameters
@@ -295,8 +295,6 @@ class DataSimulated(object):
             Rank of the low-rank decomposition.
         bias_model : str
             Bias model to be used.
-        correlation_threshold : float
-            The threshold to use when estimating pairs from a correlation matrix (the higher the fewer pairs).
         m_blocks_size : int, default = 2
             Size of each block (e.g. number of pairs). Factor to determine the number of blocks in the correlation matix of features or samples that are varying together (with differences only in degree, direction and scale). Fewer blocks are better for bias recovery.
         noise_amplitude : float, default = None
@@ -313,7 +311,6 @@ class DataSimulated(object):
         self.shape = shape
         self.rank = rank
         self.bias_model = bias_model
-        self.correlation_threshold = correlation_threshold
         self.m_blocks_size = m_blocks_size
         self.noise_amplitude = noise_amplitude
         self.correlation_strength = correlation_strength
@@ -363,4 +360,3 @@ class DataSimulated(object):
                 signal_unshuffled[space]['pairs'], self.map_backward[space])
             self.d[space]['true_stds'] = signal_unshuffled[space]['stds'][signal_unshuffled[space]['pairs']]
             self.d[space]['true_directions'] = signal_unshuffled[space]['directions']
-            self.d[space]['correlation_threshold'] = correlation_threshold
