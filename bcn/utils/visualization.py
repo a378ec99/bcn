@@ -34,6 +34,7 @@ def recovery_performance(mixed, cost_func, true_bias, estimated_signal, true_sig
     d : dict
         Performance metrics.
     """
+    d = {}
     error_cost_func_true_bias = cost_func(true_bias)
     error_cost_func_estimated_bias = cost_func(estimated_bias)
     d['Error cost function (true bias)'] = error_cost_func_true_bias
