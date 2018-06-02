@@ -25,7 +25,7 @@ class CostMiniBatch(object):
         self.A_cols = ag.array([a['col'] for a in A])
         self.A_values = ag.array([a['value'] for a in A])
         self.y = ag.array(y)
-        self.indices = np.random.randint(self.y.size, size=self.batch_size)
+        self.indices = ag.random.randint(self.y.size, size=self.batch_size)
         
     def cost_func(self, X):
         """Cost function for evaluation at X.

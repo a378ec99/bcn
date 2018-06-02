@@ -6,7 +6,7 @@ import numpy as np
 
 from bcn.bias import guess_func
 from bcn.data import DataSimulated, estimate_partial_signal_characterists
-from bcn.cost import Cost
+from bcn.cost import Cost, CostMiniBatch
 from bcn.solvers import ConjugateGradientSolver
 from bcn.linear_operators import LinearOperatorCustom, possible_measurements
 from bcn.utils.visualization import recovery_performance
@@ -14,7 +14,7 @@ from bcn.utils.visualization import recovery_performance
 from joblib import Parallel, delayed
 
 
-def test(correlation_strength, solver=None):
+def test(correlation_strength, solver='minibatch'):
 
     # Setup of general parameters for the recovery experiment.
     n_restarts = 10
@@ -62,12 +62,7 @@ def test(correlation_strength, solver=None):
     return error
 
 
-print 'minibatch'
-r = Parallel(n_jobs=2)(delayed(lambda x: test(x, 'minibatch'))(correlation_strength) for correlation_strength in np.linspace(0.9, 1.0, 10))
-print r
-
-print 'normal'
-r = Parallel(n_jobs=2)(delayed(lambda x: test(x))(correlation_strength) for correlation_strength in np.linspace(0.9, 1.0, 10))
+r = Parallel(n_jobs=2)(delayed(test)(correlation_strength) for correlation_strength in np.linspace(0.9, 1.0, 10))
 print r
 
 
