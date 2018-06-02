@@ -14,7 +14,7 @@ from bcn.utils.visualization import recovery_performance
 from joblib import Parallel, delayed
 
 
-def test(correlation_strength, solver='minibatch'):
+def test(correlation_strength, solver=None): # 'minibatch'
 
     # Setup of general parameters for the recovery experiment.
     n_restarts = 10
@@ -48,7 +48,7 @@ def test(correlation_strength, solver='minibatch'):
     # Construct cost function.
 
     if solver == 'minibatch':
-        cost = CostMiniBatch(measurements['A'], measurements['y'], sparsity=2, batch_size=10)
+        cost = CostMiniBatch(measurements['A'], measurements['y'], sparsity=2, batch_size=len(measurements['y']))
     else:
         cost = Cost(measurements['A'], measurements['y'], sparsity=2)
 

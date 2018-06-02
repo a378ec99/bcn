@@ -50,7 +50,7 @@ class CostMiniBatch(object):
         else:
             assert ag.isfinite(X).all()
         y_est = ag.sum(
-            self.A_values[self.indices] * X[self.A_rows, self.A_cols].reshape(-1, self.sparsity), axis=1)
+            self.A_values[self.indices] * X[self.A_rows, self.A_cols].reshape(-1, self.sparsity)[self.indices], axis=1)
         error = ag.mean((y_est - self.y[self.indices])**2)
         return error
 
