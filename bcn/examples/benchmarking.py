@@ -3,25 +3,27 @@
 from __future__ import division, absolute_import
 
 import numpy as np
-
-from bcn.bias import guess_func
-from bcn.data import DataSimulated, estimate_partial_signal_characterists
-from bcn.cost import Cost, CostMiniBatch
-from bcn.solvers import ConjugateGradientSolver
-from bcn.linear_operators import LinearOperatorCustom, possible_measurements
-from bcn.utils.visualization import recovery_performance
+import seaborn as sb
+import pandas as pd
 
 from joblib import Parallel, delayed
 
+from bcn.bias import guess_func
+from bcn.data import DataSimulated, estimate_partial_signal_characterists
+from bcn.cost import Cost
+from bcn.solvers import ConjugateGradientSolver, SteepestDescentSolver
+from bcn.linear_operators import LinearOperatorCustom, possible_measurements
+from bcn.utils.visualization import recovery_performance
 
-def test(correlation_strength, solver=None): # 'minibatch'
+
+
+def benchmark(correlation_strength=0.97, n_restarts=3, solver='ConjugateGradient'):
 
     # Setup of general parameters for the recovery experiment.
-    n_restarts = 10
     rank = 6
-    n_measurements = 2800
+    n_measurements = 3000 # 2800
     shape = (50, 70) # samples, features
-    missing_fraction = 0.1
+    missing_fraction = 0.01
     noise_amplitude = 2.0
     m_blocks_size = 5 # size of each block
     correlation_threshold = 0.75
@@ -47,23 +49,66 @@ def test(correlation_strength, solver=None): # 'minibatch'
 
     # Construct cost function.
 
-    if solver == 'minibatch':
-        cost = CostMiniBatch(measurements['A'], measurements['y'], sparsity=2, batch_size=len(measurements['y']))
-    else:
-        cost = Cost(measurements['A'], measurements['y'], sparsity=2)
+    cost = Cost(measurements['A'], measurements['y'], sparsity=2)
 
     # Recover the bias.
-    solver = ConjugateGradientSolver(mixed, cost.cost_func, guess_func, rank, guess_noise_amplitude=noise_amplitude, verbosity=0)
-    results = solver.recover()
+    if solver == 'ConjugateGradient':
+        Solver = ConjugateGradientSolver
+    if solver == 'SteepestDescent':
+        Solver = SteepestDescentSolver
+        
+    Solver = Solver(mixed, cost.cost_func, guess_func, rank, guess_noise_amplitude=noise_amplitude, verbosity=0, mingradnorm=1e-99, minstepsize=1e-99)
+    results = Solver.recover()
     
     d = recovery_performance(mixed, cost.cost_func, truth.d['sample']['true_bias'], results['estimated_signal'], truth.d['sample']['signal'], results['estimated_bias'])
-    error = d['Mean absolute error (estimated_signal)']
+    d['solver'] = solver
+    d['n_restarts'] = n_restarts
+    d['correlation_strength'] = correlation_strength
     
-    return error
+    return d
+
+# TODO Start up instance with lots of cores to run all at once!
+# TODO Generate all parameters that want. 
+# TODO Convergences at different maxiter=1000, maxtime=100, mingradnorm=1e-12, minstepsize=1e-12.
 
 
-r = Parallel(n_jobs=2)(delayed(test)(correlation_strength) for correlation_strength in np.linspace(0.9, 1.0, 10))
-print r
+parameters = []
+
+for correlation_strength in [0.5, 0.9, 0.97, 0.98, 0.99, 1.0]:
+    for solver in ['ConjugateGradient', 'SteepestDescent']:
+        for n_restarts in [1, 3, 10]:
+            for maxiter, maxtime in zip([100, 1000, 5000, 1000000, 1000000], [1000000, 1000000, 1000000, 100, 1000]):
+                parameters.append({'n_restarts': n_restarts, 'correlation_strength': correlation_strength, 'solver': solver, 'maxiter': maxiter, 'maxtime': maxtime})
+            
+        
+print 'Performing Experiments'
+
+experiments = Parallel(n_jobs=18)(delayed(benchmark)(**kwargs) for kwargs in parameters)
+
+df = pd.DataFrame(experiments)
+
+cm = sb.light_palette("green", as_cmap=True)
+
+df = df.drop('Number of valid values in corrupted signal', axis=1)
+
+html = df.style.background_gradient(cmap=cm).format({'Number of valid values in corrupted signal': "{:d}",
+                                                     'n_restarts': "{:d}",
+                                                     'correlation_strength': "{:.2E}",
+                                                     'solver': "{}",
+                                                     'Error cost function (true bias)': "{:.2E}",
+                                                     'Error cost function (estimated bias)': "{:.2E}",
+                                                     'Mean absolute error (true_signal)': "{:.2E}",
+                                                     'Mean absolute error (estimated_signal)': "{:.2E}",
+                                                     'Mean absolute error (zeros)': "{:.2E}",
+                                                     'Ratio mean absolute error (estimated signal / zeros)': "{:.2E}",
+                                                     'maxiter': "{:d}",
+                                                     'maxtime': "{:d}"}).render()
+    
+with open("experiments_style.html","w") as f:
+    f.write(html)
+    
+
+
 
 
 
