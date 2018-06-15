@@ -15,7 +15,7 @@ See https://github.com/a378ec99/bcn/blob/master/bcn/examples/Example.ipynb.
 - pymanopt >= 0.2.3
 - autograd >= 1.1.6
 - scikit-image >= 0.13.1
+- joblib >= 0.11
 - matplotlib >= 1.5.3 (optional -- visualization)
 - seaborn >= 0.7.1 (optional -- visualization)
-- joblib >= 0.11 (optional -- parallel)
-
+- pandas >= 0.23.0 (optional -- visualization)
