@@ -11,9 +11,6 @@ setup(
       long_description=open('README.md').read(),
       keywords=('bias', 'normalization', 'blind', 'manifold optimization', 'compressed sensing', 'high-dimensional'),
       packages=find_packages(exclude=['tests']),
-      install_requires=['scipy >= 0.19.0', 'numpy >= 1.11.3', 'scikit-learn >= 0.18.1', 'pymanopt >= 0.2.3', 'autograd >= 1.1.6', 'scikit-image >= 0.13.1'],
-      extras_require={
-                      'visualization': ['seaborn >= 0.7.1', 'matplotlib >= 1.5.3'],
-                      'parallel': ['joblib >= 0.11']
-                      }
+      install_requires=['scipy >= 0.19.0', 'numpy >= 1.11.3', 'scikit-learn >= 0.18.1', 'pymanopt >= 0.2.3', 'joblib >= 0.11', 'autograd >= 1.1.6', 'scikit-image >= 0.13.1'],
+      extras_require={'visualization': ['seaborn >= 0.7.1', 'matplotlib >= 1.5.3', 'pandas >= 0.23.0']}
 )
